@@ -140,4 +140,4 @@ DATA_DIR = os.path.join(BASE_DIR, 'public')
 UPLOAD_PREFIX='/picture'
 UPLOAD_DIR="{}/{}".format(DATA_DIR, UPLOAD_PREFIX)
 if not os.path.exists(UPLOAD_DIR):
-    os.mkdir(UPLOAD_DIR)
+    os.makedirs(UPLOAD_DIR)
