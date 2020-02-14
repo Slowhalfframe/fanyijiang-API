@@ -22,23 +22,22 @@ class UploadImage(CustomAPIView):
         image_base64_md5 = hashlib.md5(image_base64_data).hexdigest()
 
         # 获取图片base64的hash值集合
-        UPLOAD_IMAGE_SET = cache.get('UPLOAD_IMAGE_SET') if cache.get('UPLOAD_IMAGE_SET') else set()
+        UPLOAD_IMAGE_SET = cache.get('UPLOAD_IMAGE_SET') or set()
 
         suffix = os.path.splitext(image.name)[-1].lower()
-        if suffix not in ['.gif', 'jpg', '.jpeg', '.bmp', '.png']:
+        if suffix not in ['.gif', '.jpg', '.jpeg', '.bmp', '.png']:
             return self.error('不支持的文件格式', 10036)
 
         image_name = image_base64_md5 + suffix
 
         # 判断服务器缓存内是否已经有该文件，有直接返回路径，没有则写入文件
         if image_base64_md5 not in UPLOAD_IMAGE_SET:
-            UPLOAD_IMAGE_SET.add(image_base64_md5)
-
             # 保存文件
             try:
                 with open(os.path.join(settings.UPLOAD_DIR, image_name), 'wb') as imageFile:
                     for chunk in image:
                         imageFile.write(chunk)
+                UPLOAD_IMAGE_SET.add(image_base64_md5)
             except IOError as e:
                 print(e, '文件保存失败')
                 return self.error('文件上传失败，请尝试重新上传！', 10023)
