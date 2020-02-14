@@ -20,17 +20,3 @@ if __name__ == "__main__":
             )
         raise
     execute_from_command_line(sys.argv)
-
-
-
-'''
-文章阅读量：
-
-redis：
-    key：当前日期
-    value：article:{
-    }
-    
-mysql：
-    只记录文章的总阅读量，不记录阅读时间
-'''
