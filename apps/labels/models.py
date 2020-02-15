@@ -2,9 +2,8 @@ from django.db import models
 
 
 class Label(models.Model):
-    name = models.CharField(max_length=20, null=False, blank=False, verbose_name="标签名称")
+    name = models.CharField(max_length=20, unique=True, null=False, blank=False, verbose_name="标签名称")
     intro = models.TextField(null=False, blank=False, verbose_name="标签介绍")
-    parent_label = models.ForeignKey(to="self", null=True, verbose_name="父级标签")
     create_at = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
 
     class Meta:
