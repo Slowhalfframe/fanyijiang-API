@@ -53,7 +53,7 @@ THIRD_APPS = [
 
 # 本地开发app
 LOCAL_APPS = [
-
+    'apps.labels',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_APPS + LOCAL_APPS
