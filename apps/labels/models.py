@@ -31,3 +31,14 @@ class LabelRelation(models.Model):
 
     def __str__(self):
         return "{}:{}".format(self.parent, self.child)
+
+
+class LabelFollow(models.Model):
+    user_id = models.CharField(max_length=40, null=False, blank=False, verbose_name="关注者ID")
+    label = models.ForeignKey(to=Label, null=False, blank=False, verbose_name="关注的标签")
+    create_at = models.DateTimeField(auto_now_add=True, verbose_name="关注时间")
+
+    class Meta:
+        db_table = "db_label_follows"
+        verbose_name = "标签关注"
+        verbose_name_plural = verbose_name
