@@ -19,6 +19,13 @@ class LabelView(CustomAPIView):
         s = LabelCreateSerializer(instance=instance)
         return self.success(s.data)
 
+    def get(self, request):
+        """获取所有顶级标签。"""
+
+        query_set = Label.objects.filter(as_child=None)
+        s = LabelCreateSerializer(instance=query_set, many=True)
+        return self.success(s.data)
+
     def delete(self, request):
         """删除标签，同时删除它与其他标签、文章、问答等的关系，需要检查用户权限。"""
 
