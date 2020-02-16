@@ -1,6 +1,6 @@
 from apps.utils.api import CustomAPIView
 
-from .serializers import LabelCreateSerializer, ChildLabelSerializer
+from .serializers import LabelCreateSerializer, ChildLabelSerializer, LabelUpdateSerializer
 from .models import Label, LabelRelation
 
 
@@ -33,6 +33,27 @@ class LabelView(CustomAPIView):
             label.delete()  # 关系会自动删除
 
         return self.success()
+
+    def put(self, request):
+        """修改标签，需要检查用户权限。"""
+
+        user = request.user  # TODO 检查用户权限
+
+        s = LabelUpdateSerializer(data=request.data)
+        s.is_valid()
+        if s.errors:
+            return self.invalid_serializer(s)
+
+        label = s.validated_data.pop("old_name")  # 验证后,old_name存放的是标签对象
+        label.name = s.validated_data.get("name")
+        label.intro = s.validated_data.get("intro")
+        try:
+            label.save()
+        except Exception as e:
+            return self.error(e, 401)
+
+        s = LabelCreateSerializer(instance=label)
+        return self.success(s.data)
 
 
 class LabelRelationView(CustomAPIView):
