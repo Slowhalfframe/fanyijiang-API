@@ -42,3 +42,19 @@ class LabelRelationView(CustomAPIView):
             return self.error("关系已经存在", 401)
 
         return self.success({"parent": parent.name, "child": child.name})
+
+    def delete(self, request):
+        """删除标签关系，需要检查用户权限。"""
+
+        user = request.user  # TODO 检查用户权限
+
+        parent = request.data.get("parent", None)
+        child = request.data.get("child", None)
+        try:
+            instance = LabelRelation.objects.get(parent__name=parent, child__name=child)
+        except LabelRelation.DoesNotExist:
+            pass
+        else:
+            instance.delete()
+
+        return self.success()
