@@ -139,3 +139,17 @@ class LabelFollowView(CustomAPIView):
             return self.error("重复关注", 401)
         LabelFollow.objects.create(user_id=user_id, label=label)
         return self.success()
+
+    def delete(self, request):
+        """取消关注标签。"""
+
+        user = request.user  # TODO 检查用户权限，只能取消自己关注的标签
+        user_id = "cd2ed05828ebb648a225c35a9501b007"  # TODO 虚假的ID
+        name = request.data.get("name", None)
+
+        try:
+            instance = LabelFollow.objects.get(user_id=user_id, label__name=name)
+        except LabelFollow.DoesNotExist:
+            return self.error("不存在的关注", 401)
+        instance.delete()
+        return self.success()
