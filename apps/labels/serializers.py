@@ -12,3 +12,8 @@ class LabelCreateSerializer(serializers.ModelSerializer):
                 "read_only": True
             }
         }
+
+
+class ChildLabelSerializer(serializers.Serializer):
+    parent = LabelCreateSerializer()
+    children = LabelCreateSerializer(many=True)

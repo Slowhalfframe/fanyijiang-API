@@ -1,6 +1,6 @@
 from apps.utils.api import CustomAPIView
 
-from .serializers import LabelCreateSerializer
+from .serializers import LabelCreateSerializer, ChildLabelSerializer
 from .models import Label, LabelRelation
 
 
@@ -58,3 +58,19 @@ class LabelRelationView(CustomAPIView):
             instance.delete()
 
         return self.success()
+
+
+class ChildLabelView(CustomAPIView):
+    def get(self, request, pk):
+        """根据指定的主键，获取该标签和它的子标签。"""
+
+        try:
+            parent = Label.objects.get(pk=pk)
+        except Label.DoesNotExist:
+            return self.error("父标签不存在", 401)
+
+        relations = LabelRelation.objects.filter(parent=parent)
+        children = [i.child for i in relations]
+
+        s = ChildLabelSerializer(instance={"parent": parent, "children": children})
+        return self.success(s.data)
