@@ -20,8 +20,8 @@ class Label(models.Model):
 
 class LabelRelation(models.Model):
     """标签的多对多层次关系。"""
-    upper = models.ForeignKey(to=Label, on_delete=models.CASCADE, related_name="as_parent", verbose_name="父标签")
-    lower = models.ForeignKey(to=Label, on_delete=models.CASCADE, related_name="as_child", verbose_name="子标签")
+    parent = models.ForeignKey(to=Label, on_delete=models.CASCADE, related_name="as_parent", verbose_name="父标签")
+    child = models.ForeignKey(to=Label, on_delete=models.CASCADE, related_name="as_child", verbose_name="子标签")
     create_at = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
 
     class Meta:
@@ -30,4 +30,4 @@ class LabelRelation(models.Model):
         verbose_name_plural = "标签关系"
 
     def __str__(self):
-        return "{}:{}".format(self.upper, self.lower)
+        return "{}:{}".format(self.parent, self.child)
