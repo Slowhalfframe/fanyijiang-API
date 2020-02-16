@@ -19,6 +19,21 @@ class LabelView(CustomAPIView):
         s = LabelCreateSerializer(instance=instance)
         return self.success(s.data)
 
+    def delete(self, request):
+        """删除标签，同时删除它与其他标签、文章、问答等的关系，需要检查用户权限。"""
+
+        user = request.user  # TODO 检查用户权限
+
+        name = request.data.get("name", None)
+        try:
+            label = Label.objects.get(name=name)
+        except Label.DoesNotExist:
+            pass
+        else:
+            label.delete()  # 关系会自动删除
+
+        return self.success()
+
 
 class LabelRelationView(CustomAPIView):
     def post(self, request):
