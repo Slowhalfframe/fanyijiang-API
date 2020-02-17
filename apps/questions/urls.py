@@ -1,3 +1,7 @@
 from django.conf.urls import url
 
-urlpatterns = []
+from . import views
+
+urlpatterns = [
+    url(r"^$", views.QuestionView.as_view(), name="questions"),
+]
