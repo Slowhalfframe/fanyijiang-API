@@ -13,16 +13,18 @@ class LabelView(CustomAPIView):
         s.is_valid()
         if s.errors:
             return self.invalid_serializer(s)
-
-        instance = s.create(s.validated_data)
+        try:
+            instance = s.create(s.validated_data)
+        except Exception as e:
+            return self.error(e.args, 401)
         s = LabelCreateSerializer(instance=instance)
         return self.success(s.data)
 
     def get(self, request):
         """获取所有顶级标签。"""
 
-        query_set = Label.objects.filter(as_child=None)
-        s = LabelCreateSerializer(instance=query_set, many=True)
+        query_set = Label.objects.filter(label__isnull=True)
+        s = LabelCreateSerializer(instance=query_set, many=True)  # TODO 获取更多信息，需要更换序列化器
         return self.success(s.data)
 
     def delete(self, request):
@@ -33,11 +35,12 @@ class LabelView(CustomAPIView):
         name = request.data.get("name", None)
         try:
             label = Label.objects.get(name=name)
-        except Label.DoesNotExist:
-            pass
-        else:
-            label.delete()  # 关系会自动删除
-
+        except Label.DoesNotExist as e:
+            return self.error(e.args, 401)
+        try:
+            label.delete()  # TODO 与其他标签、文章、问答等的关系是否都自动删除了？
+        except Exception as e:
+            return self.error(e.args, 401)
         return self.success()
 
     def put(self, request):
@@ -49,16 +52,14 @@ class LabelView(CustomAPIView):
         s.is_valid()
         if s.errors:
             return self.invalid_serializer(s)
-
-        label = s.validated_data.pop("old_name")  # 验证后,old_name存放的是标签对象
-        label.name = s.validated_data.get("name")
-        label.intro = s.validated_data.get("intro")
+        instance = s.validated_data.pop("old_name")  # 验证后,old_name存放的是标签对象
+        instance.name = s.validated_data.get("name")
+        instance.intro = s.validated_data.get("intro")
         try:
-            label.save()
+            instance.save()
         except Exception as e:
-            return self.error(e, 401)
-
-        s = LabelCreateSerializer(instance=label)
+            return self.error(e.args, 401)
+        s = LabelCreateSerializer(instance=instance)
         return self.success(s.data)
 
 
