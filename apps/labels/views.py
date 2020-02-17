@@ -1,5 +1,4 @@
 from apps.utils.api import CustomAPIView
-
 from .serializers import LabelCreateSerializer, ChildLabelSerializer, LabelUpdateSerializer
 from .models import Label, LabelRelation, LabelFollow
 
