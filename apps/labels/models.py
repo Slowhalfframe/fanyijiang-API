@@ -17,21 +17,6 @@ class Label(models.Model):
         return self.name
 
 
-class LabelRelation(models.Model):
-    """标签的多对多层次关系。"""
-    parent = models.ForeignKey(to=Label, on_delete=models.CASCADE, related_name="as_parent", verbose_name="父标签")
-    child = models.ForeignKey(to=Label, on_delete=models.CASCADE, related_name="as_child", verbose_name="子标签")
-    create_at = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
-
-    class Meta:
-        db_table = "db_labels_rels"
-        verbose_name = "标签关系"
-        verbose_name_plural = "标签关系"
-
-    def __str__(self):
-        return "{}:{}".format(self.parent, self.child)
-
-
 class LabelFollow(models.Model):
     """标签关注"""
     user_id = models.CharField(max_length=40, null=False, verbose_name="关注者ID")
