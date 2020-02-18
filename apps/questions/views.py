@@ -12,7 +12,7 @@ class QuestionView(CustomAPIView):
 
         data = {
             "title": request.data.get("title", None),
-            "content": request.data.get("content", None),
+            "content": request.data.get("content", ""),
             "labels": request.data.getlist("labels", []),
             "user_id": user_id
         }

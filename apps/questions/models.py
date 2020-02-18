@@ -44,7 +44,7 @@ class QAComment(models.Model):
 class Question(models.Model):
     """问题，标题不能重复"""
     title = models.CharField(max_length=100, null=False, unique=True, verbose_name="问题标题")
-    content = models.TextField(null=False, verbose_name="问题描述")
+    content = models.TextField(null=True, blank=True, default="", verbose_name="问题描述")
     create_at = models.DateTimeField(auto_now_add=True, verbose_name="提问时间")
     labels = models.ManyToManyField(to=Label, verbose_name="问题的标签")
     user_id = models.CharField(max_length=40, null=False, verbose_name="提问者ID")
