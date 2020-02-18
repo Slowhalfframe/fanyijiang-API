@@ -6,17 +6,17 @@ from apps.labels.models import Label
 
 
 class ACVote(models.Model):
-    """对问题的回答及其评论的投票"""
+    """对回答或问答的评论的投票，不能重复投票"""
     user_id = models.CharField(max_length=40, null=False, verbose_name="投票者ID")
     value = models.BooleanField(null=False, verbose_name="投票值")
     create_at = models.DateTimeField(auto_now_add=True, verbose_name="投票时间")
-    content_type = models.ForeignKey(to=ContentType, null=False, on_delete=models.CASCADE)
-    object_id = models.PositiveIntegerField()
+    content_type = models.ForeignKey(to=ContentType, verbose_name="被评论对象的类型")
+    object_id = models.CharField(max_length=20, null=False, verbose_name="被评论对象的ID")
     content_object = GenericForeignKey()
 
     class Meta:
         db_table = "db_ac_vote"
-        verbose_name = "对回答及其评论的投票"
+        verbose_name = "问答和评论投票"
         verbose_name_plural = verbose_name
         unique_together = (("user_id", "object_id", "content_type"),)  # 禁止重复投票
 
@@ -26,10 +26,10 @@ class QAComment(models.Model):
     user_id = models.CharField(max_length=40, null=False, verbose_name="评论者ID")
     content = models.TextField(null=False, verbose_name="评论内容")
     create_at = models.DateTimeField(auto_now_add=True, verbose_name="评论时间")
-    reply_to_user = models.CharField(max_length=40, null=True, verbose_name="被回复用户ID")
-    vote = GenericRelation(to=ACVote, null=False)
-    content_type = models.ForeignKey(to=ContentType, null=False, on_delete=models.CASCADE)
-    object_id = models.PositiveIntegerField()
+    reply_to_user = models.CharField(max_length=40, null=True, verbose_name="被评论用户ID")
+    vote = GenericRelation(to=ACVote)
+    content_type = models.ForeignKey(to=ContentType, verbose_name="被评论对象的类型")
+    object_id = models.CharField(max_length=20, null=False, verbose_name="被评论对象的ID")
     content_object = GenericForeignKey()
 
     class Meta:
@@ -42,11 +42,12 @@ class QAComment(models.Model):
 
 
 class Question(models.Model):
-    title = models.CharField(max_length=100, null=False, unique=True, verbose_name="问题标题")  # 不能重复提问
+    """问题，标题不能重复"""
+    title = models.CharField(max_length=100, null=False, unique=True, verbose_name="问题标题")
     content = models.TextField(null=False, verbose_name="问题描述")
     create_at = models.DateTimeField(auto_now_add=True, verbose_name="提问时间")
     labels = models.ManyToManyField(to=Label, verbose_name="问题的标签")
-    user_id = models.CharField(max_length=40, null=False, blank=False, verbose_name="提问者ID")
+    user_id = models.CharField(max_length=40, null=False, verbose_name="提问者ID")
     comment = GenericRelation(to=QAComment)
 
     class Meta:
@@ -59,10 +60,11 @@ class Question(models.Model):
 
 
 class Answer(models.Model):
+    """问题的回答，同一用户不能重复回答同一问题"""
     question = models.ForeignKey(to=Question, null=False, verbose_name="问题ID")
     content = models.TextField(null=False, verbose_name="回答内容")
     create_at = models.DateTimeField(auto_now_add=True, verbose_name="回答时间")
-    user_id = models.CharField(max_length=40, null=False, blank=False, verbose_name="回答者ID")
+    user_id = models.CharField(max_length=40, null=False, verbose_name="回答者ID")
     vote = GenericRelation(to=ACVote)
     comment = GenericRelation(to=QAComment)
 
