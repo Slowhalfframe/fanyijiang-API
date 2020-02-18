@@ -124,15 +124,12 @@ class LabelFollowView(CustomAPIView):
 
         try:
             label = Label.objects.get(name=name)
-        except Label.DoesNotExist:
-            return self.error("不存在的标签", 401)
+        except Label.DoesNotExist as e:
+            return self.error(e.args, 401)
         try:
-            LabelFollow.objects.get(user_id=user_id, label=label)
-        except LabelFollow.DoesNotExist:
-            pass
-        else:
-            return self.error("重复关注", 401)
-        LabelFollow.objects.create(user_id=user_id, label=label)
+            LabelFollow.objects.create(user_id=user_id, label=label)
+        except Exception as e:
+            return self.error(e.args, 401)
         return self.success()
 
     def delete(self, request):
@@ -143,10 +140,9 @@ class LabelFollowView(CustomAPIView):
         name = request.data.get("name", None)
 
         try:
-            instance = LabelFollow.objects.get(user_id=user_id, label__name=name)
-        except LabelFollow.DoesNotExist:
-            return self.error("不存在的关注", 401)
-        instance.delete()
+            LabelFollow.objects.get(user_id=user_id, label__name=name).delete()
+        except Exception as e:
+            return self.error(e.args, 401)
         return self.success()
 
     def get(self, request):
