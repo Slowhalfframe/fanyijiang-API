@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Question
+from .models import Question, Answer
 from apps.labels.models import Label
 
 
@@ -27,3 +27,12 @@ class NewQuestionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Question
         fields = ("title", "content", "who_asks", "labels", "pk")
+
+
+class AnswerCreateSerializer(serializers.ModelSerializer):
+    who_answers = serializers.CharField(read_only=True)
+
+    class Meta:
+        model = Answer
+        fields = ("question", "content", "user_id", "pk", "who_answers")
+        read_only_fields = ("pk",)
