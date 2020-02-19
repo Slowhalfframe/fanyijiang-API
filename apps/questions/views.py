@@ -179,3 +179,22 @@ class InvitationView(CustomAPIView):
         except Exception as e:
             return self.error(e.args, 401)
         return self.success()
+
+    def put(self, request):
+        """拒绝收到的未回答的邀请"""
+
+        user = request.user  # TODO 检查用户权限
+        user_id = "cd2ed05828ebb648a225c35a9501b007"  # TODO 虚假的ID
+
+        data = {
+            "pk": request.data.get("invitation", None),
+            "invited": user_id,  # 用户需要是被邀请者
+            "status": 0,  # 未回答
+        }
+        try:
+            instance = QuestionInvite.objects.get(**data)
+            instance.status = 1  # 已拒绝
+            instance.save()
+        except Exception as e:
+            return self.error(e.args, 401)
+        return self.success()
