@@ -89,3 +89,23 @@ class QuestionFollow(models.Model):
         verbose_name = "问题关注"
         verbose_name_plural = verbose_name
         unique_together = (("user_id", "question"),)  # 不能重复关注
+
+
+class QuestionInvite(models.Model):
+    """邀请回答"""
+    STATUS = (
+        (0, "未回答"),
+        (1, "已拒绝"),
+        (2, "已回答"),
+    )
+    question = models.ForeignKey(to=Question, null=False, verbose_name="问题")
+    create_at = models.DateTimeField(auto_now_add=True, verbose_name="邀请时间")
+    inviting = models.CharField(max_length=40, null=False, verbose_name="邀请者ID")
+    invited = models.CharField(max_length=40, null=False, verbose_name="被邀请者ID")
+    status = models.SmallIntegerField(choices=STATUS, null=False, verbose_name="状态")
+
+    class Meta:
+        db_table = "db_q_invite"
+        verbose_name = "邀请回答"
+        verbose_name_plural = verbose_name
+        unique_together = (("question", "inviting", "invited",),)  # 不能重复邀请
