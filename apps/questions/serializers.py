@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Question, Answer
+from .models import Question, Answer, QuestionFollow
 from apps.labels.models import Label
 
 
@@ -29,6 +29,14 @@ class NewQuestionSerializer(serializers.ModelSerializer):
         fields = ("title", "content", "who_asks", "labels", "pk")
 
 
+class FollowedQuestionSerializer(serializers.ModelSerializer):
+    """本人关注的问题的序列化"""
+
+    class Meta:
+        model = Question
+        fields = ("title", "content", "pk")
+
+
 class AnswerCreateSerializer(serializers.ModelSerializer):
     who_answers = serializers.CharField(read_only=True)
 
@@ -36,3 +44,9 @@ class AnswerCreateSerializer(serializers.ModelSerializer):
         model = Answer
         fields = ("question", "content", "user_id", "pk", "who_answers")
         read_only_fields = ("pk",)
+
+
+class QuestionFollowSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = QuestionFollow
+        fields = ("question", "user_id")

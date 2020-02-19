@@ -76,3 +76,16 @@ class Answer(models.Model):
 
     def __str__(self):
         return self.content[:20]
+
+
+class QuestionFollow(models.Model):
+    """关注的问题"""
+    user_id = models.CharField(max_length=40, null=False, verbose_name="关注者ID")
+    question = models.ForeignKey(to=Question, null=False, verbose_name="关注的问题")
+    create_at = models.DateTimeField(auto_now_add=True, verbose_name="关注时间")
+
+    class Meta:
+        db_table = "db_q_follows"
+        verbose_name = "问题关注"
+        verbose_name_plural = verbose_name
+        unique_together = (("user_id", "question"),)  # 不能重复关注

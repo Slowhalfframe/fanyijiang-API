@@ -1,6 +1,7 @@
 from apps.utils.api import CustomAPIView
-from .serializers import QuestionCreateSerializer, NewQuestionSerializer, AnswerCreateSerializer
-from .models import Answer
+from .serializers import QuestionCreateSerializer, NewQuestionSerializer, AnswerCreateSerializer, \
+    QuestionFollowSerializer, FollowedQuestionSerializer
+from .models import Answer, QuestionFollow
 
 
 class QuestionView(CustomAPIView):
@@ -90,3 +91,48 @@ class AnswerView(CustomAPIView):
         except Exception as e:
             return self.error(e.args, 401)
         return self.success()
+
+
+class QuestionFollowView(CustomAPIView):
+    def post(self, request):
+        """关注问题"""
+
+        user = request.user  # TODO 检查用户权限
+        user_id = "cd2ed05828ebb648a225c35a9501b007"  # TODO 虚假的ID
+
+        data = {
+            "user_id": user_id,
+            "question": request.data.get("question", None)
+        }
+        s = QuestionFollowSerializer(data=data)
+        s.is_valid()
+        if s.errors:
+            return self.invalid_serializer(s)
+        try:
+            s.create(s.validated_data)
+        except Exception as e:
+            return self.error(e.args, 401)
+        return self.success()
+
+    def delete(self, request):
+        """取消关注问题"""
+
+        user = request.user  # TODO 检查用户权限，只能取消自己关注的问题
+        user_id = "cd2ed05828ebb648a225c35a9501b007"  # TODO 虚假的ID
+
+        question = request.data.get("question", None)
+        try:
+            QuestionFollow.objects.get(question=question, user_id=user_id).delete()
+        except Exception as e:
+            return self.error(e.args, 401)
+        return self.success()
+
+    def get(self, request):
+        """查看本人关注的问题"""
+
+        user = request.user  # TODO 检查用户权限
+        user_id = "cd2ed05828ebb648a225c35a9501b007"  # TODO 虚假的ID
+        follows = QuestionFollow.objects.filter(user_id=user_id)
+        questions = [i.question for i in follows]
+        s = FollowedQuestionSerializer(instance=questions, many=True)
+        return self.success(s.data)

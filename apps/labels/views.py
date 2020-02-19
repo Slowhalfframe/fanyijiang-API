@@ -146,7 +146,7 @@ class LabelFollowView(CustomAPIView):
         return self.success()
 
     def get(self, request):
-        """查看关注的标签。"""
+        """查看本人关注的标签。"""
 
         user = request.user  # TODO 检查用户权限
         user_id = "cd2ed05828ebb648a225c35a9501b007"  # TODO 虚假的ID
