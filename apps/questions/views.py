@@ -1,3 +1,5 @@
+from django.db.models import Q
+
 from apps.utils.api import CustomAPIView
 from .serializers import QuestionCreateSerializer, NewQuestionSerializer, AnswerCreateSerializer, \
     QuestionFollowSerializer, FollowedQuestionSerializer, InviteCreateSerializer
@@ -198,3 +200,16 @@ class InvitationView(CustomAPIView):
         except Exception as e:
             return self.error(e.args, 401)
         return self.success()
+
+    def get(self, request):
+        """查询用户发出和收到的邀请"""
+
+        user = request.user  # TODO 检查用户权限
+        user_id = "cd2ed05828ebb648a225c35a9501b007"  # TODO 虚假的ID
+
+        try:
+            query_set = QuestionInvite.objects.filter(Q(invited=user_id) | Q(inviting=user_id))  # TODO 进一步，过滤哪些状态？
+        except Exception as e:
+            return self.error(e.args, 401)
+        s = InviteCreateSerializer(instance=query_set, many=True)
+        return self.success(s.data)
