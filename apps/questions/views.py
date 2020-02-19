@@ -1,4 +1,5 @@
 from django.db.models import Q
+from django.db import transaction
 
 from apps.utils.api import CustomAPIView
 from .serializers import QuestionCreateSerializer, NewQuestionSerializer, AnswerCreateSerializer, \
@@ -52,7 +53,10 @@ class AnswerView(CustomAPIView):
         if s.errors:
             return self.invalid_serializer(s)
         try:
-            instance = s.create(s.validated_data)
+            with transaction.atomic():
+                instance = s.create(s.validated_data)
+                # 保存回答后，把该用户收到的该问题的未回答邀请都设置为已回答
+                QuestionInvite.objects.filter(question=question_id, invited=user_id, status=0).update(status=2)
         except Exception as e:
             return self.error(e.args, 401)
 
