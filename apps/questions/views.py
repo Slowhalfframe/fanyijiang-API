@@ -1,6 +1,6 @@
 from apps.utils.api import CustomAPIView
 from .serializers import QuestionCreateSerializer, NewQuestionSerializer, AnswerCreateSerializer, \
-    QuestionFollowSerializer, FollowedQuestionSerializer
+    QuestionFollowSerializer, FollowedQuestionSerializer, InviteCreateSerializer
 from .models import Answer, QuestionFollow
 
 
@@ -135,4 +135,29 @@ class QuestionFollowView(CustomAPIView):
         follows = QuestionFollow.objects.filter(user_id=user_id)
         questions = [i.question for i in follows]
         s = FollowedQuestionSerializer(instance=questions, many=True)
+        return self.success(s.data)
+
+
+class InvitationView(CustomAPIView):
+    def post(self, request):
+        """邀请回答，不能邀请自己、已回答用户，不能重复邀请同一用户回答同一问题"""
+
+        user = request.user  # TODO 检查用户权限
+        user_id = "cd2ed05828ebb648a225c35a9501b007"  # TODO 虚假的ID
+
+        data = {
+            "question": request.data.get("question", None),
+            "inviting": user_id,
+            "invited": request.data.get("invited", None)  # TODO 被邀请者，暂时采用ID
+        }
+        s = InviteCreateSerializer(data=data)
+        s.is_valid()
+        if s.errors:
+            return self.invalid_serializer(s)
+        s.validated_data["status"] = 0  # 未回答
+        try:
+            instance = s.create(s.validated_data)
+        except Exception as e:
+            return self.error(e.args, 401)
+        s = InviteCreateSerializer(instance=instance)
         return self.success(s.data)

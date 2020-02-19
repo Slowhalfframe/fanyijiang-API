@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Question, Answer, QuestionFollow
+from .models import Question, Answer, QuestionFollow, QuestionInvite
 from apps.labels.models import Label
 
 
@@ -50,3 +50,25 @@ class QuestionFollowSerializer(serializers.ModelSerializer):
     class Meta:
         model = QuestionFollow
         fields = ("question", "user_id")
+
+
+class InviteCreateSerializer(serializers.ModelSerializer):
+    when = serializers.DateTimeField(format="%Y%m%d %H:%M:%S", source="create_at", read_only=True)
+
+    class Meta:
+        model = QuestionInvite
+        fields = ("question", "when", "inviting", "invited", "status", "pk")
+        read_only_fields = ("when", "status", "pk")
+
+    def validate(self, attrs):
+        if attrs["inviting"] == attrs["invited"]:
+            raise serializers.ValidationError("不能邀请自己")
+        try:
+            Answer.objects.get(question=attrs["question"], user_id=attrs["invited"])
+        except Answer.DoesNotExist:
+            pass
+        except Exception as e:
+            raise serializers.ValidationError(e.args)
+        else:
+            raise serializers.ValidationError("不能邀请已回答用户")
+        return attrs
