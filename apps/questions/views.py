@@ -59,6 +59,24 @@ class QuestionDetailView(CustomAPIView):
         return self.success(data)
 
 
+class AnswerDetailView(CustomAPIView):
+    def get(self, request, answer_id):
+        try:
+            answer = Answer.objects.get(pk=answer_id)
+        except Answer.DoesNotExist as e:
+            return self.error(e.args, 401)
+        data = {
+            "pk": answer.pk,
+            "votes": answer.vote.filter(value=True).count() - answer.vote.filter(value=False).count(),
+            "user_id": answer.user_id,
+            "avatar": "avatars/001.jpg",  # TODO 头像URL
+            "nickname": "euler",  # TODO 昵称
+            "content": answer.content,
+            "when": answer.create_at.strftime(format="%Y%m%d %H:%M:%S"),
+        }
+        return self.success(data)
+
+
 class AnswerView(CustomAPIView):
     def post(self, request, question_id):
         """回答问题"""
