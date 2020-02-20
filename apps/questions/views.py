@@ -4,7 +4,7 @@ from django.db import transaction
 from apps.utils.api import CustomAPIView
 from .serializers import QuestionCreateSerializer, NewQuestionSerializer, AnswerCreateSerializer, \
     QuestionFollowSerializer, FollowedQuestionSerializer, InviteCreateSerializer, QACommentCreateSerializer
-from .models import Question, Answer, QuestionFollow, QuestionInvite, QAComment
+from .models import Question, Answer, QuestionFollow, QuestionInvite, QAComment, ACVote
 
 
 class QuestionView(CustomAPIView):
@@ -286,3 +286,39 @@ class CommentView(CustomAPIView):
             return self.error(e.args, 401)
         s = QACommentCreateSerializer(instance=comment)
         return self.success(s.data)
+
+
+class VoteView(CustomAPIView):
+    def post(self, request):
+        """对回答、问答评论进行投票"""
+
+        user = request.user  # TODO 检查用户权限
+        user_id = "cd2ed05828ebb648a225c35a9501b007"  # TODO 虚假的ID
+
+        which_model = Answer if request.data.get("type", "") == "answer" else QAComment
+        instance_pk = request.data.get("id", None)
+        try:
+            which_object = which_model.objects.get(pk=instance_pk)  # 被投票的对象，可以是回答或者问答评论
+            # TODO 能否给自己投票？
+        except which_model.DoesNotExist as e:
+            return self.error(e.args, 401)
+        value = request.data.get("value", None)
+        value = bool(value)  # TODO 具体哪些值看作True，哪些看作False?
+        data = {
+            "user_id": user_id,  # 投票者ID
+            "value": value,
+            "content_object": which_object
+        }
+
+        try:
+            vote = ACVote(**data)
+            vote.save()
+        except Exception as e:
+            return self.error(e.args, 401)
+        data = {
+            "user_id": vote.user_id,
+            "value": vote.value,
+            "ac_id": vote.object_id,
+            "pk": vote.pk,
+        }
+        return self.success(data)
