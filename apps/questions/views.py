@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from django.db.models import Q
 from django.db import transaction
 
@@ -33,6 +35,28 @@ class QuestionView(CustomAPIView):
         instance.who_asks = who_asks
         s = NewQuestionSerializer(instance=instance)
         return self.success(s.data)
+
+
+class QuestionDetailView(CustomAPIView):
+    def get(self, request, question_id):
+        try:
+            question = Question.objects.get(pk=question_id)
+        except Question.DoesNotExist as e:
+            return self.error(e.args, 401)
+        data = {
+            "pk": question.pk,
+            "answer_numbers": question.answer_set.count(),
+            "title": question.title,
+            "content_100": question.content[:100],
+            "user_id": question.user_id,  # 提问者ID
+            "who_asks": "小学生",  # TODO 提问者称呼
+            "when": question.create_at.strftime(format="%Y%m%d %H:%M:%S"),
+            "labels": [name[0] for name in question.labels.values_list("name")],
+            "follow_numbers": question.questionfollow_set.count(),
+            "comment_numbers": question.comment.count(),
+            # TODO 阅读量等其他信息
+        }
+        return self.success(data)
 
 
 class AnswerView(CustomAPIView):
