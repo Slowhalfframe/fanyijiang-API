@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Question, Answer, QuestionFollow, QuestionInvite
+from .models import Question, Answer, QuestionFollow, QuestionInvite, QAComment
 from apps.labels.models import Label
 
 
@@ -72,3 +72,13 @@ class InviteCreateSerializer(serializers.ModelSerializer):
         else:
             raise serializers.ValidationError("不能邀请已回答用户")
         return attrs
+
+
+class QACommentCreateSerializer(serializers.ModelSerializer):
+    qa_id = serializers.PrimaryKeyRelatedField(source="content_object", read_only=True)
+    when = serializers.DateTimeField(format="%Y%m%d %H:%M:%S", source="create_at", read_only=True)
+
+    class Meta:
+        model = QAComment
+        fields = ("user_id", "content", "when", "reply_to_user", "qa_id", "pk")
+        read_only_fields = ("pk",)

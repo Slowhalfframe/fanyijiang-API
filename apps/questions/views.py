@@ -3,8 +3,8 @@ from django.db import transaction
 
 from apps.utils.api import CustomAPIView
 from .serializers import QuestionCreateSerializer, NewQuestionSerializer, AnswerCreateSerializer, \
-    QuestionFollowSerializer, FollowedQuestionSerializer, InviteCreateSerializer
-from .models import Answer, QuestionFollow, QuestionInvite
+    QuestionFollowSerializer, FollowedQuestionSerializer, InviteCreateSerializer, QACommentCreateSerializer
+from .models import Question, Answer, QuestionFollow, QuestionInvite, QAComment
 
 
 class QuestionView(CustomAPIView):
@@ -216,4 +216,43 @@ class InvitationView(CustomAPIView):
         except Exception as e:
             return self.error(e.args, 401)
         s = InviteCreateSerializer(instance=query_set, many=True)
+        return self.success(s.data)
+
+
+class CommentView(CustomAPIView):
+    def post(self, request):
+        """对问题或回答发表评论"""
+
+        user = request.user  # TODO 检查用户权限
+        user_id = "cd2ed05828ebb648a225c35a9501b007"  # TODO 虚假的ID
+
+        which_model = Question if request.data.get("type", "") == "question" else Answer
+        instance_pk = request.data.get("id", None)
+        try:
+            which_object = which_model.objects.get(pk=instance_pk)  # 被评论的问题或回答对象
+        except which_model.DoesNotExist as e:
+            return self.error(e.args, 401)
+        data = {
+            "user_id": user_id,  # 评论者ID
+            "content": request.data.get("content", None),  # 评论内容
+            "reply_to_user": which_object.user_id,  # 被评论者ID
+            "content_object": which_object,
+        }
+        s = QACommentCreateSerializer(data=data)
+        s.is_valid()
+        if s.errors:
+            return self.invalid_serializer(s)
+        # TODO s.validated_data里没有content_object，所以自行组织数据了，有什么方法解决？
+        data = {
+            "user_id": s.validated_data["user_id"],
+            "content": s.validated_data["content"],
+            "reply_to_user": s.validated_data["reply_to_user"],
+            "content_object": which_object,
+        }
+        try:
+            comment = QAComment(**data)
+            comment.save()
+        except Exception as e:
+            return self.error(e.args, 401)
+        s = QACommentCreateSerializer(instance=comment)
         return self.success(s.data)
