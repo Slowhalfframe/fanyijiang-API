@@ -322,3 +322,16 @@ class VoteView(CustomAPIView):
             "pk": vote.pk,
         }
         return self.success(data)
+
+    def delete(self, request):
+        """撤销投票"""
+
+        user = request.user  # TODO 检查用户权限
+        user_id = "cd2ed05828ebb648a225c35a9501b007"  # TODO 虚假的ID
+
+        pk = request.data.get("pk", None)
+        try:
+            ACVote.objects.get(pk=pk, user_id=user_id).delete()
+        except Exception as e:
+            return self.error(e.args, 401)
+        return self.success()
