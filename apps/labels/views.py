@@ -154,3 +154,21 @@ class LabelFollowView(CustomAPIView):
         labels = [i.label for i in follows]
         s = LabelCreateSerializer(instance=labels, many=True)
         return self.success(s.data)
+
+
+class LabelDetailView(CustomAPIView):
+    def get(self, request, label_id):
+        try:
+            label = Label.objects.get(pk=label_id)
+            questions = label.question_set.all()
+            questions = [{"pk": i.pk, "title": i.title, "content": i.content} for i in questions]
+            # TODO 标签相关的文章
+        except Label.DoesNotExist as e:
+            return self.error(e.args, 401)
+        data = {
+            "pk": label.pk,
+            "name": label.name,
+            "intro": label.intro,
+            "questions": questions
+        }
+        return self.success(data)
