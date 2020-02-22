@@ -22,6 +22,7 @@ urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r"^api/labels/", include("apps.labels.urls", namespace="labels")),
     url(r"^api/questions/", include("apps.questions.urls", namespace="questions")),
+    url(r"^api/userpage/", include("apps.userpage.urls", namespace="userpage")),
     url(r'^api/', include('apps.utils.urls', namespace='utils')),
 
     url(r'public/(?P<path>.*)$', serve, {'document_root': settings.DATA_DIR}),
