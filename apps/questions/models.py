@@ -4,6 +4,9 @@ from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelatio
 
 from apps.labels.models import Label
 
+# 引入收藏夹内容模型
+from apps.userpage.models import FavoriteCollection
+
 
 class ACVote(models.Model):
     """对回答或问答的评论的投票，不能重复投票"""
@@ -67,6 +70,8 @@ class Answer(models.Model):
     user_id = models.CharField(max_length=40, null=False, verbose_name="回答者ID")
     vote = GenericRelation(to=ACVote)
     comment = GenericRelation(to=QAComment)
+    # 添加收藏关系
+    collect = GenericRelation(to=FavoriteCollection)
 
     class Meta:
         db_table = "db_answers"
