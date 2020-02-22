@@ -294,6 +294,15 @@ class CommentView(CustomAPIView):
         try:
             comment = QAComment(**data)
             comment.save()
+
+            # 可通过这种方式创建~
+            # data = {
+            #     "user_id": s.validated_data["user_id"],
+            #     "content": s.validated_data["content"],
+            #     "reply_to_user": s.validated_data["reply_to_user"],
+            # }
+            #
+            # comment = which_object.comment.create(**data)  GenericRelation会自动关联
         except Exception as e:
             return self.error(e.args, 401)
         s = QACommentCreateSerializer(instance=comment)
