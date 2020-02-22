@@ -29,3 +29,6 @@ CACHES = {
 
 # 跨域
 CORS_ORIGIN_ALLOW_ALL = True
+
+
+USER_CENTER_GATEWAY = 'http://localhost:9233'
