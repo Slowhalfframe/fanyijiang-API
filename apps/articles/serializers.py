@@ -23,6 +23,8 @@ class ArticleCreateSerializer(serializers.ModelSerializer):
 
     def validate_image(self, value):
         # TODO 应该检查以确保文件是存在的，至少是合格的文件路径
+        if value == "":  # 允许没有缩略图
+            return value
         path, ext = os.path.splitext(value)
         if not ext:
             raise serializers.ValidationError("文件名为空")

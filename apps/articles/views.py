@@ -13,7 +13,7 @@ class ArticleView(CustomAPIView):
             "user_id": user_id,
             "title": request.data.get("title", None),
             "content": request.data.get("content", None),  # 注意HTML转义
-            "image": request.data.get("image", None),
+            "image": request.data.get("image", ""),
             "status": request.data.get("status", "draft"),
             "labels": request.data.getlist("labels", []),
         }

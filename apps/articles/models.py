@@ -11,7 +11,7 @@ class Article(models.Model):
     user_id = models.CharField(max_length=40, null=False, verbose_name="作者ID")
     title = models.CharField(max_length=100, null=False, blank=False, verbose_name="文章标题")
     content = models.TextField(null=False, blank=False, verbose_name="文章正文")
-    image = models.CharField(max_length=100, null=False, blank=False, verbose_name="缩略图路径")
+    image = models.CharField(max_length=100, null=True, blank=True, verbose_name="缩略图路径")
     status = models.CharField(max_length=10, choices=STATUS, null=False, blank=True, default="draft",
                               verbose_name="草稿或成品")
     create_at = models.DateTimeField(auto_now_add=True, verbose_name="发表时间")
