@@ -95,6 +95,14 @@ class ArticleView(CustomAPIView):
             return self.error(e.args, 401)
         return self.success()
 
+    def get(self, request):
+        """查看文章，不包括草稿"""
+
+        articles = Article.objects.filter(status="published")
+        # TODO 返回哪部分数据？
+        data = self.paginate_data(request, query_set=articles, object_serializer=NewArticleSerializer)
+        return self.success(data)
+
 
 class ArticleDetailView(CustomAPIView):
     def get(self, request, article_id):
@@ -111,3 +119,16 @@ class ArticleDetailView(CustomAPIView):
                 return self.error("草稿只有作者可以查看", 401)
         s = ArticleDetailSerializer(instance=article)
         return self.success(s.data)
+
+
+class DraftView(CustomAPIView):
+    def get(self, request):
+        """查看草稿箱"""
+
+        user = request.user  # TODO 检查用户权限
+        user_id = "cd2ed05828ebb648a225c35a9501b007"  # TODO 虚假的ID
+
+        drafts = Article.objects.filter(user_id=user_id, status="draft")
+        # TODO 返回哪部分数据？
+        data = self.paginate_data(request, query_set=drafts, object_serializer=ArticleDetailSerializer)
+        return self.success(data)
