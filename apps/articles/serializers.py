@@ -46,3 +46,23 @@ class NewArticleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Article
         fields = ("pk", "user_id", "title", "content", "image", "status", "create_at", "update_at", "labels",)
+
+
+class ArticleDetailSerializer(serializers.ModelSerializer):
+    create_at = serializers.DateTimeField(format="%Y%m%d %H:%M:%S", read_only=True)
+    update_at = serializers.DateTimeField(format="%Y%m%d %H:%M:%S", read_only=True)
+    labels = serializers.StringRelatedField(many=True)
+    vote_count = serializers.SerializerMethodField()
+    comment_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Article
+        fields = (
+            "pk", "user_id", "title", "content", "image", "status", "create_at", "update_at", "labels", "vote_count",
+            "comment_count")
+
+    def get_vote_count(self, obj):
+        return obj.vote.count()
+
+    def get_comment_count(self, obj):
+        return obj.articlecomment_set.count()

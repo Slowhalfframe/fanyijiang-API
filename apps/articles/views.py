@@ -1,7 +1,7 @@
 from django.db import transaction
 
 from apps.utils.api import CustomAPIView
-from .serializers import ArticleCreateSerializer, NewArticleSerializer
+from .serializers import ArticleCreateSerializer, NewArticleSerializer, ArticleDetailSerializer
 from .models import Article
 
 
@@ -94,3 +94,20 @@ class ArticleView(CustomAPIView):
         except Exception as e:
             return self.error(e.args, 401)
         return self.success()
+
+
+class ArticleDetailView(CustomAPIView):
+    def get(self, request, article_id):
+        """查看文章详情，只有作者能查看草稿"""
+
+        try:
+            article = Article.objects.get(pk=article_id)
+        except Article.DoesNotExist as e:
+            return self.error(e.args, 401)
+        if article.status == "draft":
+            user = request.user  # TODO 检查用户权限
+            user_id = "cd2ed05828ebb648a225c35a9501b007"  # TODO 虚假的ID
+            if article.user_id != user_id:
+                return self.error("草稿只有作者可以查看", 401)
+        s = ArticleDetailSerializer(instance=article)
+        return self.success(s.data)
