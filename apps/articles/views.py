@@ -1,7 +1,8 @@
 from django.db import transaction
 
 from apps.utils.api import CustomAPIView
-from .serializers import ArticleCreateSerializer, NewArticleSerializer, ArticleDetailSerializer
+from .serializers import ArticleCreateSerializer, NewArticleSerializer, ArticleDetailSerializer, \
+    ArticleCommentSerializer
 from .models import Article
 
 
@@ -132,3 +133,29 @@ class DraftView(CustomAPIView):
         # TODO 返回哪部分数据？
         data = self.paginate_data(request, query_set=drafts, object_serializer=ArticleDetailSerializer)
         return self.success(data)
+
+
+class CommentView(CustomAPIView):
+    def post(self, request):
+        """评论文章，必须是已发表的文章"""
+
+        user = request.user  # TODO 检查用户权限
+        user_id = "cd2ed05828ebb648a225c35a9501b007"  # TODO 虚假的ID
+
+        data = {
+            "article": request.data.get("pk", None),
+            "user_id": user_id,
+            "content": request.data.get("content", None),
+        }
+        s = ArticleCommentSerializer(data=data)
+        s.is_valid()
+        if s.errors:
+            return self.invalid_serializer(s)
+        article = s.validated_data["article"]
+        s.validated_data["reply_to_user"] = article.user_id
+        try:
+            comment = s.create(s.validated_data)
+        except Exception as e:
+            return self.error(e.args, 401)
+        s = ArticleCommentSerializer(instance=comment)
+        return self.success(s.data)

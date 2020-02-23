@@ -3,7 +3,7 @@ import html
 
 from rest_framework import serializers
 
-from .models import Article
+from .models import Article, ArticleComment
 from apps.labels.models import Label
 
 
@@ -66,3 +66,17 @@ class ArticleDetailSerializer(serializers.ModelSerializer):
 
     def get_comment_count(self, obj):
         return obj.articlecomment_set.count()
+
+
+class ArticleCommentSerializer(serializers.ModelSerializer):
+    create_at = serializers.DateTimeField(format="%Y%m%d %H:%M:%S", read_only=True)
+
+    class Meta:
+        model = ArticleComment
+        fields = ("article", "user_id", "content", "reply_to_user", "pk", "create_at")
+        read_only_fields = ("pk", "create_at", "reply_to_user")
+
+    def validate_article(self, value):
+        if value.status != "published":
+            raise serializers.ValidationError("不能评论草稿")
+        return value
