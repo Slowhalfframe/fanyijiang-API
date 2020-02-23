@@ -3,7 +3,7 @@ from django.db import transaction
 from apps.utils.api import CustomAPIView
 from .serializers import ArticleCreateSerializer, NewArticleSerializer, ArticleDetailSerializer, \
     ArticleCommentSerializer
-from .models import Article
+from .models import Article, ArticleComment
 
 
 class ArticleView(CustomAPIView):
@@ -159,3 +159,15 @@ class CommentView(CustomAPIView):
             return self.error(e.args, 401)
         s = ArticleCommentSerializer(instance=comment)
         return self.success(s.data)
+
+    def delete(self, request):
+        """删除本人的评论"""
+
+        user = request.user  # TODO 检查用户权限
+        user_id = "cd2ed05828ebb648a225c35a9501b007"  # TODO 虚假的ID
+
+        try:
+            ArticleComment.objects.get(pk=request.data.get("pk", None), user_id=user_id).delete()
+        except Exception as e:
+            return self.error(e.args, 401)
+        return self.success()
