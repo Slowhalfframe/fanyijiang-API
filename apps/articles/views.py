@@ -76,3 +76,21 @@ class ArticleView(CustomAPIView):
             return self.error(e.args)
         s = NewArticleSerializer(instance=article)
         return self.success(s.data)
+
+    def patch(self, request):
+        """把草稿变为成品"""
+
+        user = request.user  # TODO 检查用户权限
+        user_id = "cd2ed05828ebb648a225c35a9501b007"  # TODO 虚假的ID
+
+        try:
+            article = Article.objects.get(pk=request.data.get("pk", None), user_id=user_id)
+        except Article.DoesNotExist as e:
+            return self.error(e.args, 401)
+        try:
+            if article.status == "draft":
+                article.status = "published"
+                article.save()
+        except Exception as e:
+            return self.error(e.args, 401)
+        return self.success()
