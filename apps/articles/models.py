@@ -61,3 +61,4 @@ class ArticleVote(models.Model):
         db_table = "db_article_vote"
         verbose_name = "文章投票"
         verbose_name_plural = verbose_name
+        unique_together = ("user_id", "content_type", "object_id")  # 禁止重复投票

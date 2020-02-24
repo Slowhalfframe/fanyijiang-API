@@ -189,3 +189,30 @@ class CommentView(CustomAPIView):
             return self.error(e.args, 401)
         s = ArticleCommentSerializer(instance=comment)
         return self.success(s.data)
+
+
+class VoteView(CustomAPIView):
+    def post(self, request):
+        """文章及其评论的投票"""
+
+        user = request.user  # TODO 检查用户权限
+        user_id = "cd2ed05828ebb648a225c35a9501b007"  # TODO 虚假的ID
+
+        which_model = Article if request.data.get("type", "") == "article" else ArticleComment
+        try:
+            which_object = which_model.objects.get(pk=request.data.get("id", None))  # TODO 能否给自己投票
+        except which_model.DoesNotExist as e:
+            return self.error(e.args, 401)
+        value = request.data.get("value", None)
+        value = bool(value)  # TODO value的具体规则
+        try:
+            vote = which_object.vote.create(user_id=user_id, value=value)
+        except Exception as e:
+            return self.error(e.args, 401)
+        data = {
+            "user_id": vote.user_id,
+            "value": vote.value,
+            "ac_id": vote.object_id,
+            "pk": vote.pk
+        }
+        return self.success(data)
