@@ -229,3 +229,16 @@ class VoteView(CustomAPIView):
         except Exception as e:
             return self.error(e.args, 401)
         return self.success()
+
+
+class ArticleCommentDetailView(CustomAPIView):
+    def get(self, request, article_id):
+        """获取指定文章的所有评论"""
+
+        try:
+            article = Article.objects.get(pk=article_id, status="published")
+        except Article.DoesNotExist as e:
+            return self.error(e.args, 401)
+        comments = article.articlecomment_set.all()  # TODO 过滤条件
+        s = ArticleCommentSerializer(instance=comments, many=True)
+        return self.success(s.data)

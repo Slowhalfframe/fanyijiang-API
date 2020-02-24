@@ -62,7 +62,7 @@ class ArticleDetailSerializer(serializers.ModelSerializer):
             "comment_count")
 
     def get_vote_count(self, obj):
-        return obj.vote.count()
+        return obj.vote.filter(value=True).count() - obj.vote.filter(value=False).count()
 
     def get_comment_count(self, obj):
         return obj.articlecomment_set.count()
@@ -70,13 +70,17 @@ class ArticleDetailSerializer(serializers.ModelSerializer):
 
 class ArticleCommentSerializer(serializers.ModelSerializer):
     create_at = serializers.DateTimeField(format="%Y%m%d %H:%M:%S", read_only=True)
+    vote_count = serializers.SerializerMethodField()
 
     class Meta:
         model = ArticleComment
-        fields = ("article", "user_id", "content", "reply_to_user", "pk", "create_at")
-        read_only_fields = ("pk", "create_at", "reply_to_user")
+        fields = ("article", "user_id", "content", "reply_to_user", "pk", "create_at", "vote_count")
+        read_only_fields = ("pk", "create_at", "reply_to_user", "vote_count")
 
     def validate_article(self, value):
         if value.status != "published":
             raise serializers.ValidationError("不能评论草稿")
         return value
+
+    def get_vote_count(self, obj):
+        return obj.vote.filter(value=True).count() - obj.vote.filter(value=False).count()

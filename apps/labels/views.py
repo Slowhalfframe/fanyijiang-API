@@ -38,7 +38,7 @@ class LabelView(CustomAPIView):
         except Label.DoesNotExist as e:
             return self.error(e.args, 401)
         try:
-            label.delete()  # TODO 与其他标签、文章、问答等的关系是否都自动删除了？
+            label.delete()  # TODO 与其他标签、文章、问答等的关系都自动删除了，可能使文章、问答等失去标签
         except Exception as e:
             return self.error(e.args, 401)
         return self.success()
@@ -162,13 +162,15 @@ class LabelDetailView(CustomAPIView):
             label = Label.objects.get(pk=label_id)
             questions = label.question_set.all()
             questions = [{"pk": i.pk, "title": i.title, "content": i.content} for i in questions]
-            # TODO 标签相关的文章
+            articles = label.article_set.all()
+            articles = [{"pk": i.pk, "title": i.title, "content": i.content} for i in articles]
         except Label.DoesNotExist as e:
             return self.error(e.args, 401)
         data = {
             "pk": label.pk,
             "name": label.name,
             "intro": label.intro,
-            "questions": questions
+            "questions": questions,
+            "articles": articles,
         }
         return self.success(data)
