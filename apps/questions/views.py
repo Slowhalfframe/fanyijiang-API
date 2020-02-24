@@ -5,7 +5,8 @@ from django.db import transaction
 
 from apps.utils.api import CustomAPIView
 from .serializers import QuestionCreateSerializer, NewQuestionSerializer, AnswerCreateSerializer, \
-    QuestionFollowSerializer, FollowedQuestionSerializer, InviteCreateSerializer, QACommentCreateSerializer
+    QuestionFollowSerializer, FollowedQuestionSerializer, InviteCreateSerializer, QACommentCreateSerializer, \
+    QACommentDetailSerializer
 from .models import Question, Answer, QuestionFollow, QuestionInvite, QAComment, ACVote
 
 
@@ -59,6 +60,17 @@ class QuestionDetailView(CustomAPIView):
             # TODO 阅读量、问题的评论等其他信息
         }
         return self.success(data)
+
+
+class QuestionCommentView(CustomAPIView):
+    def get(self, request, question_id):
+        try:
+            question = Question.objects.get(pk=question_id)
+        except Question.DoesNotExist as e:
+            return self.error(e.args, 401)
+        comments = question.comment.all()
+        s = QACommentDetailSerializer(instance=comments, many=True)
+        return self.success(s.data)
 
 
 class AnswerDetailView(CustomAPIView):
