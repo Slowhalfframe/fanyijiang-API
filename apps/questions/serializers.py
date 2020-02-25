@@ -82,3 +82,14 @@ class QACommentCreateSerializer(serializers.ModelSerializer):
         model = QAComment
         fields = ("user_id", "content", "when", "reply_to_user", "qa_id", "pk")
         read_only_fields = ("pk",)
+
+
+class QACommentDetailSerializer(serializers.ModelSerializer):
+    vote_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = QAComment
+        fields = ("pk", "user_id", "content", "create_at", "reply_to_user", "vote_count")
+
+    def get_vote_count(self, obj):
+        return obj.vote.filter(value=True).count() - obj.vote.filter(value=False).count()

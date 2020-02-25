@@ -5,7 +5,8 @@ from django.db import transaction
 
 from apps.utils.api import CustomAPIView
 from .serializers import QuestionCreateSerializer, NewQuestionSerializer, AnswerCreateSerializer, \
-    QuestionFollowSerializer, FollowedQuestionSerializer, InviteCreateSerializer, QACommentCreateSerializer
+    QuestionFollowSerializer, FollowedQuestionSerializer, InviteCreateSerializer, QACommentCreateSerializer, \
+    QACommentDetailSerializer
 from .models import Question, Answer, QuestionFollow, QuestionInvite, QAComment, ACVote
 
 
@@ -43,20 +44,33 @@ class QuestionDetailView(CustomAPIView):
             question = Question.objects.get(pk=question_id)
         except Question.DoesNotExist as e:
             return self.error(e.args, 401)
+        answer_ids = [i.pk for i in question.answer_set.all()]  # TODO 返回哪些答案
         data = {
             "pk": question.pk,
             "answer_numbers": question.answer_set.count(),
+            "answer_ids": answer_ids,
             "title": question.title,
-            "content_100": question.content[:100],
+            "content": question.content,
             "user_id": question.user_id,  # 提问者ID
             "who_asks": "小学生",  # TODO 提问者称呼
             "when": question.create_at.strftime(format="%Y%m%d %H:%M:%S"),
             "labels": [name[0] for name in question.labels.values_list("name")],
             "follow_numbers": question.questionfollow_set.count(),
             "comment_numbers": question.comment.count(),
-            # TODO 阅读量等其他信息
+            # TODO 阅读量、问题的评论等其他信息
         }
         return self.success(data)
+
+
+class QuestionCommentView(CustomAPIView):
+    def get(self, request, question_id):
+        try:
+            question = Question.objects.get(pk=question_id)
+        except Question.DoesNotExist as e:
+            return self.error(e.args, 401)
+        comments = question.comment.all()
+        s = QACommentDetailSerializer(instance=comments, many=True)
+        return self.success(s.data)
 
 
 class AnswerDetailView(CustomAPIView):
@@ -73,6 +87,7 @@ class AnswerDetailView(CustomAPIView):
             "nickname": "euler",  # TODO 昵称
             "content": answer.content,
             "when": answer.create_at.strftime(format="%Y%m%d %H:%M:%S"),
+            # TODO 回答的评论等信息
         }
         return self.success(data)
 
