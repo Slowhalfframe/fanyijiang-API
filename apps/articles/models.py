@@ -5,6 +5,8 @@ from django.contrib.contenttypes.models import ContentType
 from apps.labels.models import Label
 from apps.userpage.models import FavoriteCollection
 
+from apps.creator.models import ReadNums
+
 
 class Article(models.Model):
     STATUS = (("draft", "draft"), ("published", "published"))
@@ -21,6 +23,8 @@ class Article(models.Model):
     # TODO 阅读量
     mark = GenericRelation(to=FavoriteCollection, verbose_name="收藏")
 
+    # 阅读量
+    read_nums = GenericRelation(to=ReadNums)
     class Meta:
         db_table = "db_articles"
         verbose_name = "文章"

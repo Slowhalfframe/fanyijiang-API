@@ -101,7 +101,7 @@ class FollowedFavorites(models.Model):
 
 class FavoriteCollection(models.Model):
     favorite = models.ForeignKey('UserFavorites', related_name='favorite_collect')
-
+    create_at = models.DateTimeField(auto_now_add=True, verbose_name='收藏时间', null=True, blank=True)
     content_type = models.ForeignKey(ContentType, related_name='collect_on', on_delete=models.CASCADE)
     object_id = models.CharField(max_length=255)
     content_object = GenericForeignKey('content_type', 'object_id')
