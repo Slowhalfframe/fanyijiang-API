@@ -58,3 +58,30 @@ class MonoIdeaView(CustomAPIView):
         idea.nickname = nickname
         s = IdeaDetailSerializer(instance=idea)
         return self.success(s.data)
+
+    def put(self, request, idea_pk):
+        """修改自己的想法"""
+
+        user = request.user  # TODO 检查用户权限
+        user_id = "cd2ed05828ebb648a225c35a9501b007"  # TODO 虚假的ID
+
+        data = {
+            "user_id": user_id,
+            "content": request.data.get("content", None)
+        }
+        s = IdeaValidator(data=data)
+        s.is_valid()
+        if s.errors:
+            return self.invalid_serializer(s)
+        try:
+            idea = Idea.objects.get(pk=idea_pk, user_id=user_id)
+            idea.content = s.validated_data["content"]
+            idea.save()
+        except Exception as e:
+            return self.error(e.args, 401)
+        avatar = "images/001.png"  # TODO 虚假的头像
+        nickname = "新手"  # TODO 虚假的昵称
+        idea.avatar = avatar
+        idea.nickname = nickname
+        s = IdeaDetailSerializer(instance=idea)
+        return self.success(s.data)
