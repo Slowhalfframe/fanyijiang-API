@@ -1,6 +1,6 @@
 from apps.utils.api import CustomAPIView
 
-from .serializers import IdeaValidator, IdeaDetailSerializer
+from .serializers import IdeaValidator, IdeaDetailSerializer, IdeaCommentValidator, IdeaCommentSerializer
 from .models import Idea
 
 
@@ -102,4 +102,28 @@ class MonoIdeaView(CustomAPIView):
         idea.avatar = avatar
         idea.nickname = nickname
         s = IdeaDetailSerializer(instance=idea)
+        return self.success(s.data)
+
+
+class IdeaCommentView(CustomAPIView):
+    def post(self, request, idea_pk):
+        """想法评论"""
+
+        user = request.user  # TODO 检查用户权限
+        user_id = "cd2ed05828ebb648a225c35a9501b007"  # TODO 虚假的ID
+
+        data = {
+            "user_id": user_id,
+            "think": idea_pk,
+            "content": request.data.get("content", None)
+        }
+        s = IdeaCommentValidator(data=data)
+        s.is_valid()
+        if s.errors:
+            return self.invalid_serializer(s)
+        try:
+            comment = s.create(s.validated_data)
+        except Exception as e:
+            return self.error(e.args, 401)
+        s = IdeaCommentSerializer(instance=comment)
         return self.success(s.data)
