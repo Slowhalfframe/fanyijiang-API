@@ -7,7 +7,7 @@ class Idea(models.Model):
     user_id = models.CharField(max_length=40, null=False, verbose_name="提出者ID")
     content = models.TextField(null=False, blank=False, verbose_name="想法内容")
     create_at = models.DateTimeField(auto_now_add=True, verbose_name="提出时间")
-    agree = GenericRelation(to="IdeaAgree", verbose_name="想法点赞")
+    agree = GenericRelation(to="IdeaLike", verbose_name="想法点赞")
 
     class Meta:
         db_table = "db_thinks"
@@ -23,7 +23,7 @@ class IdeaComment(models.Model):
     think = models.ForeignKey(to="Idea", null=False, blank=False, verbose_name="想法ID")
     content = models.TextField(null=False, blank=False, verbose_name="想法评论内容")
     create_at = models.DateTimeField(auto_now_add=True, verbose_name="评论时间")
-    agree = GenericRelation(to="IdeaAgree", verbose_name="想法点赞")
+    agree = GenericRelation(to="IdeaLike", verbose_name="想法点赞")
 
     class Meta:
         db_table = "db_think_comments"
@@ -31,7 +31,7 @@ class IdeaComment(models.Model):
         verbose_name_plural = verbose_name
 
 
-class IdeaAgree(models.Model):
+class IdeaLike(models.Model):
     user_id = models.CharField(max_length=40, null=False, verbose_name="点赞者ID")
     create_at = models.DateTimeField(auto_now_add=True, verbose_name="点赞时间")
     content_type = models.ForeignKey(to=ContentType, null=False, blank=False, verbose_name="点赞对象类型")

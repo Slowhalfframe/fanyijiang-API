@@ -1,7 +1,7 @@
 from apps.utils.api import CustomAPIView
 
 from .serializers import IdeaValidator, IdeaDetailSerializer, IdeaCommentValidator, IdeaCommentSerializer
-from .models import Idea, IdeaComment
+from .models import Idea, IdeaComment, IdeaLike
 
 
 class IdeaView(CustomAPIView):
@@ -186,3 +186,31 @@ class MonoIdeaCommentView(CustomAPIView):
             return self.error(e.args, 401)
         s = IdeaCommentSerializer(instance=comment)
         return self.success(s.data)
+
+
+class IdeaLikeView(CustomAPIView):
+    def post(self, request):
+        """想法及其评论点赞"""
+
+        user = request.user  # TODO 检查用户权限
+        user_id = "cd2ed05828ebb648a225c35a9501b007"  # TODO 虚假的ID
+
+        which_model = Idea if request.data.get("type", "") == "idea" else IdeaComment
+        try:
+            which_object = which_model.objects.get(pk=request.data.get("id", None))  # TODO 能否给自己点赞
+            which_object.agree.create(user_id=user_id)
+        except Exception as e:
+            return self.error(e.args, 401)
+        return self.success()
+
+    def delete(self, request):
+        """取消点赞"""
+
+        user = request.user  # TODO 检查用户权限
+        user_id = "cd2ed05828ebb648a225c35a9501b007"  # TODO 虚假的ID
+
+        try:
+            IdeaLike.objects.get(pk=request.data.get("id", None), user_id=user_id).delete()
+        except Exception as e:
+            return self.error(e.args, 401)
+        return self.success()
