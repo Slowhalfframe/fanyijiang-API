@@ -6,7 +6,7 @@ from apps.labels.models import Label
 
 # 引入收藏夹内容模型
 from apps.userpage.models import FavoriteCollection
-
+from apps.creator.models import ReadNums
 
 class ACVote(models.Model):
     """对回答或问答的评论的投票，不能重复投票"""
@@ -72,6 +72,8 @@ class Answer(models.Model):
     comment = GenericRelation(to=QAComment)
     # 添加收藏关系
     collect = GenericRelation(to=FavoriteCollection)
+
+    read_nums = GenericRelation(to=ReadNums)
 
     class Meta:
         db_table = "db_answers"

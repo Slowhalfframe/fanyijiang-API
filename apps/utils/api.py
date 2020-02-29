@@ -46,7 +46,7 @@ class CustomAPIView(APIView):
         if limit < 0 or limit > 250:
             limit = 10
         try:
-            offset = int(request.GET.get("page", "0"))
+            offset = int(request.GET.get("offset", "0"))
         except ValueError:
             offset = 0
         if offset < 0:

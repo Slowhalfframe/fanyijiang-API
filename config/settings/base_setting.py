@@ -58,6 +58,7 @@ LOCAL_APPS = [
     'apps.userpage',
     'apps.articles',
     'apps.ideas',
+    'apps.creator',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_APPS + LOCAL_APPS
@@ -93,11 +94,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
-
-
 
 
 # Password validation
@@ -118,7 +116,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/1.11/topics/i18n/
 
@@ -132,16 +129,14 @@ USE_L10N = True
 
 USE_TZ = False
 
-
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
 
 STATIC_URL = '/static/'
 
-
 # 图片上传路径
 DATA_DIR = os.path.join(BASE_DIR, 'public')
-UPLOAD_PREFIX='/picture'
-UPLOAD_DIR="{}/{}".format(DATA_DIR, UPLOAD_PREFIX)
+UPLOAD_PREFIX = '/picture'
+UPLOAD_DIR = "{}/{}".format(DATA_DIR, UPLOAD_PREFIX)
 if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
