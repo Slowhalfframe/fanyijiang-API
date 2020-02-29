@@ -31,6 +31,7 @@ class IdeaCommentValidator(serializers.ModelSerializer):
 
 class IdeaCommentSerializer(serializers.ModelSerializer):
     agree_count = serializers.SerializerMethodField()
+    create_at = serializers.DateTimeField(format="%Y%m%d %H:%M:%S")
 
     class Meta:
         model = IdeaComment
