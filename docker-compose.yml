@@ -1,21 +1,21 @@
 version: '2'
 
 services:
-  'uc':
+  'fanyijiang':
     container_name: fanyijiang
     image: fanyijiang
 #    ports:
-#    - "9233:9233"
+#    - "9234:9234"
 #    - "465:465"
     volumes:
     - .:/app
     network_mode: "host"
 
 #    depends_on:
-#      - uc_redis
+#      - redis
 #    links:
-#      - uc_redis
+#      - redis
 
-#  'uc_redis':
-#    container_name: uc_redis
+#  'redis':
+#    container_name: redis
 #    image: redis
