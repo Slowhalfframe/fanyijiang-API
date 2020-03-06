@@ -59,6 +59,7 @@ LOCAL_APPS = [
     'apps.articles',
     'apps.ideas',
     'apps.creator',
+    'apps.notifications',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_APPS + LOCAL_APPS
@@ -133,6 +134,18 @@ USE_TZ = False
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
 
 STATIC_URL = '/static/'
+
+
+# 缓存
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/1",
+        "OPTIONS": {
+           "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
+}
 
 # 图片上传路径
 DATA_DIR = os.path.join(BASE_DIR, 'public')

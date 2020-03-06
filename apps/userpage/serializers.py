@@ -10,6 +10,8 @@ from apps.labels.serializers import LabelCreateSerializer
 from apps.questions.models import Question, QuestionFollow, Answer
 from apps.questions.serializers import AnswerCreateSerializer
 
+from apps.articles.models import Article
+
 
 class UserInfoSerializer(serializers.ModelSerializer):
     employment_history = serializers.SerializerMethodField()
@@ -124,7 +126,7 @@ class UserPageQuestionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Question
-        fields = ('id', 'title', 'content', 'create_time', 'answer_count',)
+        fields = ('id', 'title', 'content', 'create_time', 'answer_count', 'follow_count')
 
     def get_answer_count(self, obj):
         return obj.answer_set.all().count()
@@ -143,9 +145,36 @@ class UserPageAnswerSerializer(serializers.ModelSerializer):
                   )
 
     def get_user_info(self, obj):
-        user = UserProfile.objects.filter(uid=obj.user_id).only('nickname', 'avatar', 'slug')
+        user = UserProfile.objects.filter(uid=obj.user_id).only('nickname', 'avatar', 'slug').first()
         data = {'nickname': user.nickname, 'avatar': user.avatar, 'user_slug': user.slug}
         return data
 
     def get_question_title(self, obj):
         return obj.question.title
+
+
+class UserPageArticleSerializer(serializers.ModelSerializer):
+
+    update_time = serializers.DateTimeField(format="%Y%m%d %H:%M:%S", source="update_at", read_only=True)
+    comment_count = serializers.SerializerMethodField()
+    upvote_count = serializers.SerializerMethodField()
+    author_info = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Article
+        fields = ('title', 'content', 'update_time', 'comment_count', 'upvote_count', 'author_info')
+
+    def get_comment_count(self, obj):
+        return obj.articlecomment_set.all().count()
+
+    def get_upvote_count(self, obj):
+        return obj.vote.filter(value=True).count()
+
+    def get_author_info(self, obj):
+        author = UserProfile.objects.filter(uid=obj.user_id).first()
+        data = {
+            'avatar': author.avatar,
+            'nickname': author.nickname,
+            'slug': author.slug,
+        }
+        return data

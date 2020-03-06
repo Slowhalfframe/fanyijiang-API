@@ -26,6 +26,7 @@ urlpatterns = [
     url(r"^api/articles/", include("apps.articles.urls", namespace="articles")),
     url(r"^api/ideas/", include("apps.ideas.urls", namespace="ideas")),
     url(r"^api/creator/", include("apps.creator.urls", namespace="creator")),
+    url(r"^api/notifications/", include("apps.notifications.urls", namespace="notifications")),
     url(r'^api/', include('apps.utils.urls', namespace='utils')),
 
     url(r'public/(?P<path>.*)$', serve, {'document_root': settings.DATA_DIR}),

@@ -2,7 +2,7 @@ import os
 
 DEBUG = False
 
-ALLOWED_HOSTS = [""]
+ALLOWED_HOSTS = ["*"]
 
 DATABASES = {
     'default': {
@@ -15,3 +15,8 @@ DATABASES = {
         'CHARSET': 'utf8',
     }
 }
+
+# 跨域
+CORS_ORIGIN_ALLOW_ALL = True
+
+USER_CENTER_GATEWAY = 'http://47.92.28.66:9233'

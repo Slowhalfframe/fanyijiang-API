@@ -12,14 +12,24 @@ from apps.utils.decorators import validate_serializer, validate_identity
 from apps.userpage.models import (UserProfile, UserFavorites, FollowedUser, FollowedFavorites,
                                   FavoriteCollection)
 from apps.userpage.serializers import (UserInfoSerializer, FavoritesSerializer, FollowsUserSerializer,
-                                       FavoritesContentSerializer, UserPageQuestionSerializer, UserPageAnswerSerializer)
+                                       FavoritesContentSerializer, UserPageQuestionSerializer, UserPageAnswerSerializer, UserPageArticleSerializer)
 from apps.userpage.validators import FavoritesValidator
 
 from apps.questions.models import Question, Answer
 from apps.questions.serializers import FollowedQuestionSerializer
 
+from apps.articles.models import Article
+
 from apps.labels.models import Label
 from apps.labels.serializers import LabelCreateSerializer
+
+from apps.notifications.views import notification_handler
+
+from apps.ideas.models import Idea
+from apps.ideas.serializers import IdeaDetailSerializer
+
+from apps.creator.views import ArticleVoteStatistics, ArticleCollectStatistics, AnswerVoteStatistics, \
+    AnswerCollectStatistics, ThinkVoteStatistics
 
 
 # @method_decorator(validate_token, name='dispatch')
@@ -60,13 +70,28 @@ class UserInfoAPIView(CustomAPIView):
                 user_pro_obj.user_employment_history.all().delete()
                 for employment in data['employment_history']:
                     user_pro_obj.user_professional_history.create(**employment)
-
+                create_content_nums = {
+                    'question_count': 0,
+                    'answer_count': 0,
+                    'article_count': 0,
+                    'think_count': 0,
+                    'collect_count': 0,
+                }
+                data['create_content_nums'] = create_content_nums
                 return self.success(data)
 
             except Exception as e:
                 return self.error(e.args, 500)
 
         data = UserInfoSerializer(user).data
+        create_content_nums = {
+            'question_count': Question.objects.filter(user_id=user.uid).count(),
+            'answer_count': Answer.objects.filter(user_id=user.uid).count(),
+            'article_count': Article.objects.filter(user_id=user.uid).count(),
+            'think_count': Idea.objects.filter(user_id=user.uid).count(),
+            'collect_count': user.favorites.all().count(),
+        }
+        data['create_content_nums'] = create_content_nums
         return self.success(data)
 
 
@@ -114,21 +139,31 @@ class UcUpdateAPIView(CustomAPIView):
 class SelfAchievementAPIView(CustomAPIView):
     '''个人成就'''
 
-    def get(self, request):
+    def get(self, request, user_slug):
+        user = UserProfile.objects.filter(slug=user_slug).first()
+        if not user:
+            return self.error('error', 404)
+
         # 全部文章被赞同的数量 + 全部想法被赞同的数量 + 全部回答被赞同的数量
-        pass
+        article_upvotes = ArticleVoteStatistics(user).get_total_upvote_nums() or 0
+        answer_upvotes = AnswerVoteStatistics(user).get_total_upvote_nums() or 0
+        think_upvotes = ThinkVoteStatistics(user).get_total_upvote_nums() or 0
+        upvotes = article_upvotes + answer_upvotes + think_upvotes
 
         # 全部文章被收藏的数量 + 全部回答被收藏的数量 + 全部想法被赞同的数量
-        pass
 
-        # 全部回答被喜欢的数量
-        pass
+        article_collect = ArticleCollectStatistics(user).get_total_collect_nums()
+        answer_collect = ArticleCollectStatistics(user).get_total_collect_nums()
+        collect_count = article_collect + answer_collect
+
+        data = {'upvote_count': upvotes, 'collect_count': collect_count}
+        return self.success(data)
 
 
 class FollowingUserAPIView(CustomAPIView):
     '''关注该用户'''
 
-    @validate_identity  #TODO 这种方式响应时间较长，怎么处理比较好？
+    @validate_identity  # TODO 这种方式响应时间较长，怎么处理比较好？
     def get(self, request, user_slug):
         '''查看是否已经关注该用户'''
         uid = request._request.uid
@@ -143,6 +178,7 @@ class FollowingUserAPIView(CustomAPIView):
     def post(self, request, user_slug):
         ''''''
         uid = request._request.uid
+        print(uid, '用户ID')
         idol_user = UserProfile.objects.filter(slug=user_slug).first()
         if not idol_user:
             return self.error('error', 404)
@@ -150,7 +186,11 @@ class FollowingUserAPIView(CustomAPIView):
             return self.error('不能关注自己', 400)
         if FollowedUser.objects.filter(fans_id=uid, idol=idol_user).exists():
             return self.error('不能重复关注', 400)
-        FollowedUser.objects.create(fans_id=uid, idol=idol_user)
+        fans = UserProfile.objects.get(uid=uid)
+        FollowedUser.objects.create(fans=fans, idol=idol_user)
+
+        # TODO 触发消息通知
+        notification_handler(uid, idol_user.uid, 'O', idol_user)
         return self.success()
 
     # 取关该用户
@@ -229,7 +269,7 @@ class QuestionListAPIView(CustomAPIView):
             return self.error('该用户不存在', 404)
 
         # TODO 查询相关数据库
-        questions = Question.objects.filter(user_id=user.id)
+        questions = Question.objects.filter(user_id=user.uid)
         data = self.paginate_data(request, questions, UserPageQuestionSerializer)
         return self.success(data)
 
@@ -244,7 +284,7 @@ class AnswerListAPIView(CustomAPIView):
             return self.error('该用户不存在', 404)
 
         # TODO 查询相关数据库
-        answers = Answer.objects.filter(user_id=user.id)
+        answers = Answer.objects.filter(user_id=user.uid)
         data = self.paginate_data(request, answers, UserPageAnswerSerializer)
         return self.success(data)
 
@@ -259,8 +299,8 @@ class ThinkListAPIView(CustomAPIView):
             return self.error('该用户不存在', 404)
 
         # TODO 查询相关数据库
-
-        data = {'results': [], 'total': 0}
+        ideas = Idea.objects.filter(user_id=user.uid)
+        data = self.paginate_data(request, ideas, IdeaDetailSerializer)
         return self.success(data)
 
 
@@ -274,8 +314,9 @@ class ArticleListAPIView(CustomAPIView):
             return self.error('该用户不存在', 404)
 
         # TODO 查询相关数据库
-
-        data = {'results': [], 'total': 0}
+        articles = Article.objects.filter(user_id=user.uid)
+        data = self.paginate_data(request, articles, UserPageArticleSerializer)
+        # data = {'results': [], 'total': 0}
         return self.success(data)
 
 
@@ -283,10 +324,10 @@ class SelfFavoritesAPIView(CustomAPIView):
     '''用户创建或者修改收藏夹操作'''
 
     @validate_serializer(FavoritesValidator)
-    def post(self, request):
+    def post(self, request, user_slug):
         '''创建收藏夹'''
         data = request.data
-        user = UserProfile.objects.filter(uid=data['uid']).first()
+        user = UserProfile.objects.filter(slug=user_slug).first()
 
         if not user:
             return self.error('该用户不存在', 404)
@@ -298,10 +339,10 @@ class SelfFavoritesAPIView(CustomAPIView):
         return self.success()
 
     @validate_serializer(FavoritesValidator)
-    def put(self, request):
+    def put(self, request, user_slug):
         '''修改收藏夹'''
         data = request.data
-        user = UserProfile.objects.filter(uid=data['uid']).first()
+        user = UserProfile.objects.filter(slug=user_slug).first()
         if not user:
             return self.error('该用户不存在', 404)
 
@@ -316,10 +357,10 @@ class SelfFavoritesAPIView(CustomAPIView):
 
         return self.success()
 
-    def delete(self, request):
+    def delete(self, request, user_slug):
         '''删除收藏夹'''
         data = QueryDict(request.body)
-        user = UserProfile.objects.filter(uid=data['uid']).first()
+        user = UserProfile.objects.filter(slug=user_slug).first()
         if not user:
             return self.error('该用户不存在', 404)
 
@@ -387,6 +428,26 @@ class FollowedUserAPIView(CustomAPIView):
         return self.success(data)
 
 
+class FollowedUserCountAPIView(CustomAPIView):
+    '''关注的用户与被关注的用户列表'''
+
+    def get(self, request, user_slug):
+        '''获取该用户的关注者和被关注者'''
+        user = UserProfile.objects.filter(slug=user_slug).first()
+        if not user:
+            return self.error('用户不存在', 404)
+
+        fans = FollowedUser.objects.filter(idol=user)
+        idol = FollowedUser.objects.filter(fans=user)
+
+        fans_nums = fans.count()
+        idol_nums = idol.count()
+
+        data = {'fans_nums': fans_nums, "idol_nums": idol_nums}
+
+        return self.success(data)
+
+
 class FollowedLabelAPIView(CustomAPIView):
     '''关注的标签'''
 
@@ -441,7 +502,8 @@ class FavoritesContentAPIView(CustomAPIView):
             answer = Answer.objects.filter(pk=object_id).first()
             answer.collect.update_or_create(favorite=fa)
         if content_type == 'article':
-            pass
+            article = Article.objects.filter(pk=object_id).first()
+            article.mark.update_or_create(favorite=fa)
 
         return self.success()
 
@@ -458,7 +520,8 @@ class FavoritesContentAPIView(CustomAPIView):
             answer.collect.get(favorite=fa).delete()
 
         if content_type == 'article':
-            pass
+            article = Article.objects.filter(pk=object_id).first()
+            article.mark.get(favorite=fa).delete()
 
         return self.success()
 
@@ -473,7 +536,7 @@ class CollectedAPIView(CustomAPIView):
         if content_type == 'answer':
             instance = Answer.objects.filter(pk=object_id).first()
         if content_type == 'article':
-            pass
+            instance = Article.objects.filter(pk=object_id).first()
 
         for data in data_list:
             # 检查是否已收藏

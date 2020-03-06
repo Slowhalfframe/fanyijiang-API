@@ -32,6 +32,7 @@ def creator_list(date):
     data = sorted(all_data, key=lambda x: x['score'], reverse=True)[:10]
     return data
 
+
 def get_answer_score(answer):
     # 获取一周的阅读量, 因为统计的是从回答从创建到昨日的阅读量, 所以可以直接从数据库读即可
     read_nums = answer.read_nums.get(object_id=answer.id).nums or 0

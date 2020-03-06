@@ -5,7 +5,6 @@ from django.db.models import Sum
 from django.core.cache import cache
 
 from apps.utils.api import CustomAPIView
-from apps.taskapp.tasks import answers_pv_record, articles_pv_record, thinks_pv_record
 
 from apps.questions.models import Answer, Question, QuestionFollow, QuestionInvite
 
@@ -16,6 +15,8 @@ from apps.creator.models import ReadNums, CreatorList, SeveralIssues
 from apps.articles.models import Article
 
 from apps.labels.models import LabelFollow
+
+from apps.ideas.models import Idea
 
 
 # 基础统计
@@ -102,7 +103,7 @@ class ArticleReadNums(ReadNumsClass):
 
 # 想法阅读量统计
 class ThinkReadNums(ReadNumsClass):
-    def __init__(self, user, which_model=Answer):
+    def __init__(self, user, which_model=Idea):
         super(ThinkReadNums, self).__init__(user=user, which_model=which_model)
 
     def get_queryset_date_num(self, date, cache_key='think'):
@@ -186,6 +187,41 @@ class AnswerCollectStatistics(BaseStatistics):
         return nums
 
 
+class AnswerVoteStatistics(BaseStatistics):
+    '''回答赞同统计'''
+
+    def __init__(self, user, which_model=Answer):
+        super(AnswerVoteStatistics, self).__init__(user, which_model)
+
+    def get_total_upvote_nums(self):
+        queryset = self.get_queryset()
+        nums_list = [query.vote.filter(value=True).count() for query in queryset]
+        nums = sum(nums_list) or 0
+        return nums
+
+    def get_date_upvote_nums(self, date):
+        begin_date = datetime.datetime.strptime(date, '%Y%m%d')
+        end_date = begin_date + datetime.timedelta(days=1)
+        queryset = self.get_queryset()
+        nums_list = [query.vote.filter(value=True, create_at__gte=begin_date, create_at__lte=end_date).count() for query
+                     in
+                     queryset]
+        nums = sum(nums_list) or 0
+        return nums
+
+    def get_instance_upvote_date_nums(self, id, date):
+        instance = self.get_instance(id)
+        begin_date = datetime.datetime.strptime(date, '%Y%m%d')
+        end_date = begin_date + datetime.timedelta(days=1)
+        nums = instance.vote.filter(value=True, create_at__gte=begin_date, create_at__lte=end_date).count()
+        return nums
+
+    def get_instance_total_nums(self, id):
+        instance = self.get_instance(id)
+        nums = instance.vote.filter(value=True).count()
+        return nums
+
+
 # 文章评论收统计
 class ArticleCommentStatistics(BaseStatistics):
     '''文章评论统计'''
@@ -258,41 +294,6 @@ class ArticleCollectStatistics(BaseStatistics):
         return nums
 
 
-class AnswerVoteStatistics(BaseStatistics):
-    '''回答赞同统计'''
-
-    def __init__(self, user, which_model=Answer):
-        super(AnswerVoteStatistics, self).__init__(user, which_model)
-
-    def get_total_upvote_nums(self):
-        queryset = self.get_queryset()
-        nums_list = [query.vote.filter(value=True).count() for query in queryset]
-        nums = sum(nums_list) or 0
-        return nums
-
-    def get_date_upvote_nums(self, date):
-        begin_date = datetime.datetime.strptime(date, '%Y%m%d')
-        end_date = begin_date + datetime.timedelta(days=1)
-        queryset = self.get_queryset()
-        nums_list = [query.vote.filter(value=True, create_at__gte=begin_date, create_at__lte=end_date).count() for query
-                     in
-                     queryset]
-        nums = sum(nums_list) or 0
-        return nums
-
-    def get_instance_upvote_date_nums(self, id, date):
-        instance = self.get_instance(id)
-        begin_date = datetime.datetime.strptime(date, '%Y%m%d')
-        end_date = begin_date + datetime.timedelta(days=1)
-        nums = instance.vote.filter(value=True, create_at__gte=begin_date, create_at__lte=end_date).count()
-        return nums
-
-    def get_instance_total_nums(self, id):
-        instance = self.get_instance(id)
-        nums = instance.vote.filter(value=True).count()
-        return nums
-
-
 class ArticleVoteStatistics(BaseStatistics):
     '''文章赞同统计'''
 
@@ -328,6 +329,77 @@ class ArticleVoteStatistics(BaseStatistics):
         return nums
 
 
+# 文章评论收统计
+class ThinkCommentStatistics(BaseStatistics):
+    '''想法评论统计'''
+
+    def __init__(self, user, which_model=Idea):
+        super(ThinkCommentStatistics, self).__init__(user=user, which_model=which_model)
+
+    def get_total_comment_nums(self):
+        queryset = self.get_queryset()
+        nums_list = [query.ideacomment_set.all().count() for query in queryset]
+        nums = sum(nums_list) or 0
+        return nums
+
+    def get_date_total_comments(self, date):
+        begin_date = datetime.datetime.strptime(date, '%Y%m%d')
+        end_date = begin_date + datetime.timedelta(days=1)
+        queryset = self.get_queryset()
+        nums_list = [query.ideacomment_set.filter(create_at__gte=begin_date, create_at__lte=end_date).count() for
+                     query in
+                     queryset]
+        nums = sum(nums_list) or 0
+        return nums
+
+    def get_instance_date_nums(self, id, date):
+        instance = self.get_instance(id)
+        begin_date = datetime.datetime.strptime(date, '%Y%m%d')
+        end_date = begin_date + datetime.timedelta(days=1)
+        nums = instance.ideacomment_set.filter(create_at__gte=begin_date, create_at__lte=end_date).count()
+        return nums
+
+    def get_instance_total_nums(self, id):
+        instance = self.get_instance(id)
+        nums = instance.ideacomment_set.all().count()
+        return nums
+
+
+class ThinkVoteStatistics(BaseStatistics):
+    '''想法赞同统计'''
+
+    def __init__(self, user, which_model=Idea):
+        super(ThinkVoteStatistics, self).__init__(user, which_model)
+
+    def get_total_upvote_nums(self):
+        queryset = self.get_queryset()
+        nums_list = [query.agree.all().count() for query in queryset]
+        nums = sum(nums_list) or 0
+        return nums
+
+    def get_date_upvote_nums(self, date):
+        begin_date = datetime.datetime.strptime(date, '%Y%m%d')
+        end_date = begin_date + datetime.timedelta(days=1)
+        queryset = self.get_queryset()
+        nums_list = [query.agree.filter(create_at__gte=begin_date, create_at__lte=end_date).count() for query
+                     in
+                     queryset]
+        nums = sum(nums_list) or 0
+        return nums
+
+    def get_instance_upvote_date_nums(self, id, date):
+        instance = self.get_instance(id)
+        begin_date = datetime.datetime.strptime(date, '%Y%m%d')
+        end_date = begin_date + datetime.timedelta(days=1)
+        nums = instance.agree.filter(create_at__gte=begin_date, create_at__lte=end_date).count()
+        return nums
+
+    def get_instance_upvote_total_nums(self, id):
+        instance = self.get_instance(id)
+        nums = instance.agree.all().count()
+        return nums
+
+
 # 问题推荐
 class RecommendQuestion(object):
     '''
@@ -335,6 +407,7 @@ class RecommendQuestion(object):
         首先获取用户关注的标签,获取标签下所有用户未回答的问题
         如果获取的问题数量不够显示,则从所有未回答的问题内随机添加,直到数量达标
     '''
+
     def __init__(self, user, offset, limit):
         self.user = user
         self.offset = offset
@@ -347,13 +420,15 @@ class RecommendQuestion(object):
 
     def get_label_question(self, label):
         '''获取用户关注的话题下所有未回答过的问题'''
-        questions = label.label.question_set.exclude(answer__user_id=self.user.uid)[self.offset:self.offset+self.limit]
+        questions = label.label.question_set.exclude(answer__user_id=self.user.uid)[
+                    self.offset:self.offset + self.limit]
         question_list = [question for question in questions]
         return question_list
 
     def get_all_question(self):
         '''获取所有问题中，用户未回答过的问题'''
-        questions = Question.objects.exclude(answer__user_id=self.user.uid).order_by('-create_at')[self.offset:self.offset+self.limit]
+        questions = Question.objects.exclude(answer__user_id=self.user.uid).order_by('-create_at')[
+                    self.offset:self.offset + self.limit]
         question_list = [question for question in questions]
         return question_list
 
@@ -367,7 +442,7 @@ class RecommendQuestion(object):
         re_question = random.choice(question_list) if len(question_list) >= 1 else question_list
         return re_question
 
-    def get_finally_question(self,):
+    def get_finally_question(self, ):
         '''获取推荐问题列表'''
         labels = self.get_user_followed_labels()
         questions = list()
@@ -460,8 +535,22 @@ class RecentCreateContent(object):
         return article_data
 
     def recent_thinks(self):
-        pass
-        return []
+        thinks = Idea.objects.filter(user_id=self.user.uid).order_by('create_at')[:3]
+        thinks_data = []
+        for think in thinks:
+            data = dict()
+            data['id'] = think.id
+            data['display_title'] = ''
+            data['display_content'] = think.content
+            data['type'] = 'think'
+            data['create_at'] = think.create_at
+            read_nums = think.read_nums.filter(object_id=think.id).first()
+            data['read_nums'] = read_nums.nums if read_nums else 0
+            data['comment_count'] = think.ideacomment_set.all().count()
+            data['upvote_count'] = think.agree.filter(object_id=think.id).count()
+            data['collect_count'] = 0
+            thinks_data.append(data)
+        return thinks_data
 
     def get_recent_data(self):
         recent_list = self.recent_answer() + self.recent_article() + self.recent_thinks()
@@ -501,11 +590,15 @@ class TotalNums(object):
         return answer + article + think
 
 
+from apps.utils.decorators import validate_identity
+
+
 class CreatorHomeAPIView(CustomAPIView):
     '''创作者中心主页视图，包含阅读量，赞同数，关注者等问题推荐'''
 
+    @validate_identity
     def get(self, request):
-        uid = request.GET.get('uid')
+        uid = request._request.uid
         user = UserProfile.objects.filter(uid=uid).first()
         if not user:
             return self.error('用户不存在', 404)
@@ -537,25 +630,23 @@ class CreatorHomeAPIView(CustomAPIView):
         recent_instance = RecentCreateContent(user)
         recent_data = recent_instance.get_recent_data()
 
-        # # 推荐问题
-        # re_question = RecommendQuestion(user, offset=0, limit=20)
-        # re_questions_list = re_question.get_new_question()
-
         data = {
             'creator_data': {
                 'read_nums': {'total_read_nums': total_read_nums, 'total_ysd_read_nums': total_ysd_read_nums},
                 'fans': {'total_fans': fans.count(), 'ysd_add_fans': ysd_fans.count()},
                 'upvotes': {'total_upvote': total_upvote, 'ysd_upvote': ysd_upvote}},
             'recent_data': recent_data,
-            # 're_question': re_questions_list
         }
         return self.success(data)
 
 
 class CreatorDataDetailAPIView(CustomAPIView):
     '''创作者中心内容分析页面顶部内容视图'''
+
+    @validate_identity
     def get(self, request):
-        uid = request.GET.get('uid')
+        # uid = request.GET.get('uid')
+        uid = request._request.uid
         user = UserProfile.objects.filter(uid=uid).first()
         if not user:
             return self.error('用户不存在', 404)
@@ -565,7 +656,7 @@ class CreatorDataDetailAPIView(CustomAPIView):
         yesterday = datetime.date.today()
         yesterday_str = datetime.date.strftime(yesterday, '%Y%m%d')
         if not include:
-            return self.error('error', 400)
+            return self.error('缺少include', 400)
         create_data = {}
         if include == 'answer':
             instance = AnswerReadNums(user=user)
@@ -592,17 +683,20 @@ class CreatorDataDetailAPIView(CustomAPIView):
             create_data = {
                 'total_count': instance.get_queryset().count(),
                 'read_nums': instance.get_queryset_total_num(),
-                'upvote_nums': 0,  # TODO
+                'upvote_nums': ThinkVoteStatistics(user).get_total_upvote_nums(),  # TODO
                 'ysd_read_nums': instance.get_queryset_date_num(yesterday_str),
-                'ysd_upvote_nums': 0 # TODO
+                'ysd_upvote_nums': ThinkVoteStatistics(user).get_date_upvote_nums(yesterday_str)  # TODO
             }
         return self.success(create_data)
 
 
 class StatisticsDateAPIView(CustomAPIView):
     '''创作者中心内容分析页面详细分析视图'''
+
+    @validate_identity
     def get(self, request):
-        uid = request.GET.get('uid')
+        # uid = request.GET.get('uid')
+        uid = request._request.uid
         user = UserProfile.objects.filter(uid=uid).first()
         if not user:
             return self.error('用户不存在', 404)
@@ -634,12 +728,9 @@ class StatisticsDateAPIView(CustomAPIView):
                 data['collect_nums'] = AnswerCollectStatistics(user).get_date_collect_nums(statistics_date)
 
             if data_type == 'think':
-                pass
-
-                # data['read_nums'] = ThinkReadNums(user).get_queryset_date_num(statistics_date)
-                # data['comment_nums'] = AnswerCommentStatistics(user).get_date_total_comments(statistics_date)
-                # data['upvote_nums'] = AnswerVoteStatistics(user).get_date_upvote_nums(statistics_date)
-                # data['collect_nums'] = AnswerCollectStatistics(user).get_date_collect_nums(statistics_date)
+                data['read_nums'] = ThinkReadNums(user).get_queryset_date_num(statistics_date)
+                data['comment_nums'] = ThinkCommentStatistics(user).get_date_total_comments(statistics_date)
+                data['upvote_nums'] = ThinkVoteStatistics(user).get_date_upvote_nums(statistics_date)
 
             begin_da += datetime.timedelta(days=1)
             data_list.append(data)
@@ -648,8 +739,11 @@ class StatisticsDateAPIView(CustomAPIView):
 
 class SingleDataStatisticsAPIView(CustomAPIView):
     '''内容分析页面单篇内容分析'''
+
+    @validate_identity
     def get(self, request):
-        uid = request.GET.get('uid')
+        # uid = request.GET.get('uid')
+        uid = request._request.uid
         user = UserProfile.objects.filter(uid=uid).first()
         if not user:
             return self.error('用户不存在', 404)
@@ -687,17 +781,28 @@ class SingleDataStatisticsAPIView(CustomAPIView):
                 data['collect_nums'] = ArticleCollectStatistics(user).get_instance_total_nums(article.id)
                 data_list.append(data)
         if data_type == 'think':
-            pass
+            thinks = Idea.objects.filter(create_at__gte=begin_da, create_at__lte=end_da)
+            for think in thinks:
+                data = dict()
+                data['id'] = think.id
+                data['title'] = think.content
+                data['create_at'] = think.create_at
+                data['read_nums'] = ThinkReadNums(user).get_instance_total_nums(think.id)
+                data['comment_nums'] = ThinkCommentStatistics(user).get_instance_total_nums(think.id)
+                data['upvote_nums'] = ArticleVoteStatistics(user).get_instance_upvote_total_nums(think.id)
+                data_list.append(data)
         return self.success(data_list)
 
 
 class RecommendQuestionAPIVIew(CustomAPIView):
     '''问题推荐视图'''
+    @validate_identity
     def get(self, request):
-        uid = request.GET.get('uid')
+        # uid = request.GET.get('uid')
+        uid = request._request.uid
         offset = request.GET.get('offset', 0)
         limit = request.GET.get('limit', 20)
-        question_type = request.GET.get('question_type')
+        question_type = request.GET.get('question_type', 'recommend')
         user = UserProfile.objects.filter(uid=uid).first()
         if not user:
             return self.error('用户不存在', 404)
@@ -741,7 +846,7 @@ class CreatorListAPIView(CustomAPIView):
                     data['title'] = answer.question.title
                     user = UserProfile.objects.get(uid=answer.user_id)
                     user_data = {'avatar': user.avatar, 'nickname': user.nickname}
-                    data['user_data'] = user_data
+                    data['author_data'] = user_data
                     data['score'] = content.score
 
                 if content_type == 'article':
@@ -749,22 +854,13 @@ class CreatorListAPIView(CustomAPIView):
                     data['title'] = article.title
                     user = UserProfile.objects.get(uid=article.user_id)
                     user_data = {'avatar': user.avatar, 'nickname': user.nickname}
-                    data['user_data'] = user_data
+                    data['author_data'] = user_data
                     data['score'] = content.score
                 data['content_type'] = content_type
                 creator_list.append(data)
             return self.success(creator_list)
 
         else:
-            several = SeveralIssues.objects.all()
-            data = [{'title': s.title, 'image': s.image}for s in several]
+            several = SeveralIssues.objects.all().order_by('-create_at')
+            data = [{'title': s.title, 'image': s.image, 'id': s.id} for s in several]
             return self.success(data)
-
-
-
-
-
-
-
-
-

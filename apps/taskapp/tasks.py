@@ -6,8 +6,12 @@ from apps.questions.models import Answer
 
 from apps.taskapp.utils import creator_list
 
-
 from apps.creator.models import CreatorList, SeveralIssues
+
+from apps.articles.models import Article
+
+from apps.ideas.models import Idea
+
 
 @app.task(name='answers_pv_record')
 def answers_pv_record(remote_addr, answer_id):
@@ -66,13 +70,15 @@ def read_nums_in_database():
     write_read_in_database('answer', yesterday_str)
     # 写入文章阅读量
     # TODO
+    write_read_in_database('article', yesterday_str)
     # 写入想法阅读量
     # TODO
+    write_read_in_database('think', yesterday_str)
 
 
 # 定时写入数据库任务
 def write_read_in_database(content_type, yesterday_str):
-    content_type_dict = {'answer': Answer, }
+    content_type_dict = {'answer': Answer, 'article': Article, 'think': Idea}
     which_model = content_type_dict[content_type]
     cache_key_list = cache.keys(content_type + '_*_' + yesterday_str)
     data_list = [{'nums': cache.get(key), 'id': key.replace(content_type + '_', '').replace('_' + yesterday_str, '')}
@@ -96,24 +102,12 @@ def write_creator_in_database():
     several_issues_instance = SeveralIssues.objects.last()
 
     several_issues_nums = several_issues_instance.sort + 1 if several_issues_instance else 1
-    several, status = SeveralIssues.objects.update_or_create(sort=several_issues_nums, defaults={'title':'第{}期榜单'.format(str(several_issues_nums))})
+    several, status = SeveralIssues.objects.update_or_create(sort=several_issues_nums, defaults={
+        'title': '第{}期榜单'.format(str(several_issues_nums))})
     create_list = list()
 
     for item in data:
-        c = CreatorList(object_id=item['id'], content_type=item['content_type'], score=item['score'], several_issues=several)
+        c = CreatorList(object_id=item['id'], content_type=item['content_type'], score=item['score'],
+                        several_issues=several)
         create_list.append(c)
     CreatorList.objects.bulk_create(create_list)
-
-
-
-
-
-
-
-
-
-
-
-
-
-

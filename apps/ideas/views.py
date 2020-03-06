@@ -3,6 +3,8 @@ from apps.utils.api import CustomAPIView
 from .serializers import IdeaValidator, IdeaDetailSerializer, IdeaCommentValidator, IdeaCommentSerializer
 from .models import Idea, IdeaComment, IdeaLike
 
+from apps.taskapp.tasks import thinks_pv_record
+
 
 class IdeaView(CustomAPIView):
     def post(self, request):
@@ -75,6 +77,9 @@ class MonoIdeaView(CustomAPIView):
         idea.avatar = avatar
         idea.nickname = nickname
         s = IdeaDetailSerializer(instance=idea)
+
+        # TODO 记录阅读量
+        thinks_pv_record.delay(request.META.get('REMOTE_ADDR'), idea.id)
         return self.success(s.data)
 
     def put(self, request, idea_pk):

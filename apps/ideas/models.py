@@ -2,12 +2,15 @@ from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 
+from apps.creator.models import ReadNums
+
 
 class Idea(models.Model):
     user_id = models.CharField(max_length=40, null=False, verbose_name="提出者ID")
     content = models.TextField(null=False, blank=False, verbose_name="想法内容")
     create_at = models.DateTimeField(auto_now_add=True, verbose_name="提出时间")
     agree = GenericRelation(to="IdeaLike", verbose_name="想法点赞")
+    read_nums = GenericRelation(to=ReadNums)
 
     class Meta:
         db_table = "db_thinks"

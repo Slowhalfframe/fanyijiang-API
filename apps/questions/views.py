@@ -9,6 +9,10 @@ from .serializers import QuestionCreateSerializer, NewQuestionSerializer, Answer
     QACommentDetailSerializer
 from .models import Question, Answer, QuestionFollow, QuestionInvite, QAComment, ACVote
 
+from apps.notifications.views import notification_handler
+
+from apps.taskapp.tasks import answers_pv_record
+
 
 class QuestionView(CustomAPIView):
     def post(self, request):
@@ -89,6 +93,9 @@ class AnswerDetailView(CustomAPIView):
             "when": answer.create_at.strftime(format="%Y%m%d %H:%M:%S"),
             # TODO 回答的评论等信息
         }
+
+        # TODO 记录阅读量
+        answers_pv_record.delay(request.META.get('REMOTE_ADDR'), answer.id)
         return self.success(data)
 
 
@@ -97,7 +104,7 @@ class AnswerView(CustomAPIView):
         """回答问题"""
 
         user = request.user  # TODO 检查用户权限
-        user_id = "cd2ed05828ebb648a225c35a9501b007"  # TODO 虚假的ID
+        user_id = "45c48cce2e2d7fbdea1afc51c7c6ad26"  # TODO 虚假的ID
         who_answers = "大师"  # TODO 虚假的名称
 
         data = {
@@ -120,6 +127,14 @@ class AnswerView(CustomAPIView):
         data = dict(AnswerCreateSerializer(instance=instance).data)
         data.pop("user_id")
         data["who_answers"] = who_answers
+
+        # TODO 触发消息通知
+        try:
+            print('触发消息通知')
+            question = Question.objects.get(pk=question_id)
+            notification_handler(user_id, question.user_id, 'A', instance)
+        except Question.DoesNotExist as e:
+            return self.error(e.args, 404)
         return self.success(data)
 
     def put(self, request, question_id):
@@ -206,7 +221,7 @@ class InvitationView(CustomAPIView):
         """邀请回答，不能邀请自己、已回答用户，不能重复邀请同一用户回答同一问题"""
 
         user = request.user  # TODO 检查用户权限
-        user_id = "cd2ed05828ebb648a225c35a9501b007"  # TODO 虚假的ID
+        user_id = "a87ff679a2f3e71d9181a67b7542122c"  # TODO 虚假的ID
 
         data = {
             "question": request.data.get("question", None),
@@ -223,6 +238,10 @@ class InvitationView(CustomAPIView):
         except Exception as e:
             return self.error(e.args, 401)
         s = InviteCreateSerializer(instance=instance)
+
+        # TODO 发送消息通知
+        question = Question.objects.filter(pk=data.get('question')).first()
+        notification_handler(instance.inviting, instance.invited, 'I', question)
         return self.success(s.data)
 
     def delete(self, request):
@@ -321,6 +340,12 @@ class CommentView(CustomAPIView):
         except Exception as e:
             return self.error(e.args, 401)
         s = QACommentCreateSerializer(instance=comment)
+
+        # TODO 触发消息通知
+        if request.data.get("type", "") == "question":
+            notification_handler(user_id, which_object.user_id, 'CQ', which_object)
+        else:
+            notification_handler(user_id, which_object.user_id, 'CAN', which_object)
         return self.success(s.data)
 
     def delete(self, request):
@@ -387,6 +412,10 @@ class VoteView(CustomAPIView):
             "ac_id": vote.object_id,
             "pk": vote.pk,
         }
+        # TODO 触发消息通知
+        if request.data.get("type", "") == "answer" and value == True:
+            notification_handler(user_id, which_object.user_id, 'LAN', which_object)
+
         return self.success(data)
 
     def delete(self, request):

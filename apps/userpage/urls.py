@@ -4,10 +4,12 @@ from . import views
 
 urlpatterns = [
 
-    url(r"^user_info/(?P<user_slug>[-\w]+)$", views.UserInfoAPIView.as_view(), name="user_info"),
+    url(r"^(?P<user_slug>[-\w]+)$", views.UserInfoAPIView.as_view(), name="user_info"),
 
     # 用户自己创建或者修改收藏夹视图
-    url(r'^self_favorites$', views.SelfFavoritesAPIView.as_view(), name='self_favorites'),
+    url(r'^self_favorites/(?P<user_slug>[-\w]+)$', views.SelfFavoritesAPIView.as_view(), name='self_favorites'),
+    # 用户个人成就
+    url(r'^self_achievement/(?P<user_slug>[-\w]+)$', views.SelfAchievementAPIView.as_view(), name='self_achievement'),
 
     # 用户内容分类相关视图---------------------------------------------
     # 获取某一个用户的收藏夹列表
@@ -35,6 +37,7 @@ urlpatterns = [
     url(r'followed_questions/(?P<user_slug>[-\w]+)$', views.FollowedQuestionsAPIView.as_view(), name='followed_questions'),
     # 查看用户关注的用户或者被关注的用户
     url(r'followed_user/(?P<user_slug>[-\w]+)$', views.FollowedUserAPIView.as_view(), name='followed_user'),
+    url(r'followed_user_count/(?P<user_slug>[-\w]+)$', views.FollowedUserCountAPIView.as_view(), name='followed_user_count'),
 
     # --------------------------------------------
     # 收藏某一个内容

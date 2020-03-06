@@ -5,6 +5,8 @@ from .serializers import ArticleCreateSerializer, NewArticleSerializer, ArticleD
     ArticleCommentSerializer
 from .models import Article, ArticleComment, ArticleVote
 
+from apps.taskapp.tasks import articles_pv_record
+
 
 class ArticleView(CustomAPIView):
     def post(self, request):
@@ -119,6 +121,9 @@ class ArticleDetailView(CustomAPIView):
             if article.user_id != user_id:
                 return self.error("草稿只有作者可以查看", 401)
         s = ArticleDetailSerializer(instance=article)
+
+        # TODO 记录阅读量
+        articles_pv_record.delay(request.META.get('REMOTE_ADDR'), article.id)
         return self.success(s.data)
 
 
@@ -158,6 +163,9 @@ class CommentView(CustomAPIView):
         except Exception as e:
             return self.error(e.args, 401)
         s = ArticleCommentSerializer(instance=comment)
+
+        # TODO 触发消息通知
+
         return self.success(s.data)
 
     def delete(self, request):
@@ -215,6 +223,8 @@ class VoteView(CustomAPIView):
             "ac_id": vote.object_id,
             "pk": vote.pk
         }
+
+        # TODO 触发消息通知
         return self.success(data)
 
     def delete(self, request):
