@@ -1,20 +1,19 @@
 from apps.utils.api import CustomAPIView
-
+from apps.utils.decorators import validate_identity
 from .serializers import IdeaValidator, IdeaDetailSerializer, IdeaCommentValidator, IdeaCommentSerializer
 from .models import Idea, IdeaComment, IdeaLike
+from apps.userpage.models import UserProfile
 
 from apps.taskapp.tasks import thinks_pv_record
 
 
 class IdeaView(CustomAPIView):
+    @validate_identity
     def post(self, request):
         """发表想法"""
 
-        user = request.user  # TODO 检查用户权限
-        user_id = "cd2ed05828ebb648a225c35a9501b007"  # TODO 虚假的ID
-        avatar = "images/001.png"  # TODO 虚假的头像
-        nickname = "新手"  # TODO 虚假的昵称
-
+        user_id = request._request.uid
+        user = UserProfile.objects.get(uid=user_id)
         data = {
             "user_id": user_id,
             "content": request.data.get("content", None)
@@ -27,37 +26,34 @@ class IdeaView(CustomAPIView):
             idea = s.create(s.validated_data)
         except Exception as e:
             return self.error(e.args, 401)
-        idea.avatar = avatar
-        idea.nickname = nickname
+        idea.avatar = user.avatar
+        idea.nickname = user.nickname
         s = IdeaDetailSerializer(instance=idea)
         return self.success(s.data)
 
+    @validate_identity
     def get(self, request):
         """查看本人的所有想法"""
 
-        user = request.user  # TODO 检查用户权限
-        user_id = "cd2ed05828ebb648a225c35a9501b007"  # TODO 虚假的ID
-        avatar = "images/001.png"  # TODO 虚假的头像
-        nickname = "新手"  # TODO 虚假的昵称
-
+        user_id = request._request.uid
+        user = UserProfile.objects.get(uid=user_id)
         try:
             ideas = Idea.objects.filter(user_id=user_id)
         except Exception as e:
             return self.error(e.args, 401)
         for idea in ideas:
-            idea.avatar = avatar
-            idea.nickname = nickname
+            idea.avatar = user.avatar
+            idea.nickname = user.nickname
         s = IdeaDetailSerializer(instance=ideas, many=True)
         return self.success(s.data)
 
 
 class MonoIdeaView(CustomAPIView):
+    @validate_identity
     def delete(self, request, idea_pk):
         """删除自己的想法"""
 
-        user = request.user  # TODO 检查用户权限
-        user_id = "cd2ed05828ebb648a225c35a9501b007"  # TODO 虚假的ID
-
+        user_id = request._request.uid
         try:
             idea = Idea.objects.get(pk=idea_pk, user_id=user_id)
             idea.delete()  # TODO 收藏、点赞等都自动删除了吗
@@ -72,22 +68,21 @@ class MonoIdeaView(CustomAPIView):
             idea = Idea.objects.get(pk=idea_pk)
         except Idea.DoesNotExist as e:
             return self.error(e.args, 401)
-        avatar = "images/001.png"  # TODO 虚假的头像
-        nickname = "新手"  # TODO 虚假的昵称
-        idea.avatar = avatar
-        idea.nickname = nickname
+        user = UserProfile.objects.get(uid=idea.user_id)
+        idea.avatar = user.avatar
+        idea.nickname = user.nickname
         s = IdeaDetailSerializer(instance=idea)
 
         # TODO 记录阅读量
         thinks_pv_record.delay(request.META.get('REMOTE_ADDR'), idea.id)
         return self.success(s.data)
 
+    @validate_identity
     def put(self, request, idea_pk):
         """修改自己的想法"""
 
-        user = request.user  # TODO 检查用户权限
-        user_id = "cd2ed05828ebb648a225c35a9501b007"  # TODO 虚假的ID
-
+        user_id = request._request.uid
+        user = UserProfile.objects.get(uid=user_id)
         data = {
             "user_id": user_id,
             "content": request.data.get("content", None)
@@ -102,23 +97,19 @@ class MonoIdeaView(CustomAPIView):
             idea.save()
         except Exception as e:
             return self.error(e.args, 401)
-        avatar = "images/001.png"  # TODO 虚假的头像
-        nickname = "新手"  # TODO 虚假的昵称
-        idea.avatar = avatar
-        idea.nickname = nickname
+        idea.avatar = user.avatar
+        idea.nickname = user.nickname
         s = IdeaDetailSerializer(instance=idea)
         return self.success(s.data)
 
 
 class IdeaCommentView(CustomAPIView):
+    @validate_identity
     def post(self, request, idea_pk):
         """想法评论"""
 
-        user = request.user  # TODO 检查用户权限
-        user_id = "cd2ed05828ebb648a225c35a9501b007"  # TODO 虚假的ID
-
         data = {
-            "user_id": user_id,
+            "user_id": request._request.uid,
             "think": idea_pk,
             "content": request.data.get("content", None)
         }
@@ -146,24 +137,21 @@ class IdeaCommentView(CustomAPIView):
 
 
 class MonoIdeaCommentView(CustomAPIView):
+    @validate_identity
     def delete(self, request, idea_pk, comment_pk):
         """删除评论"""
 
-        user = request.user  # TODO 检查用户权限
-        user_id = "cd2ed05828ebb648a225c35a9501b007"  # TODO 虚假的ID
-
         try:
-            IdeaComment.objects.get(pk=comment_pk, user_id=user_id, think=idea_pk).delete()
+            IdeaComment.objects.get(pk=comment_pk, user_id=request._request.uid, think=idea_pk).delete()
         except Exception as e:
             return self.error(e.args, 401)
         return self.success()
 
+    @validate_identity
     def put(self, request, idea_pk, comment_pk):
         """修改评论"""
 
-        user = request.user  # TODO 检查用户权限
-        user_id = "cd2ed05828ebb648a225c35a9501b007"  # TODO 虚假的ID
-
+        user_id = request._request.uid
         data = {
             "user_id": user_id,
             "think": idea_pk,
@@ -194,12 +182,11 @@ class MonoIdeaCommentView(CustomAPIView):
 
 
 class IdeaLikeView(CustomAPIView):
+    @validate_identity
     def post(self, request):
         """想法及其评论点赞"""
 
-        user = request.user  # TODO 检查用户权限
-        user_id = "cd2ed05828ebb648a225c35a9501b007"  # TODO 虚假的ID
-
+        user_id = request._request.uid
         which_model = Idea if request.data.get("type", "") == "idea" else IdeaComment
         try:
             which_object = which_model.objects.get(pk=request.data.get("id", None))  # TODO 能否给自己点赞
@@ -208,12 +195,11 @@ class IdeaLikeView(CustomAPIView):
             return self.error(e.args, 401)
         return self.success()
 
+    @validate_identity
     def delete(self, request):
         """取消点赞"""
 
-        user = request.user  # TODO 检查用户权限
-        user_id = "cd2ed05828ebb648a225c35a9501b007"  # TODO 虚假的ID
-
+        user_id = request._request.uid
         try:
             IdeaLike.objects.get(pk=request.data.get("id", None), user_id=user_id).delete()
         except Exception as e:

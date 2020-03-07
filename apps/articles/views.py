@@ -1,6 +1,7 @@
 from django.db import transaction
 
 from apps.utils.api import CustomAPIView
+from apps.utils.decorators import validate_identity
 from .serializers import ArticleCreateSerializer, NewArticleSerializer, ArticleDetailSerializer, \
     ArticleCommentSerializer
 from .models import Article, ArticleComment, ArticleVote
@@ -9,14 +10,12 @@ from apps.taskapp.tasks import articles_pv_record
 
 
 class ArticleView(CustomAPIView):
+    @validate_identity
     def post(self, request):
         """发表文章"""
 
-        user = request.user  # TODO 检查用户权限
-        user_id = "cd2ed05828ebb648a225c35a9501b007"  # TODO 虚假的ID
-
         data = {
-            "user_id": user_id,
+            "user_id": request._request.uid,
             "title": request.data.get("title", None),
             "content": request.data.get("content", None),  # 注意HTML转义
             "image": request.data.get("image", ""),
@@ -35,12 +34,11 @@ class ArticleView(CustomAPIView):
         s = NewArticleSerializer(instance=article)
         return self.success(s.data)
 
+    @validate_identity
     def put(self, request):
         """更新文章，成品不能改为草稿"""
 
-        user = request.user  # TODO 检查用户权限
-        user_id = "cd2ed05828ebb648a225c35a9501b007"  # TODO 虚假的ID
-
+        user_id = request._request.uid
         data = {
             "user_id": user_id,
             # TODO 使用序列化器来验证数据，需要绕过作者和标题的唯一性，因此使用假标题。
@@ -80,14 +78,12 @@ class ArticleView(CustomAPIView):
         s = NewArticleSerializer(instance=article)
         return self.success(s.data)
 
+    @validate_identity
     def patch(self, request):
         """把草稿变为成品"""
 
-        user = request.user  # TODO 检查用户权限
-        user_id = "cd2ed05828ebb648a225c35a9501b007"  # TODO 虚假的ID
-
         try:
-            article = Article.objects.get(pk=request.data.get("pk", None), user_id=user_id)
+            article = Article.objects.get(pk=request.data.get("pk", None), user_id=request._request.uid)
         except Article.DoesNotExist as e:
             return self.error(e.args, 401)
         try:
@@ -108,6 +104,7 @@ class ArticleView(CustomAPIView):
 
 
 class ArticleDetailView(CustomAPIView):
+    @validate_identity
     def get(self, request, article_id):
         """查看文章详情，只有作者能查看草稿"""
 
@@ -116,9 +113,7 @@ class ArticleDetailView(CustomAPIView):
         except Article.DoesNotExist as e:
             return self.error(e.args, 401)
         if article.status == "draft":
-            user = request.user  # TODO 检查用户权限
-            user_id = "cd2ed05828ebb648a225c35a9501b007"  # TODO 虚假的ID
-            if article.user_id != user_id:
+            if article.user_id != request._request.uid:  # TODO 查看草稿必须登录，非草稿不需要@validate_identity
                 return self.error("草稿只有作者可以查看", 401)
         s = ArticleDetailSerializer(instance=article)
 
@@ -128,28 +123,24 @@ class ArticleDetailView(CustomAPIView):
 
 
 class DraftView(CustomAPIView):
+    @validate_identity
     def get(self, request):
         """查看草稿箱"""
 
-        user = request.user  # TODO 检查用户权限
-        user_id = "cd2ed05828ebb648a225c35a9501b007"  # TODO 虚假的ID
-
-        drafts = Article.objects.filter(user_id=user_id, status="draft")
+        drafts = Article.objects.filter(user_id=request._request.uid, status="draft")
         # TODO 返回哪部分数据？
         data = self.paginate_data(request, query_set=drafts, object_serializer=ArticleDetailSerializer)
         return self.success(data)
 
 
 class CommentView(CustomAPIView):
+    @validate_identity
     def post(self, request):
         """评论文章，必须是已发表的文章"""
 
-        user = request.user  # TODO 检查用户权限
-        user_id = "cd2ed05828ebb648a225c35a9501b007"  # TODO 虚假的ID
-
         data = {
             "article": request.data.get("pk", None),
-            "user_id": user_id,
+            "user_id": request._request.uid,
             "content": request.data.get("content", None),
         }
         s = ArticleCommentSerializer(data=data)
@@ -168,24 +159,22 @@ class CommentView(CustomAPIView):
 
         return self.success(s.data)
 
+    @validate_identity
     def delete(self, request):
         """删除本人的评论"""
 
-        user = request.user  # TODO 检查用户权限
-        user_id = "cd2ed05828ebb648a225c35a9501b007"  # TODO 虚假的ID
-
+        user_id = request._request.uid
         try:
             ArticleComment.objects.get(pk=request.data.get("pk", None), user_id=user_id).delete()
         except Exception as e:
             return self.error(e.args, 401)
         return self.success()
 
+    @validate_identity
     def put(self, request):
         """修改本人的评论"""
 
-        user = request.user  # TODO 检查用户权限
-        user_id = "cd2ed05828ebb648a225c35a9501b007"  # TODO 虚假的ID
-
+        user_id = request._request.uid
         content = request.data.get("content", None)
         if not content:
             return self.error("评论不能为空", 401)
@@ -200,12 +189,11 @@ class CommentView(CustomAPIView):
 
 
 class VoteView(CustomAPIView):
+    @validate_identity
     def post(self, request):
         """文章及其评论的投票"""
 
-        user = request.user  # TODO 检查用户权限
-        user_id = "cd2ed05828ebb648a225c35a9501b007"  # TODO 虚假的ID
-
+        user_id = request._request.uid
         which_model = Article if request.data.get("type", "") == "article" else ArticleComment
         try:
             which_object = which_model.objects.get(pk=request.data.get("id", None))  # TODO 能否给自己投票
@@ -227,12 +215,11 @@ class VoteView(CustomAPIView):
         # TODO 触发消息通知
         return self.success(data)
 
+    @validate_identity
     def delete(self, request):
         """撤销投票"""
 
-        user = request.user  # TODO 检查用户权限
-        user_id = "cd2ed05828ebb648a225c35a9501b007"  # TODO 虚假的ID
-
+        user_id = request._request.uid
         pk = request.data.get("pk", None)
         try:
             ArticleVote.objects.get(pk=pk, user_id=user_id).delete()

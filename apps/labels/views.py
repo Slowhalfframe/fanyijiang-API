@@ -1,14 +1,15 @@
 from apps.utils.api import CustomAPIView
+from apps.utils.decorators import validate_identity
 from .serializers import LabelCreateSerializer, ChildLabelSerializer, LabelUpdateSerializer
 from .models import Label, LabelFollow
 
 
 class LabelView(CustomAPIView):
+    @validate_identity
     def post(self, request):
-        """新建标签，需要检查用户权限。"""
+        """新建标签"""
 
-        user = request.user  # TODO 检查用户权限
-
+        uid = request._request.uid  # TODO 新建标签的权限
         s = LabelCreateSerializer(data=request.data)
         s.is_valid()
         if s.errors:
@@ -27,27 +28,24 @@ class LabelView(CustomAPIView):
         s = LabelCreateSerializer(instance=query_set, many=True)  # TODO 获取更多信息，需要更换序列化器
         return self.success(s.data)
 
+    @validate_identity
     def delete(self, request):
-        """删除标签，同时删除它与其他标签、文章、问答等的关系，需要检查用户权限。"""
+        """删除标签，同时删除它与其他标签、文章、问答等的关系"""
 
-        user = request.user  # TODO 检查用户权限
-
+        uid = request._request.uid  # TODO 删除标签的权限
         name = request.data.get("name", None)
         try:
             label = Label.objects.get(name=name)
-        except Label.DoesNotExist as e:
-            return self.error(e.args, 401)
-        try:
             label.delete()  # TODO 与其他标签、文章、问答等的关系都自动删除了，可能使文章、问答等失去标签
         except Exception as e:
             return self.error(e.args, 401)
         return self.success()
 
+    @validate_identity
     def put(self, request):
-        """修改标签，需要检查用户权限。"""
+        """修改标签"""
 
-        user = request.user  # TODO 检查用户权限
-
+        uid = request._request.uid  # TODO 修改标签的权限
         s = LabelUpdateSerializer(data=request.data)
         s.is_valid()
         if s.errors:
@@ -64,11 +62,11 @@ class LabelView(CustomAPIView):
 
 
 class LabelRelationView(CustomAPIView):
+    @validate_identity
     def post(self, request):
-        """新建标签关系，需要检查用户权限。"""
+        """新建标签关系"""
 
-        user = request.user  # TODO 检查用户权限
-
+        uid = request._request.uid  # TODO 新建子标签的权限
         parent = request.data.get("parent", None)
         child = request.data.get("child", None)
         try:
@@ -82,11 +80,11 @@ class LabelRelationView(CustomAPIView):
             return self.error(e.args, 401)
         return self.success({"parent": parent.name, "child": child.name})
 
+    @validate_identity
     def delete(self, request):
-        """删除标签关系，需要检查用户权限。"""
+        """删除标签关系"""
 
-        user = request.user  # TODO 检查用户权限
-
+        uid = request._request.uid  # TODO 删除子标签的权限
         parent = request.data.get("parent", None)
         child = request.data.get("child", None)
         try:
@@ -115,13 +113,12 @@ class ChildLabelView(CustomAPIView):
 
 
 class LabelFollowView(CustomAPIView):
+    @validate_identity
     def post(self, request):
         """关注标签。"""
 
-        user = request.user  # TODO 检查用户权限
-        user_id = "cd2ed05828ebb648a225c35a9501b007"  # TODO 虚假的ID
+        user_id = request._request.uid
         name = request.data.get("name", None)
-
         try:
             label = Label.objects.get(name=name)
         except Label.DoesNotExist as e:
@@ -132,24 +129,23 @@ class LabelFollowView(CustomAPIView):
             return self.error(e.args, 401)
         return self.success()
 
+    @validate_identity
     def delete(self, request):
         """取消关注标签。"""
 
-        user = request.user  # TODO 检查用户权限，只能取消自己关注的标签
-        user_id = "cd2ed05828ebb648a225c35a9501b007"  # TODO 虚假的ID
+        user_id = request._request.uid
         name = request.data.get("name", None)
-
         try:
-            LabelFollow.objects.get(user_id=user_id, label__name=name).delete()
+            LabelFollow.objects.get(user_id=user_id, label__name=name).delete()  # 只能取消自己关注的标签
         except Exception as e:
             return self.error(e.args, 401)
         return self.success()
 
+    @validate_identity
     def get(self, request):
         """查看本人关注的标签。"""
 
-        user = request.user  # TODO 检查用户权限
-        user_id = "cd2ed05828ebb648a225c35a9501b007"  # TODO 虚假的ID
+        user_id = request._request.uid
         follows = LabelFollow.objects.filter(user_id=user_id)
         labels = [i.label for i in follows]
         s = LabelCreateSerializer(instance=labels, many=True)
