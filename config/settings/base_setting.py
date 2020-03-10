@@ -132,9 +132,10 @@ USE_TZ = False
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
+DATA_DIR = os.path.join(BASE_DIR, 'public')
 
 STATIC_URL = '/static/'
-
+STATIC_ROOT = os.path.join(DATA_DIR, 'collectstatic')
 
 # 缓存
 CACHES = {
@@ -148,7 +149,6 @@ CACHES = {
 }
 
 # 图片上传路径
-DATA_DIR = os.path.join(BASE_DIR, 'public')
 UPLOAD_PREFIX = '/picture'
 UPLOAD_DIR = "{}/{}".format(DATA_DIR, UPLOAD_PREFIX)
 if not os.path.exists(UPLOAD_DIR):

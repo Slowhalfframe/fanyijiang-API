@@ -30,4 +30,5 @@ urlpatterns = [
     url(r'^api/', include('apps.utils.urls', namespace='utils')),
 
     url(r'public/(?P<path>.*)$', serve, {'document_root': settings.DATA_DIR}),
+    url(r'static/(?P<path>.*)$', serve, {'document_root': settings.STATIC_ROOT}),  # admin的css文件访问路径
 ]

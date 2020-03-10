@@ -131,7 +131,7 @@ class DraftView(CustomAPIView):
         # TODO 返回哪部分数据？
         data = self.paginate_data(request, query_set=drafts, object_serializer=ArticleDetailSerializer)
         return self.success(data)
-
+ 
 
 class CommentView(CustomAPIView):
     @validate_identity

@@ -46,9 +46,9 @@ def notification_handler(actor_uid, recipient_uid, verb, action_object, **kwargs
     elif verb == 'CAR':
         # 传入评论对象
         is_object = recipient_uid == action_object.article.user_id
-    elif verb == 'CQ':
-        # 传入评论对象
-        is_object = recipient_uid == action_object.question.user_id
+    # elif verb == 'CQ':
+    #     # 传入评论对象
+    #     is_object = recipient_uid == action_object.user_id
     else:
         is_object = recipient_uid == action_object.user_id
 
