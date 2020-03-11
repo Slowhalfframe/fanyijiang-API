@@ -63,16 +63,17 @@ class UserLocationSerializer(serializers.ModelSerializer):
 class FavoritesSerializer(serializers.ModelSerializer):
     content_count = serializers.SerializerMethodField()
     follow_count = serializers.SerializerMethodField()
+    # update_time = serializers.DateTimeField(format="%Y%m%d %H:%M:%S", source="update_time", read_only=True)
 
     class Meta:
         model = UserFavorites
         fields = ('id', 'title', 'status', 'content_count', 'follow_count', 'update_time')
 
     def get_content_count(self, obj):
-        return obj.mark_content.all().count()
+        return obj.favorite_collect.all().count()
 
     def get_follow_count(self, obj):
-        return FollowedFavorites.objects.filter(bm=obj).count()
+        return FollowedFavorites.objects.filter(fa=obj).count()
 
 
 # class FavoritesAnswerSerializer(serializers.ModelSerializer):
@@ -172,7 +173,7 @@ class UserPageArticleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Article
-        fields = ('id', 'title', 'content', 'update_time', 'comment_count', 'upvote_count', 'author_info')
+        fields = ('id', 'title', 'content', 'image', 'update_time', 'comment_count', 'upvote_count', 'author_info')
 
     def get_comment_count(self, obj):
         return obj.articlecomment_set.all().count()
@@ -217,3 +218,17 @@ class UserPageThinksSerializer(serializers.ModelSerializer):
             'autograph': author.autograph,
         }
         return data
+
+
+class UserPageLabelSerializer(serializers.ModelSerializer):
+    answer_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Label
+        fields = ('id', 'name', 'intro', 'answer_count')
+
+    def get_answer_count(self, obj):
+        questions = obj.question_set.all()
+        uid = self.context.get('uid')
+        count = [Answer.objects.filter(question=question, user_id=uid).count() for question in questions]
+        return sum(count)

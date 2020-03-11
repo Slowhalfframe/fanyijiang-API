@@ -48,6 +48,7 @@ urlpatterns = [
     url(r"^uc_update$", views.UcUpdateAPIView.as_view(), name="uc_update"),
 
     url(r'hover_userinfo/(?P<user_slug>[-\w]+)$', views.HoverUserInfoAPIView.as_view(), name='hover_userinfo'),
+    url(r'hover_labelinfo/(?P<pk>\d+)$', views.HoverLabelInfoAPIView.as_view(), name='hover_userinfo'),
 
     url(r"^(?P<user_slug>[-\w]+)$", views.UserInfoAPIView.as_view(), name="user_info"),
 ]
