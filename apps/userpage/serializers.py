@@ -20,7 +20,7 @@ class UserInfoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = UserProfile
-        fields = ('uid', 'nickname', 'avatar', 'autograph', 'industry',
+        fields = ('uid', 'nickname', 'avatar', 'autograph', 'gender', 'industry',
                   'employment_history', 'education_history', 'locations',
                   'description', 'slug')
 

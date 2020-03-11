@@ -60,16 +60,19 @@ class UserInfoAPIView(CustomAPIView):
                 })
 
                 user_pro_obj.location.all().delete()
-                for location in data['locations']:
+                locations = json.loads(data['locations'])
+                for location in locations:
                     user_pro_obj.location.update_or_create(name=location['name'])
 
                 user_pro_obj.user_education_history.all().delete()
-                for education in data['education_history']:
+                education_history = json.loads(data['education_history'])
+                for education in education_history:
                     user_pro_obj.user_education_history.create(**education)
 
                 user_pro_obj.user_employment_history.all().delete()
-                for employment in data['employment_history']:
-                    user_pro_obj.user_professional_history.create(**employment)
+                employment_history = json.loads(data['employment_history'])
+                for employment in employment_history:
+                    user_pro_obj.user_employment_history.create(**employment)
                 create_content_nums = {
                     'question_count': 0,
                     'answer_count': 0,
@@ -115,18 +118,21 @@ class UcUpdateAPIView(CustomAPIView):
         update_dict = dict()
         if update_obj == 'locations':
             user_pro_obj.location.all().delete()
-            for location in update_content['locations']:
-                user_pro_obj.location.update_or_create(name=location['name'])
+            locations = json.loads(update_content['locations'])
+            for location in locations:
+                user_pro_obj.location.update_or_create(**location)
 
         elif update_obj == 'educations':
             user_pro_obj.user_education_history.all().delete()
-            for education in update_content['educations']:
+            educations = json.loads(update_content['educations'])
+            for education in educations:
                 user_pro_obj.user_education_history.create(**education)
 
         elif update_obj == 'employments':
             user_pro_obj.user_employment_history.all().delete()
-            for employment in update_content['employments']:
-                user_pro_obj.user_professional_history.create(**employment)
+            employments = json.loads(update_content['employments'])
+            for employment in employments:
+                user_pro_obj.user_employment_history.create(**employment)
 
         else:
             update_dict[update_obj] = update_content[update_obj]

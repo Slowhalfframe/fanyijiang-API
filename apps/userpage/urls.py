@@ -4,7 +4,6 @@ from . import views
 
 urlpatterns = [
 
-    url(r"^(?P<user_slug>[-\w]+)$", views.UserInfoAPIView.as_view(), name="user_info"),
 
     # 用户自己创建或者修改收藏夹视图
     url(r'^self_favorites/(?P<user_slug>[-\w]+)$', views.SelfFavoritesAPIView.as_view(), name='self_favorites'),
@@ -47,5 +46,7 @@ urlpatterns = [
     url(r'favorites_content/(?P<pk>\d+)$', views.FavoritesContentAPIView.as_view(), name='favorites_content'),
     # 接受统一用户中心发送过来的更新请求
     url(r"^uc_update$", views.UcUpdateAPIView.as_view(), name="uc_update"),
+
+    url(r"^(?P<user_slug>[-\w]+)$", views.UserInfoAPIView.as_view(), name="user_info"),
 
 ]

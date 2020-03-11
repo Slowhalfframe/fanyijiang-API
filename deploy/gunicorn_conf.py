@@ -66,5 +66,4 @@ p     process ID
 accesslog = os.path.join(LOG_DIR, 'gunicorn_access.log')
 # 错误日志文件
 errorlog = os.path.join(LOG_DIR, 'gunicorn_error.log')
-# pid 文件
-pidfile = os.path.join(LOG_DIR, 'gunicorn_error.pid')
+

@@ -23,5 +23,6 @@ fi
 
 
 cd $APP
+yes | python manage.py collectstatic
 python manage.py makemigrations && python manage.py migrate
 exec supervisord -c /app/deploy/supervisord.conf
