@@ -2,6 +2,7 @@ from django.db import transaction
 
 from apps.utils.api import CustomAPIView
 from apps.utils.decorators import validate_identity
+from apps.utils import errorcode
 from .serializers import ArticleCreateSerializer, NewArticleSerializer, ArticleDetailSerializer, \
     ArticleCommentSerializer
 from .models import Article, ArticleComment, ArticleVote
@@ -25,12 +26,11 @@ class ArticleView(CustomAPIView):
         s = ArticleCreateSerializer(data=data)
         s.is_valid()
         if s.errors:
-            return self.invalid_serializer(s)
-
+            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
         try:
             article = s.create(s.validated_data)
         except Exception as e:
-            return self.error(e.args, 401)
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         s = NewArticleSerializer(instance=article)
         return self.success(s.data)
 
@@ -52,15 +52,14 @@ class ArticleView(CustomAPIView):
         s = ArticleCreateSerializer(data=data)
         s.is_valid()
         if s.errors:
-            return self.invalid_serializer(s)
-
+            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
         try:
             article = Article.objects.get(pk=request.data.get("pk", None), user_id=user_id)
         except Article.DoesNotExist as e:
-            return self.error(e.args, 401)
+            return self.error(errorcode.MSG_NOT_OWNER, errorcode.INVALID_DATA)
         title = request.data.get("title", "")
         if not title:
-            return self.error("文章没有标题", 401)
+            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
         status = s.validated_data["status"]
         if article.status == "published":
             status = "published"
@@ -74,7 +73,7 @@ class ArticleView(CustomAPIView):
                 article.save()
                 article.labels.set(s.validated_data["labels"])
         except Exception as e:
-            return self.error(e.args)
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         s = NewArticleSerializer(instance=article)
         return self.success(s.data)
 
@@ -85,13 +84,13 @@ class ArticleView(CustomAPIView):
         try:
             article = Article.objects.get(pk=request.data.get("pk", None), user_id=request._request.uid)
         except Article.DoesNotExist as e:
-            return self.error(e.args, 401)
+            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
         try:
             if article.status == "draft":
                 article.status = "published"
                 article.save()
         except Exception as e:
-            return self.error(e.args, 401)
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         return self.success()
 
     def get(self, request):
@@ -111,10 +110,10 @@ class ArticleDetailView(CustomAPIView):
         try:
             article = Article.objects.get(pk=article_id)
         except Article.DoesNotExist as e:
-            return self.error(e.args, 401)
+            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
         if article.status == "draft":
             if article.user_id != request._request.uid:  # TODO 查看草稿必须登录，非草稿不需要@validate_identity
-                return self.error("草稿只有作者可以查看", 401)
+                return self.error(errorcode.MSG_NOT_OWNER, errorcode.INVALID_DATA)
         s = ArticleDetailSerializer(instance=article)
 
         # TODO 记录阅读量
@@ -131,7 +130,7 @@ class DraftView(CustomAPIView):
         # TODO 返回哪部分数据？
         data = self.paginate_data(request, query_set=drafts, object_serializer=ArticleDetailSerializer)
         return self.success(data)
- 
+
 
 class CommentView(CustomAPIView):
     @validate_identity
@@ -146,13 +145,13 @@ class CommentView(CustomAPIView):
         s = ArticleCommentSerializer(data=data)
         s.is_valid()
         if s.errors:
-            return self.invalid_serializer(s)
+            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
         article = s.validated_data["article"]
         s.validated_data["reply_to_user"] = article.user_id
         try:
             comment = s.create(s.validated_data)
         except Exception as e:
-            return self.error(e.args, 401)
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         s = ArticleCommentSerializer(instance=comment)
 
         # TODO 触发消息通知
@@ -166,8 +165,11 @@ class CommentView(CustomAPIView):
         user_id = request._request.uid
         try:
             ArticleComment.objects.get(pk=request.data.get("pk", None), user_id=user_id).delete()
+        except ArticleComment.DoesNotExist:
+            pass
+            # return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
         except Exception as e:
-            return self.error(e.args, 401)
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         return self.success()
 
     @validate_identity
@@ -177,13 +179,15 @@ class CommentView(CustomAPIView):
         user_id = request._request.uid
         content = request.data.get("content", None)
         if not content:
-            return self.error("评论不能为空", 401)
+            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
         try:
             comment = ArticleComment.objects.get(pk=request.data.get("pk", None), user_id=user_id)
             comment.content = content
             comment.save()
+        except ArticleComment.DoesNotExist:
+            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
         except Exception as e:
-            return self.error(e.args, 401)
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         s = ArticleCommentSerializer(instance=comment)
         return self.success(s.data)
 
@@ -197,14 +201,14 @@ class VoteView(CustomAPIView):
         which_model = Article if request.data.get("type", "") == "article" else ArticleComment
         try:
             which_object = which_model.objects.get(pk=request.data.get("id", None))  # TODO 能否给自己投票
-        except which_model.DoesNotExist as e:
-            return self.error(e.args, 401)
+        except which_model.DoesNotExist:
+            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
         value = request.data.get("value", None)
         value = bool(value)  # TODO value的具体规则
         try:
             vote = which_object.vote.create(user_id=user_id, value=value)
         except Exception as e:
-            return self.error(e.args, 401)
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         data = {
             "user_id": vote.user_id,
             "value": vote.value,
@@ -223,8 +227,11 @@ class VoteView(CustomAPIView):
         pk = request.data.get("pk", None)
         try:
             ArticleVote.objects.get(pk=pk, user_id=user_id).delete()
+        except ArticleVote.DoesNotExist:
+            pass
+            # return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
         except Exception as e:
-            return self.error(e.args, 401)
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         return self.success()
 
 
@@ -234,8 +241,8 @@ class ArticleCommentDetailView(CustomAPIView):
 
         try:
             article = Article.objects.get(pk=article_id, status="published")
-        except Article.DoesNotExist as e:
-            return self.error(e.args, 401)
+        except Article.DoesNotExist:
+            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
         comments = article.articlecomment_set.all()  # TODO 过滤条件
         s = ArticleCommentSerializer(instance=comments, many=True)
         return self.success(s.data)

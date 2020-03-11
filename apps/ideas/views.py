@@ -1,5 +1,6 @@
 from apps.utils.api import CustomAPIView
 from apps.utils.decorators import validate_identity
+from apps.utils import errorcode
 from .serializers import IdeaValidator, IdeaDetailSerializer, IdeaCommentValidator, IdeaCommentSerializer
 from .models import Idea, IdeaComment, IdeaLike
 from apps.userpage.models import UserProfile
@@ -21,11 +22,11 @@ class IdeaView(CustomAPIView):
         s = IdeaValidator(data=data)
         s.is_valid()
         if s.errors:
-            return self.invalid_serializer(s)
+            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
         try:
             idea = s.create(s.validated_data)
         except Exception as e:
-            return self.error(e.args, 401)
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         idea.avatar = user.avatar
         idea.nickname = user.nickname
         s = IdeaDetailSerializer(instance=idea)
@@ -40,7 +41,7 @@ class IdeaView(CustomAPIView):
         try:
             ideas = Idea.objects.filter(user_id=user_id)
         except Exception as e:
-            return self.error(e.args, 401)
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         for idea in ideas:
             idea.avatar = user.avatar
             idea.nickname = user.nickname
@@ -57,8 +58,10 @@ class MonoIdeaView(CustomAPIView):
         try:
             idea = Idea.objects.get(pk=idea_pk, user_id=user_id)
             idea.delete()  # TODO 收藏、点赞等都自动删除了吗
+        except Idea.DoesNotExist:
+            pass
         except Exception as e:
-            return self.error(e.args, 401)
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         return self.success()
 
     def get(self, request, idea_pk):
@@ -66,8 +69,8 @@ class MonoIdeaView(CustomAPIView):
 
         try:
             idea = Idea.objects.get(pk=idea_pk)
-        except Idea.DoesNotExist as e:
-            return self.error(e.args, 401)
+        except Idea.DoesNotExist:
+            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
         user = UserProfile.objects.get(uid=idea.user_id)
         idea.avatar = user.avatar
         idea.nickname = user.nickname
@@ -90,13 +93,15 @@ class MonoIdeaView(CustomAPIView):
         s = IdeaValidator(data=data)
         s.is_valid()
         if s.errors:
-            return self.invalid_serializer(s)
+            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
         try:
             idea = Idea.objects.get(pk=idea_pk, user_id=user_id)
             idea.content = s.validated_data["content"]
             idea.save()
+        except Idea.DoesNotExist:
+            return self.error(errorcode.MSG_NOT_OWNER, errorcode.INVALID_DATA)
         except Exception as e:
-            return self.error(e.args, 401)
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         idea.avatar = user.avatar
         idea.nickname = user.nickname
         s = IdeaDetailSerializer(instance=idea)
@@ -116,11 +121,11 @@ class IdeaCommentView(CustomAPIView):
         s = IdeaCommentValidator(data=data)
         s.is_valid()
         if s.errors:
-            return self.invalid_serializer(s)
+            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
         try:
             comment = s.create(s.validated_data)
         except Exception as e:
-            return self.error(e.args, 401)
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         s = IdeaCommentSerializer(instance=comment)
         return self.success(s.data)
 
@@ -130,8 +135,10 @@ class IdeaCommentView(CustomAPIView):
         try:
             idea = Idea.objects.get(pk=idea_pk)
             comments = idea.ideacomment_set.all()
+        except Idea.DoesNotExist:
+            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
         except Exception as e:
-            return self.error(e.args, 401)
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         s = IdeaCommentSerializer(instance=comments, many=True)
         return self.success(s.data)
 
@@ -143,8 +150,10 @@ class MonoIdeaCommentView(CustomAPIView):
 
         try:
             IdeaComment.objects.get(pk=comment_pk, user_id=request._request.uid, think=idea_pk).delete()
+        except IdeaComment.DoesNotExist:
+            pass
         except Exception as e:
-            return self.error(e.args, 401)
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         return self.success()
 
     @validate_identity
@@ -160,13 +169,15 @@ class MonoIdeaCommentView(CustomAPIView):
         s = IdeaCommentValidator(data=data)
         s.is_valid()
         if s.errors:
-            return self.invalid_serializer(s)
+            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
         try:
             comment = IdeaComment.objects.get(pk=comment_pk, think=idea_pk, user_id=user_id)
             comment.content = s.validated_data["content"]
             comment.save()
+        except IdeaComment.DoesNotExist:
+            return self.error(errorcode.MSG_NOT_OWNER, errorcode.INVALID_DATA)
         except Exception as e:
-            return self.error(e.args, 401)
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         s = IdeaCommentSerializer(instance=comment)
         return self.success(s.data)
 
@@ -175,8 +186,8 @@ class MonoIdeaCommentView(CustomAPIView):
 
         try:
             comment = IdeaComment.objects.get(pk=comment_pk, think=idea_pk)
-        except Exception as e:
-            return self.error(e.args, 401)
+        except IdeaComment.DoesNotExist:
+            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
         s = IdeaCommentSerializer(instance=comment)
         return self.success(s.data)
 
@@ -191,8 +202,10 @@ class IdeaLikeView(CustomAPIView):
         try:
             which_object = which_model.objects.get(pk=request.data.get("id", None))  # TODO 能否给自己点赞
             which_object.agree.create(user_id=user_id)
+        except which_model.DoesNotExist:
+            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
         except Exception as e:
-            return self.error(e.args, 401)
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         return self.success()
 
     @validate_identity
@@ -202,6 +215,8 @@ class IdeaLikeView(CustomAPIView):
         user_id = request._request.uid
         try:
             IdeaLike.objects.get(pk=request.data.get("id", None), user_id=user_id).delete()
+        except IdeaLike.DoesNotExist:
+            pass
         except Exception as e:
-            return self.error(e.args, 401)
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         return self.success()
