@@ -12,7 +12,8 @@ from apps.utils.decorators import validate_serializer, validate_identity
 from apps.userpage.models import (UserProfile, UserFavorites, FollowedUser, FollowedFavorites,
                                   FavoriteCollection)
 from apps.userpage.serializers import (UserInfoSerializer, FavoritesSerializer, FollowsUserSerializer,
-                                       FavoritesContentSerializer, UserPageQuestionSerializer, UserPageAnswerSerializer, UserPageArticleSerializer)
+                                       FavoritesContentSerializer, UserPageQuestionSerializer, UserPageAnswerSerializer,
+                                       UserPageArticleSerializer, UserPageThinksSerializer)
 from apps.userpage.validators import FavoritesValidator
 
 from apps.questions.models import Question, Answer
@@ -346,7 +347,7 @@ class ThinkListAPIView(CustomAPIView):
 
         # TODO 查询相关数据库
         ideas = Idea.objects.filter(user_id=user.uid)
-        data = self.paginate_data(request, ideas, IdeaDetailSerializer)
+        data = self.paginate_data(request, ideas, UserPageThinksSerializer)
         return self.success(data)
 
 

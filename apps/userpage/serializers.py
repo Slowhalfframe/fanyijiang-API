@@ -12,6 +12,8 @@ from apps.questions.serializers import AnswerCreateSerializer
 
 from apps.articles.models import Article
 
+from apps.ideas.models import Idea
+
 
 class UserInfoSerializer(serializers.ModelSerializer):
     employment_history = serializers.SerializerMethodField()
@@ -170,13 +172,41 @@ class UserPageArticleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Article
-        fields = ('title', 'content', 'update_time', 'comment_count', 'upvote_count', 'author_info')
+        fields = ('id', 'title', 'content', 'update_time', 'comment_count', 'upvote_count', 'author_info')
 
     def get_comment_count(self, obj):
         return obj.articlecomment_set.all().count()
 
     def get_upvote_count(self, obj):
         return obj.vote.filter(value=True).count()
+
+    def get_author_info(self, obj):
+        author = UserProfile.objects.filter(uid=obj.user_id).first()
+        data = {
+            'avatar': author.avatar,
+            'nickname': author.nickname,
+            'slug': author.slug,
+            'autograph': author.autograph,
+        }
+        return data
+
+
+class UserPageThinksSerializer(serializers.ModelSerializer):
+
+    create_time = serializers.DateTimeField(format="%Y%m%d %H:%M:%S", source="create_at", read_only=True)
+    comment_count = serializers.SerializerMethodField()
+    upvote_count = serializers.SerializerMethodField()
+    author_info = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Idea
+        fields = ('id', 'content', 'create_time', 'comment_count', 'upvote_count', 'author_info')
+
+    def get_comment_count(self, obj):
+        return obj.ideacomment_set.all().count()
+
+    def get_upvote_count(self, obj):
+        return obj.agree.all().count()
 
     def get_author_info(self, obj):
         author = UserProfile.objects.filter(uid=obj.user_id).first()
