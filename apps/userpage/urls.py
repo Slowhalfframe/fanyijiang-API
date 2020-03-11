@@ -46,8 +46,8 @@ urlpatterns = [
     url(r'favorites_content/(?P<pk>\d+)$', views.FavoritesContentAPIView.as_view(), name='favorites_content'),
     # 接受统一用户中心发送过来的更新请求
     url(r"^uc_update$", views.UcUpdateAPIView.as_view(), name="uc_update"),
-    url(r"^(?P<user_slug>[-\w]+)$", views.UserInfoAPIView.as_view(), name="user_info"),
+
+    url(r'hover_userinfo/(?P<user_slug>[-\w]+)$', views.HoverUserInfoAPIView.as_view(), name='hover_userinfo'),
 
     url(r"^(?P<user_slug>[-\w]+)$", views.UserInfoAPIView.as_view(), name="user_info"),
-
 ]

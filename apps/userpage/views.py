@@ -158,6 +158,30 @@ class UcUpdateAPIView(CustomAPIView):
         return self.success()
 
 
+class HoverUserInfoAPIView(CustomAPIView):
+    def get(self, request, user_slug):
+        user = UserProfile.objects.filter(slug=user_slug).first()
+        if not user:
+            return self.error('error', 404)
+        user_info = {'avatar': user.avatar, 'nickname': user.nickname, 'autograph': user.autograph,
+                     }
+        employment = {'company': user.user_employment_history.first().company if user.user_employment_history else None,
+                      'position': user.user_employment_history.first().position if user.user_employment_history else None,
+                      }
+
+        create_count = {
+            'answer_count': Answer.objects.filter(user_id=user.uid).count(),
+            'article_count': Article.objects.filter(user_id=user.uid).count(),
+            'fans_count': FollowedUser.objects.filter(idol=user).count(),
+        }
+
+        data = {
+            'user_info': user_info,
+            'employment': employment,
+            'create_count': create_count,
+        }
+        return self.success(data)
+
 # class SelfAchievementAPIView(CustomAPIView):
 #     '''个人成就'''
 #
