@@ -137,20 +137,28 @@ class UserPageQuestionSerializer(serializers.ModelSerializer):
 
 class UserPageAnswerSerializer(serializers.ModelSerializer):
     question_title = serializers.SerializerMethodField()
-    user_info = serializers.SerializerMethodField()
-
+    author_info = serializers.SerializerMethodField()
+    upvote_count = serializers.SerializerMethodField()
+    comment_count = serializers.SerializerMethodField()
+    create_time = serializers.DateTimeField(format="%Y%m%d %H:%M:%S", source="create_at", read_only=True)
     class Meta:
         model = Answer
-        fields = ('id', 'content', 'question_id', 'question_title', 'user_info',
-                  )
+        fields = ('id', 'content', 'question_id', 'question_title', 'author_info',
+                  'upvote_count', 'comment_count', 'create_time')
 
-    def get_user_info(self, obj):
+    def get_author_info(self, obj):
         user = UserProfile.objects.filter(uid=obj.user_id).only('nickname', 'avatar', 'slug').first()
-        data = {'nickname': user.nickname, 'avatar': user.avatar, 'user_slug': user.slug}
+        data = {'nickname': user.nickname, 'avatar': user.avatar, 'user_slug': user.slug, 'autograph':user.autograph}
         return data
 
     def get_question_title(self, obj):
         return obj.question.title
+
+    def get_upvote_count(self, obj):
+        return obj.vote.filter(value=True).count()
+
+    def get_comment_count(self, obj):
+        return obj.comment.all().count()
 
 
 class UserPageArticleSerializer(serializers.ModelSerializer):
@@ -176,5 +184,6 @@ class UserPageArticleSerializer(serializers.ModelSerializer):
             'avatar': author.avatar,
             'nickname': author.nickname,
             'slug': author.slug,
+            'autograph': author.autograph,
         }
         return data

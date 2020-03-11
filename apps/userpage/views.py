@@ -54,34 +54,24 @@ class UserInfoAPIView(CustomAPIView):
 
                 data = res_data['data']
 
-                user_pro_obj, status = UserProfile.objects.update_or_create(uid=data['uid'], defaults={
+                user, status = UserProfile.objects.update_or_create(uid=data['uid'], defaults={
                     'nickname': data['nickname'], 'avatar': data['avatar'], 'autograph': data['autograph'],
                     'description': data['description'], 'slug': data['slug'], 'industry': data['industry']
                 })
-
-                user_pro_obj.location.all().delete()
+                user.location.all().delete()
                 locations = json.loads(data['locations'])
                 for location in locations:
-                    user_pro_obj.location.update_or_create(name=location['name'])
+                    user.location.update_or_create(name=location['name'])
 
-                user_pro_obj.user_education_history.all().delete()
+                user.user_education_history.all().delete()
                 education_history = json.loads(data['education_history'])
                 for education in education_history:
-                    user_pro_obj.user_education_history.create(**education)
+                    user.user_education_history.create(**education)
 
-                user_pro_obj.user_employment_history.all().delete()
+                user.user_employment_history.all().delete()
                 employment_history = json.loads(data['employment_history'])
                 for employment in employment_history:
-                    user_pro_obj.user_employment_history.create(**employment)
-                create_content_nums = {
-                    'question_count': 0,
-                    'answer_count': 0,
-                    'article_count': 0,
-                    'think_count': 0,
-                    'collect_count': 0,
-                }
-                data['create_content_nums'] = create_content_nums
-                return self.success(data)
+                    user.user_employment_history.create(**employment)
 
             except Exception as e:
                 return self.error(e.args, 500)
@@ -95,6 +85,32 @@ class UserInfoAPIView(CustomAPIView):
             'collect_count': user.favorites.all().count(),
         }
         data['create_content_nums'] = create_content_nums
+
+        # 个人成就
+        # 全部文章被赞同的数量 + 全部想法被赞同的数量 + 全部回答被赞同的数量
+        article_upvotes = ArticleVoteStatistics(user).get_total_upvote_nums() or 0
+        answer_upvotes = AnswerVoteStatistics(user).get_total_upvote_nums() or 0
+        think_upvotes = ThinkVoteStatistics(user).get_total_upvote_nums() or 0
+        upvotes = article_upvotes + answer_upvotes + think_upvotes
+
+        # 全部文章被收藏的数量 + 全部回答被收藏的数量 + 全部想法被赞同的数量
+
+        article_collect = ArticleCollectStatistics(user).get_total_collect_nums()
+        answer_collect = ArticleCollectStatistics(user).get_total_collect_nums()
+        collect_count = article_collect + answer_collect
+
+        self_achievement = {'upvote_count': upvotes, 'collect_count': collect_count}
+        data['self_achievement'] = self_achievement
+
+        # 关注的人
+        fans = FollowedUser.objects.filter(idol=user)
+        idol = FollowedUser.objects.filter(fans=user)
+
+        fans_nums = fans.count()
+        idol_nums = idol.count()
+
+        fans_and_idols = {'fans_nums': fans_nums, "idol_nums": idol_nums}
+        data['fans_and_idols'] = fans_and_idols
         return self.success(data)
 
 
@@ -142,28 +158,28 @@ class UcUpdateAPIView(CustomAPIView):
         return self.success()
 
 
-class SelfAchievementAPIView(CustomAPIView):
-    '''个人成就'''
-
-    def get(self, request, user_slug):
-        user = UserProfile.objects.filter(slug=user_slug).first()
-        if not user:
-            return self.error('error', 404)
-
-        # 全部文章被赞同的数量 + 全部想法被赞同的数量 + 全部回答被赞同的数量
-        article_upvotes = ArticleVoteStatistics(user).get_total_upvote_nums() or 0
-        answer_upvotes = AnswerVoteStatistics(user).get_total_upvote_nums() or 0
-        think_upvotes = ThinkVoteStatistics(user).get_total_upvote_nums() or 0
-        upvotes = article_upvotes + answer_upvotes + think_upvotes
-
-        # 全部文章被收藏的数量 + 全部回答被收藏的数量 + 全部想法被赞同的数量
-
-        article_collect = ArticleCollectStatistics(user).get_total_collect_nums()
-        answer_collect = ArticleCollectStatistics(user).get_total_collect_nums()
-        collect_count = article_collect + answer_collect
-
-        data = {'upvote_count': upvotes, 'collect_count': collect_count}
-        return self.success(data)
+# class SelfAchievementAPIView(CustomAPIView):
+#     '''个人成就'''
+#
+#     def get(self, request, user_slug):
+#         user = UserProfile.objects.filter(slug=user_slug).first()
+#         if not user:
+#             return self.error('error', 404)
+#
+#         # 全部文章被赞同的数量 + 全部想法被赞同的数量 + 全部回答被赞同的数量
+#         article_upvotes = ArticleVoteStatistics(user).get_total_upvote_nums() or 0
+#         answer_upvotes = AnswerVoteStatistics(user).get_total_upvote_nums() or 0
+#         think_upvotes = ThinkVoteStatistics(user).get_total_upvote_nums() or 0
+#         upvotes = article_upvotes + answer_upvotes + think_upvotes
+#
+#         # 全部文章被收藏的数量 + 全部回答被收藏的数量 + 全部想法被赞同的数量
+#
+#         article_collect = ArticleCollectStatistics(user).get_total_collect_nums()
+#         answer_collect = ArticleCollectStatistics(user).get_total_collect_nums()
+#         collect_count = article_collect + answer_collect
+#
+#         data = {'upvote_count': upvotes, 'collect_count': collect_count}
+#         return self.success(data)
 
 
 class FollowingUserAPIView(CustomAPIView):

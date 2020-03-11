@@ -7,8 +7,8 @@ urlpatterns = [
 
     # 用户自己创建或者修改收藏夹视图
     url(r'^self_favorites/(?P<user_slug>[-\w]+)$', views.SelfFavoritesAPIView.as_view(), name='self_favorites'),
-    # 用户个人成就
-    url(r'^self_achievement/(?P<user_slug>[-\w]+)$', views.SelfAchievementAPIView.as_view(), name='self_achievement'),
+    # # 用户个人成就
+    # url(r'^self_achievement/(?P<user_slug>[-\w]+)$', views.SelfAchievementAPIView.as_view(), name='self_achievement'),
 
     # 用户内容分类相关视图---------------------------------------------
     # 获取某一个用户的收藏夹列表
@@ -46,6 +46,7 @@ urlpatterns = [
     url(r'favorites_content/(?P<pk>\d+)$', views.FavoritesContentAPIView.as_view(), name='favorites_content'),
     # 接受统一用户中心发送过来的更新请求
     url(r"^uc_update$", views.UcUpdateAPIView.as_view(), name="uc_update"),
+    url(r"^(?P<user_slug>[-\w]+)$", views.UserInfoAPIView.as_view(), name="user_info"),
 
     url(r"^(?P<user_slug>[-\w]+)$", views.UserInfoAPIView.as_view(), name="user_info"),
 
