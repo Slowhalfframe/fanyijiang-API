@@ -17,7 +17,7 @@ class IdeaDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Idea
-        fields = ("user_id", "content", "create_at", "pk", "agree_count", "nickname", "avatar")
+        fields = ("user_id", "content", "create_at", "id", "agree_count", "nickname", "avatar")
 
     def get_agree_count(self, obj):
         return obj.agree.count()
@@ -35,7 +35,7 @@ class IdeaCommentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = IdeaComment
-        fields = ("user_id", "think", "content", "create_at", "agree_count", "pk")
+        fields = ("user_id", "think", "content", "create_at", "agree_count", "id")
 
     def get_agree_count(self, obj):
         return obj.agree.count()

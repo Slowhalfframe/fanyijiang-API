@@ -54,7 +54,7 @@ class ArticleView(CustomAPIView):
         if s.errors:
             return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
         try:
-            article = Article.objects.get(pk=request.data.get("pk", None), user_id=user_id)
+            article = Article.objects.get(pk=request.data.get("id", None), user_id=user_id)
         except Article.DoesNotExist as e:
             return self.error(errorcode.MSG_NOT_OWNER, errorcode.INVALID_DATA)
         title = request.data.get("title", "")
@@ -82,7 +82,7 @@ class ArticleView(CustomAPIView):
         """把草稿变为成品"""
 
         try:
-            article = Article.objects.get(pk=request.data.get("pk", None), user_id=request._request.uid)
+            article = Article.objects.get(pk=request.data.get("id", None), user_id=request._request.uid)
         except Article.DoesNotExist as e:
             return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
         try:
@@ -138,7 +138,7 @@ class CommentView(CustomAPIView):
         """评论文章，必须是已发表的文章"""
 
         data = {
-            "article": request.data.get("pk", None),
+            "article": request.data.get("id", None),
             "user_id": request._request.uid,
             "content": request.data.get("content", None),
         }
@@ -164,10 +164,9 @@ class CommentView(CustomAPIView):
 
         user_id = request._request.uid
         try:
-            ArticleComment.objects.get(pk=request.data.get("pk", None), user_id=user_id).delete()
+            ArticleComment.objects.get(pk=request.data.get("id", None), user_id=user_id).delete()
         except ArticleComment.DoesNotExist:
             pass
-            # return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
         except Exception as e:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         return self.success()
@@ -181,7 +180,7 @@ class CommentView(CustomAPIView):
         if not content:
             return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
         try:
-            comment = ArticleComment.objects.get(pk=request.data.get("pk", None), user_id=user_id)
+            comment = ArticleComment.objects.get(pk=request.data.get("id", None), user_id=user_id)
             comment.content = content
             comment.save()
         except ArticleComment.DoesNotExist:
@@ -213,7 +212,7 @@ class VoteView(CustomAPIView):
             "user_id": vote.user_id,
             "value": vote.value,
             "ac_id": vote.object_id,
-            "pk": vote.pk
+            "id": vote.pk
         }
 
         # TODO 触发消息通知
@@ -224,12 +223,11 @@ class VoteView(CustomAPIView):
         """撤销投票"""
 
         user_id = request._request.uid
-        pk = request.data.get("pk", None)
+        pk = request.data.get("id", None)
         try:
             ArticleVote.objects.get(pk=pk, user_id=user_id).delete()
         except ArticleVote.DoesNotExist:
             pass
-            # return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
         except Exception as e:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         return self.success()

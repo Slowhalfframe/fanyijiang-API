@@ -26,7 +26,7 @@ class NewQuestionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Question
-        fields = ("title", "content", "who_asks", "labels", "pk")
+        fields = ("title", "content", "who_asks", "labels", "id")
 
 
 class FollowedQuestionSerializer(serializers.ModelSerializer):
@@ -34,7 +34,7 @@ class FollowedQuestionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Question
-        fields = ("title", "content", "pk")
+        fields = ("title", "content", "id")
 
 
 class AnswerCreateSerializer(serializers.ModelSerializer):
@@ -42,8 +42,8 @@ class AnswerCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Answer
-        fields = ("question", "content", "user_id", "pk", "who_answers")
-        read_only_fields = ("pk",)
+        fields = ("question", "content", "user_id", "id", "who_answers")
+        read_only_fields = ("id",)
 
 
 class QuestionFollowSerializer(serializers.ModelSerializer):
@@ -57,8 +57,8 @@ class InviteCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = QuestionInvite
-        fields = ("question", "when", "inviting", "invited", "status", "pk")
-        read_only_fields = ("when", "status", "pk")
+        fields = ("question", "when", "inviting", "invited", "status", "id")
+        read_only_fields = ("when", "status", "id")
 
     def validate(self, attrs):
         if attrs["inviting"] == attrs["invited"]:
@@ -80,16 +80,17 @@ class QACommentCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = QAComment
-        fields = ("user_id", "content", "when", "reply_to_user", "qa_id", "pk")
-        read_only_fields = ("pk",)
+        fields = ("user_id", "content", "when", "reply_to_user", "qa_id", "id")
+        read_only_fields = ("id",)
 
 
 class QACommentDetailSerializer(serializers.ModelSerializer):
     vote_count = serializers.SerializerMethodField()
+    create_at = serializers.DateTimeField(format="%Y%m%d %H:%M:%S", read_only=True)
 
     class Meta:
         model = QAComment
-        fields = ("pk", "user_id", "content", "create_at", "reply_to_user", "vote_count")
+        fields = ("id", "user_id", "content", "create_at", "reply_to_user", "vote_count")
 
     def get_vote_count(self, obj):
         return obj.vote.filter(value=True).count() - obj.vote.filter(value=False).count()

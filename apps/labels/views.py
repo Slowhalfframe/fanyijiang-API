@@ -163,15 +163,15 @@ class LabelDetailView(CustomAPIView):
         try:
             label = Label.objects.get(pk=label_id)
             questions = label.question_set.all()
-            questions = [{"pk": i.pk, "title": i.title, "content": i.content} for i in questions]
+            questions = [{"id": i.pk, "title": i.title, "content": i.content} for i in questions]
             articles = label.article_set.all()
-            articles = [{"pk": i.pk, "title": i.title, "content": i.content} for i in articles]
+            articles = [{"id": i.pk, "title": i.title, "content": i.content} for i in articles]
         except Label.DoesNotExist:
             return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
         except Exception:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         data = {
-            "pk": label.pk,
+            "id": label.pk,
             "name": label.name,
             "intro": label.intro,
             "questions": questions,

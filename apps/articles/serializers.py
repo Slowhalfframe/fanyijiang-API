@@ -45,7 +45,7 @@ class NewArticleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Article
-        fields = ("pk", "user_id", "title", "content", "image", "status", "create_at", "update_at", "labels",)
+        fields = ("id", "user_id", "title", "content", "image", "status", "create_at", "update_at", "labels",)
 
 
 class ArticleDetailSerializer(serializers.ModelSerializer):
@@ -58,7 +58,7 @@ class ArticleDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Article
         fields = (
-            "pk", "user_id", "title", "content", "image", "status", "create_at", "update_at", "labels", "vote_count",
+            "id", "user_id", "title", "content", "image", "status", "create_at", "update_at", "labels", "vote_count",
             "comment_count")
 
     def get_vote_count(self, obj):
@@ -74,8 +74,8 @@ class ArticleCommentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ArticleComment
-        fields = ("article", "user_id", "content", "reply_to_user", "pk", "create_at", "vote_count")
-        read_only_fields = ("pk", "create_at", "reply_to_user", "vote_count")
+        fields = ("article", "user_id", "content", "reply_to_user", "id", "create_at", "vote_count")
+        read_only_fields = ("id", "create_at", "reply_to_user", "vote_count")
 
     def validate_article(self, value):
         if value.status != "published":

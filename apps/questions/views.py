@@ -50,7 +50,7 @@ class QuestionDetailView(CustomAPIView):
         answer_ids = [i.pk for i in question.answer_set.all()]  # TODO 返回哪些答案
         user = UserProfile.objects.get(uid=question.user_id)  # TODO 用户不存在怎么处理？
         data = {
-            "pk": question.pk,
+            "id": question.pk,
             "answer_numbers": question.answer_set.count(),
             "answer_ids": answer_ids,
             "title": question.title,
@@ -85,7 +85,7 @@ class AnswerDetailView(CustomAPIView):
             return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
         user = UserProfile.objects.get(uid=answer.user_id)  # TODO 用户不存在怎么办？
         data = {
-            "pk": answer.pk,
+            "id": answer.pk,
             "votes": answer.vote.filter(value=True).count() - answer.vote.filter(value=False).count(),
             "user_id": answer.user_id,
             "avatar": user.avatar,
@@ -178,7 +178,7 @@ class QuestionFollowView(CustomAPIView):
 
         data = {
             "user_id": request._request.uid,
-            "question": request.data.get("question", None)
+            "question": request.data.get("id", None)
         }
         s = QuestionFollowSerializer(data=data)
         s.is_valid()
@@ -194,7 +194,7 @@ class QuestionFollowView(CustomAPIView):
     def delete(self, request):
         """取消关注问题"""
 
-        question = request.data.get("question", None)
+        question = request.data.get("id", None)
         try:
             QuestionFollow.objects.get(question=question, user_id=request._request.uid).delete()
         except QuestionFollow.DoesNotExist:
@@ -219,7 +219,7 @@ class InvitationView(CustomAPIView):
         """邀请回答，不能邀请自己、已回答用户，不能重复邀请同一用户回答同一问题"""
 
         data = {
-            "question": request.data.get("question", None),
+            "question": request.data.get("id", None),
             "inviting": request._request.uid,
             "invited": request.data.get("invited", None)  # TODO 被邀请者，暂时采用ID
         }
@@ -244,7 +244,7 @@ class InvitationView(CustomAPIView):
         """撤销邀请，只能撤销本人发出的未回答的邀请"""
 
         data = {
-            "question": request.data.get("question", None),
+            "question": request.data.get("id", None),
             "inviting": request._request.uid,
             "invited": request.data.get("invited", None),  # TODO 被邀请者，暂时采用ID
             "status": 0  # 未回答
@@ -262,7 +262,7 @@ class InvitationView(CustomAPIView):
         """拒绝收到的未回答的邀请"""
 
         data = {
-            "pk": request.data.get("invitation", None),
+            "pk": request.data.get("id", None),
             "invited": request._request.uid,  # 用户需要是被邀请者
             "status": 0,  # 未回答
         }
@@ -334,7 +334,7 @@ class CommentView(CustomAPIView):
         """撤销本人发表的问答评论"""
 
         try:
-            QAComment.objects.get(pk=request.data.get("pk", None), user_id=request._request.uid).delete()
+            QAComment.objects.get(pk=request.data.get("id", None), user_id=request._request.uid).delete()
         except QAComment.DoesNotExist:
             pass
         except Exception as e:
@@ -345,7 +345,7 @@ class CommentView(CustomAPIView):
     def patch(self, request):
         """修改本人发表的问答评论"""
 
-        pk = request.data.get("pk", None)
+        pk = request.data.get("id", None)
         content = request.data.get("content", None)
         try:
             comment = QAComment.objects.get(pk=pk, user_id=request._request.uid)
@@ -388,7 +388,7 @@ class VoteView(CustomAPIView):
             "user_id": vote.user_id,
             "value": vote.value,
             "ac_id": vote.object_id,
-            "pk": vote.pk,
+            "id": vote.pk,
         }
         # TODO 触发消息通知
         if request.data.get("type", "") == "answer" and value == True:
@@ -400,7 +400,7 @@ class VoteView(CustomAPIView):
     def delete(self, request):
         """撤销投票"""
 
-        pk = request.data.get("pk", None)
+        pk = request.data.get("id", None)
         user_id = request._request.uid
         try:
             ACVote.objects.get(pk=pk, user_id=user_id).delete()
