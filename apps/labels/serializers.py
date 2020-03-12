@@ -6,9 +6,9 @@ from .models import Label
 class LabelCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Label
-        fields = ("name", "intro", "pk")
+        fields = ("name", "intro", "id")
         extra_kwargs = {
-            "pk": {
+            "id": {
                 "read_only": True
             }
         }

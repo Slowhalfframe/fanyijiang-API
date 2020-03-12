@@ -1,5 +1,6 @@
 from apps.utils.api import CustomAPIView
 from apps.utils.decorators import validate_identity
+from apps.utils import errorcode
 from .serializers import LabelCreateSerializer, ChildLabelSerializer, LabelUpdateSerializer
 from .models import Label, LabelFollow
 
@@ -13,11 +14,11 @@ class LabelView(CustomAPIView):
         s = LabelCreateSerializer(data=request.data)
         s.is_valid()
         if s.errors:
-            return self.invalid_serializer(s)
+            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
         try:
             instance = s.create(s.validated_data)
         except Exception as e:
-            return self.error(e.args, 401)
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         s = LabelCreateSerializer(instance=instance)
         return self.success(s.data)
 
@@ -37,8 +38,10 @@ class LabelView(CustomAPIView):
         try:
             label = Label.objects.get(name=name)
             label.delete()  # TODO 与其他标签、文章、问答等的关系都自动删除了，可能使文章、问答等失去标签
+        except Label.DoesNotExist:
+            pass
         except Exception as e:
-            return self.error(e.args, 401)
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         return self.success()
 
     @validate_identity
@@ -49,14 +52,14 @@ class LabelView(CustomAPIView):
         s = LabelUpdateSerializer(data=request.data)
         s.is_valid()
         if s.errors:
-            return self.invalid_serializer(s)
+            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
         instance = s.validated_data.pop("old_name")  # 验证后,old_name存放的是标签对象
         instance.name = s.validated_data.get("name")
         instance.intro = s.validated_data.get("intro")
         try:
             instance.save()
         except Exception as e:
-            return self.error(e.args, 401)
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         s = LabelCreateSerializer(instance=instance)
         return self.success(s.data)
 
@@ -72,12 +75,12 @@ class LabelRelationView(CustomAPIView):
         try:
             parent = Label.objects.get(name=parent)
             child = Label.objects.get(name=child)
-        except Label.DoesNotExist as e:
-            return self.error(e.args, 401)
+        except Label.DoesNotExist:
+            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
         try:
             parent.children.add(child)  # 自动生成的底层数据表有唯一约束，不会重复添加
         except Exception as e:
-            return self.error(e.args, 401)
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         return self.success({"parent": parent.name, "child": child.name})
 
     @validate_identity
@@ -90,12 +93,12 @@ class LabelRelationView(CustomAPIView):
         try:
             parent = Label.objects.get(name=parent)
             child = Label.objects.get(name=child)
-        except Label.DoesNotExist as e:
-            return self.error(e.args, 401)
+        except Label.DoesNotExist:
+            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
         try:
             parent.children.remove(child)
         except Exception as e:
-            return self.error(e.args, 401)
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         return self.success()
 
 
@@ -105,9 +108,11 @@ class ChildLabelView(CustomAPIView):
 
         try:
             parent = Label.objects.get(pk=pk)
-        except Label.DoesNotExist as e:
-            return self.error(e.args, 401)
-        children = parent.children.all()
+            children = parent.children.all()
+        except Label.DoesNotExist:
+            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
+        except Exception:
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         s = ChildLabelSerializer(instance={"parent": parent, "children": children})
         return self.success(s.data)
 
@@ -121,12 +126,11 @@ class LabelFollowView(CustomAPIView):
         name = request.data.get("name", None)
         try:
             label = Label.objects.get(name=name)
-        except Label.DoesNotExist as e:
-            return self.error(e.args, 401)
-        try:
             LabelFollow.objects.create(user_id=user_id, label=label)
+        except Label.DoesNotExist:
+            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
         except Exception as e:
-            return self.error(e.args, 401)
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         return self.success()
 
     @validate_identity
@@ -137,8 +141,10 @@ class LabelFollowView(CustomAPIView):
         name = request.data.get("name", None)
         try:
             LabelFollow.objects.get(user_id=user_id, label__name=name).delete()  # 只能取消自己关注的标签
+        except LabelFollow.DoesNotExist:
+            return self.error(errorcode.MSG_NOT_OWNER, errorcode.INVALID_DATA)
         except Exception as e:
-            return self.error(e.args, 401)
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         return self.success()
 
     @validate_identity
@@ -157,13 +163,15 @@ class LabelDetailView(CustomAPIView):
         try:
             label = Label.objects.get(pk=label_id)
             questions = label.question_set.all()
-            questions = [{"pk": i.pk, "title": i.title, "content": i.content} for i in questions]
+            questions = [{"id": i.pk, "title": i.title, "content": i.content} for i in questions]
             articles = label.article_set.all()
-            articles = [{"pk": i.pk, "title": i.title, "content": i.content} for i in articles]
-        except Label.DoesNotExist as e:
-            return self.error(e.args, 401)
+            articles = [{"id": i.pk, "title": i.title, "content": i.content} for i in articles]
+        except Label.DoesNotExist:
+            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
+        except Exception:
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         data = {
-            "pk": label.pk,
+            "id": label.pk,
             "name": label.name,
             "intro": label.intro,
             "questions": questions,
