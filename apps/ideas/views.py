@@ -3,7 +3,6 @@ from apps.utils.decorators import validate_identity
 from apps.utils import errorcode
 from .serializers import IdeaValidator, IdeaDetailSerializer, IdeaCommentValidator, IdeaCommentSerializer
 from .models import Idea, IdeaComment, IdeaLike
-from apps.userpage.models import UserProfile
 
 from apps.taskapp.tasks import thinks_pv_record
 
@@ -14,7 +13,6 @@ class IdeaView(CustomAPIView):
         """发表想法"""
 
         user_id = request._request.uid
-        user = UserProfile.objects.get(uid=user_id)
         data = {
             "user_id": user_id,
             "content": request.data.get("content", None)
@@ -27,8 +25,6 @@ class IdeaView(CustomAPIView):
             idea = s.create(s.validated_data)
         except Exception as e:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
-        idea.avatar = user.avatar
-        idea.nickname = user.nickname
         s = IdeaDetailSerializer(instance=idea)
         return self.success(s.data)
 
@@ -37,14 +33,10 @@ class IdeaView(CustomAPIView):
         """查看本人的所有想法"""
 
         user_id = request._request.uid
-        user = UserProfile.objects.get(uid=user_id)
         try:
             ideas = Idea.objects.filter(user_id=user_id)
         except Exception as e:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
-        for idea in ideas:
-            idea.avatar = user.avatar
-            idea.nickname = user.nickname
         s = IdeaDetailSerializer(instance=ideas, many=True)
         return self.success(s.data)
 
@@ -71,9 +63,6 @@ class MonoIdeaView(CustomAPIView):
             idea = Idea.objects.get(pk=idea_pk)
         except Idea.DoesNotExist:
             return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
-        user = UserProfile.objects.get(uid=idea.user_id)
-        idea.avatar = user.avatar
-        idea.nickname = user.nickname
         s = IdeaDetailSerializer(instance=idea)
 
         # TODO 记录阅读量
@@ -85,7 +74,6 @@ class MonoIdeaView(CustomAPIView):
         """修改自己的想法"""
 
         user_id = request._request.uid
-        user = UserProfile.objects.get(uid=user_id)
         data = {
             "user_id": user_id,
             "content": request.data.get("content", None)
@@ -102,8 +90,6 @@ class MonoIdeaView(CustomAPIView):
             return self.error(errorcode.MSG_NOT_OWNER, errorcode.INVALID_DATA)
         except Exception as e:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
-        idea.avatar = user.avatar
-        idea.nickname = user.nickname
         s = IdeaDetailSerializer(instance=idea)
         return self.success(s.data)
 

@@ -21,7 +21,6 @@ class QuestionView(CustomAPIView):
         """提问"""
 
         user_id = request._request.uid  # TODO 提问的权限
-        user = UserProfile.objects.get(uid=user_id)
         data = {
             "title": request.data.get("title", None),
             "content": request.data.get("content", ""),
@@ -36,7 +35,6 @@ class QuestionView(CustomAPIView):
             instance = s.create(s.validated_data)
         except Exception as e:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
-        instance.who_asks = user.nickname
         s = NewQuestionSerializer(instance=instance)
         return self.success(s.data)
 
@@ -56,8 +54,8 @@ class QuestionDetailView(CustomAPIView):
             "title": question.title,
             "content": question.content,
             "user_id": question.user_id,
-            "who_asks": user.nickname,
-            "when": question.create_at.strftime(format="%Y%m%d %H:%M:%S"),
+            "nickname": user.nickname,
+            "create_at": question.create_at.strftime(format="%Y%m%d %H:%M:%S"),
             "labels": [name[0] for name in question.labels.values_list("name")],
             "follow_numbers": question.questionfollow_set.count(),
             "comment_numbers": question.comment.count(),
@@ -91,7 +89,7 @@ class AnswerDetailView(CustomAPIView):
             "avatar": user.avatar,
             "nickname": user.nickname,
             "content": answer.content,
-            "when": answer.create_at.strftime(format="%Y%m%d %H:%M:%S"),
+            "create_at": answer.create_at.strftime(format="%Y%m%d %H:%M:%S"),
             # TODO 回答的评论等信息
         }
 
@@ -106,7 +104,6 @@ class AnswerView(CustomAPIView):
         """回答问题"""
 
         user_id = request._request.uid
-        user = UserProfile.objects.get(uid=user_id)
         data = {
             "question": question_id,
             "content": request.data.get("content", None),
@@ -124,10 +121,7 @@ class AnswerView(CustomAPIView):
         except Exception as e:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
 
-        data = dict(AnswerCreateSerializer(instance=instance).data)
-        data.pop("user_id")
-        data["who_answers"] = user.nickname
-
+        s = AnswerCreateSerializer(instance=instance)
         # TODO 触发消息通知
         try:
             print('触发消息通知')
@@ -135,14 +129,13 @@ class AnswerView(CustomAPIView):
             notification_handler(user_id, question.user_id, 'A', instance)
         except Question.DoesNotExist as e:
             return self.error(e.args, errorcode.INVALID_DATA)
-        return self.success(data)
+        return self.success(s.data)
 
     @validate_identity
     def put(self, request, question_id):
         """修改回答，只能修改本人的回答"""
 
         user_id = request._request.uid
-        user = UserProfile.objects.get(uid=user_id)
         content = request.data.get("content", None)
         try:
             instance = Answer.objects.get(question=question_id, user_id=user_id)
@@ -153,10 +146,8 @@ class AnswerView(CustomAPIView):
         except Exception as e:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
 
-        data = dict(AnswerCreateSerializer(instance=instance).data)
-        data.pop("user_id")
-        data["who_answers"] = user.nickname
-        return self.success(data)
+        s = AnswerCreateSerializer(instance=instance)
+        return self.success(s.data)
 
     @validate_identity
     def delete(self, request, question_id):
