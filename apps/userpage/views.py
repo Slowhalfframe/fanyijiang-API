@@ -13,7 +13,7 @@ from apps.userpage.models import (UserProfile, UserFavorites, FollowedUser, Foll
                                   FavoriteCollection)
 from apps.userpage.serializers import (UserInfoSerializer, FavoritesSerializer, FollowsUserSerializer,
                                        FavoritesContentSerializer, UserPageQuestionSerializer, UserPageAnswerSerializer,
-                                       UserPageArticleSerializer, UserPageThinksSerializer)
+                                       UserPageArticleSerializer, UserPageThinksSerializer, UserPageLabelSerializer)
 from apps.userpage.validators import FavoritesValidator
 
 from apps.questions.models import Question, Answer
@@ -21,7 +21,7 @@ from apps.questions.serializers import FollowedQuestionSerializer
 
 from apps.articles.models import Article
 
-from apps.labels.models import Label
+from apps.labels.models import Label, LabelFollow
 from apps.labels.serializers import LabelCreateSerializer
 
 from apps.notifications.views import notification_handler
@@ -160,11 +160,13 @@ class UcUpdateAPIView(CustomAPIView):
 
 
 class HoverUserInfoAPIView(CustomAPIView):
+    '''但鼠标放在用户头像上时，显示用户部分信息'''
     def get(self, request, user_slug):
         user = UserProfile.objects.filter(slug=user_slug).first()
         if not user:
             return self.error('error', 404)
         user_info = {'avatar': user.avatar, 'nickname': user.nickname, 'autograph': user.autograph,
+                     'slug': user.slug
                      }
         employment = {'company': user.user_employment_history.first().company if user.user_employment_history else None,
                       'position': user.user_employment_history.first().position if user.user_employment_history else None,
@@ -182,6 +184,22 @@ class HoverUserInfoAPIView(CustomAPIView):
             'create_count': create_count,
         }
         return self.success(data)
+
+
+class HoverLabelInfoAPIView(CustomAPIView):
+    '''但鼠标放在用户头像上时，显示用户部分信息'''
+    def get(self, request, pk):
+        label = Label.objects.filter(pk=pk).first()
+        if not label:
+            return self.error('not found', 404)
+        data = {
+            'name': label.name,
+            'intro': label.intro,
+            'question_count': Question.objects.filter(labels=label).count(),
+            'followed_user_count': LabelFollow.objects.filter(label=label).count(),
+        }
+        return self.success(data)
+
 
 # class SelfAchievementAPIView(CustomAPIView):
 #     '''个人成就'''
@@ -293,15 +311,18 @@ class FollowingFavoritesAPIView(CustomAPIView):
 
 
 class FavoritesListAPIView(CustomAPIView):
+    @validate_identity
     def get(self, request, user_slug):
+        uid = request._request.uid
         '''用户列表页收藏夹列表'''
         user = UserProfile.objects.filter(slug=user_slug).first()
-
         if not user:
             return self.error('该用户不存在', 404)
-
+        if user.uid == uid:
         # 获取该用户下所有收藏夹
-        favorites = user.favorites.all()
+            favorites = user.favorites.all()
+        else:
+            favorites = user.favorites.filter(status='public')
         data = self.paginate_data(request, favorites, FavoritesSerializer)
         return self.success(data)
 
@@ -505,8 +526,9 @@ class FollowedLabelAPIView(CustomAPIView):
             return self.error('用户不存在', 404)
 
         # TODO 查询标签关注表
-        follows = Label.objects.filter(labelfollow__user_id=user.id)
-        data = self.paginate_data(request, follows, LabelCreateSerializer)
+        follows = Label.objects.filter(labelfollow__user_id=user.uid)
+        serializer_context = {'uid': user.uid}
+        data = self.paginate_data(request, follows, UserPageLabelSerializer, serializer_context=serializer_context)
         return self.success(data)
 
 
@@ -520,8 +542,8 @@ class FollowedQuestionsAPIView(CustomAPIView):
             return self.error('用户不存在', 404)
 
         # TODO 查询问题关注表
-        questions = Question.objects.filter(questionfollow__user_id=user.id)
-        data = self.paginate_data(request, questions, FollowedQuestionSerializer)
+        questions = Question.objects.filter(questionfollow__user_id=user.uid)
+        data = self.paginate_data(request, questions, UserPageQuestionSerializer)
         return self.success(data)
 
 
