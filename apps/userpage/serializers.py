@@ -151,7 +151,7 @@ class UserPageAnswerSerializer(serializers.ModelSerializer):
 
     def get_author_info(self, obj):
         user = UserProfile.objects.filter(uid=obj.user_id).only('nickname', 'avatar', 'slug').first()
-        data = {'nickname': user.nickname, 'avatar': user.avatar, 'user_slug': user.slug, 'autograph':user.autograph}
+        data = {'nickname': user.nickname, 'avatar': user.avatar, 'slug': user.slug, 'autograph':user.autograph}
         return data
 
     def get_question_title(self, obj):
