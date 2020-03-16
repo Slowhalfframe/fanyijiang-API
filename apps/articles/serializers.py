@@ -5,6 +5,7 @@ from rest_framework import serializers
 
 from .models import Article, ArticleComment
 from apps.labels.models import Label
+from apps.userpage.models import UserProfile
 
 
 class ArticleCreateSerializer(serializers.ModelSerializer):
@@ -42,10 +43,23 @@ class NewArticleSerializer(serializers.ModelSerializer):
     create_at = serializers.DateTimeField(format="%Y%m%d %H:%M:%S", read_only=True)
     update_at = serializers.DateTimeField(format="%Y%m%d %H:%M:%S", read_only=True)
     labels = serializers.StringRelatedField(many=True)
+    nickname = serializers.SerializerMethodField()
+    avatar = serializers.SerializerMethodField()
 
     class Meta:
         model = Article
-        fields = ("pk", "user_id", "title", "content", "image", "status", "create_at", "update_at", "labels",)
+        fields = (
+            "id", "user_id", "nickname", "avatar", "title", "content", "image", "status", "create_at", "update_at",
+            "labels",
+        )
+
+    def get_nickname(self, obj):
+        user = UserProfile.objects.get(uid=obj.user_id)
+        return user.nickname
+
+    def get_avatar(self, obj):
+        user = UserProfile.objects.get(uid=obj.user_id)
+        return user.avatar
 
 
 class ArticleDetailSerializer(serializers.ModelSerializer):
@@ -54,12 +68,15 @@ class ArticleDetailSerializer(serializers.ModelSerializer):
     labels = serializers.StringRelatedField(many=True)
     vote_count = serializers.SerializerMethodField()
     comment_count = serializers.SerializerMethodField()
+    nickname = serializers.SerializerMethodField()
+    avatar = serializers.SerializerMethodField()
 
     class Meta:
         model = Article
         fields = (
-            "pk", "user_id", "title", "content", "image", "status", "create_at", "update_at", "labels", "vote_count",
-            "comment_count")
+            "id", "user_id", "nickname", "avatar", "title", "content", "image", "status", "create_at", "update_at",
+            "labels", "vote_count", "comment_count"
+        )
 
     def get_vote_count(self, obj):
         return obj.vote.filter(value=True).count() - obj.vote.filter(value=False).count()
@@ -67,15 +84,24 @@ class ArticleDetailSerializer(serializers.ModelSerializer):
     def get_comment_count(self, obj):
         return obj.articlecomment_set.count()
 
+    def get_nickname(self, obj):
+        user = UserProfile.objects.get(uid=obj.user_id)
+        return user.nickname
+
+    def get_avatar(self, obj):
+        user = UserProfile.objects.get(uid=obj.user_id)
+        return user.avatar
+
 
 class ArticleCommentSerializer(serializers.ModelSerializer):
     create_at = serializers.DateTimeField(format="%Y%m%d %H:%M:%S", read_only=True)
     vote_count = serializers.SerializerMethodField()
+    nickname = serializers.SerializerMethodField()
 
     class Meta:
         model = ArticleComment
-        fields = ("article", "user_id", "content", "reply_to_user", "pk", "create_at", "vote_count")
-        read_only_fields = ("pk", "create_at", "reply_to_user", "vote_count")
+        fields = ("article", "user_id", "nickname", "content", "reply_to_user", "id", "create_at", "vote_count")
+        read_only_fields = ("id", "create_at", "reply_to_user", "vote_count")
 
     def validate_article(self, value):
         if value.status != "published":
@@ -84,3 +110,7 @@ class ArticleCommentSerializer(serializers.ModelSerializer):
 
     def get_vote_count(self, obj):
         return obj.vote.filter(value=True).count() - obj.vote.filter(value=False).count()
+
+    def get_nickname(self, obj):
+        user = UserProfile.objects.get(uid=obj.user_id)
+        return user.nickname
