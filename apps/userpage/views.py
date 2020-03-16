@@ -16,7 +16,7 @@ from apps.userpage.serializers import (UserInfoSerializer, FavoritesSerializer, 
                                        UserPageArticleSerializer, UserPageThinksSerializer, UserPageLabelSerializer)
 from apps.userpage.validators import FavoritesValidator
 
-from apps.questions.models import Question, Answer
+from apps.questions.models import Question, Answer, QuestionFollow
 from apps.questions.serializers import FollowedQuestionSerializer
 
 from apps.articles.models import Article
@@ -112,6 +112,20 @@ class UserInfoAPIView(CustomAPIView):
 
         fans_and_idols = {'fans_nums': fans_nums, "idol_nums": idol_nums}
         data['fans_and_idols'] = fans_and_idols
+
+        # 关注的信息
+        # 标签
+        followed_label_count = LabelFollow.objects.filter(user_id=user.uid).count()
+        followed_question_count = QuestionFollow.objects.filter(user_id=user.uid).count()
+        followed_favorites_count = FollowedFavorites.objects.filter(user=user).count()
+
+        followed_content = {
+            'followed_label_count': followed_label_count,
+            'followed_question_count': followed_question_count,
+            'followed_favorites_count': followed_favorites_count,
+        }
+
+        data['followed_content'] = followed_content
         return self.success(data)
 
 
@@ -161,21 +175,24 @@ class UcUpdateAPIView(CustomAPIView):
 
 class HoverUserInfoAPIView(CustomAPIView):
     '''但鼠标放在用户头像上时，显示用户部分信息'''
+    @validate_identity
     def get(self, request, user_slug):
+        uid = request._request.uid
         user = UserProfile.objects.filter(slug=user_slug).first()
         if not user:
             return self.error('error', 404)
         user_info = {'avatar': user.avatar, 'nickname': user.nickname, 'autograph': user.autograph,
                      'slug': user.slug
                      }
-        employment = {'company': user.user_employment_history.first().company if user.user_employment_history else None,
-                      'position': user.user_employment_history.first().position if user.user_employment_history else None,
+        employment = {'company': user.user_employment_history.first().company if user.user_employment_history.first() else None,
+                      'position': user.user_employment_history.first().position if user.user_employment_history.first() else None,
                       }
-
+        has_followed = True if FollowedUser.objects.filter(fans__uid=uid, idol__uid=user.uid).exists() else False
         create_count = {
             'answer_count': Answer.objects.filter(user_id=user.uid).count(),
             'article_count': Article.objects.filter(user_id=user.uid).count(),
             'fans_count': FollowedUser.objects.filter(idol=user).count(),
+            'has_followed': has_followed
         }
 
         data = {
