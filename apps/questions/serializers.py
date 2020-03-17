@@ -1,6 +1,8 @@
 from rest_framework import serializers
+from drf_haystack.serializers import HaystackSerializer
 
 from .models import Question, Answer, QuestionFollow, QuestionInvite, QAComment
+from .search_indexes import QuestionIndex
 from apps.labels.models import Label
 from apps.userpage.models import UserProfile
 
@@ -169,3 +171,9 @@ class QuestionInLabelDiscussSerializer(serializers.ModelSerializer):
         me = self.context["me"]
         s = AnswerInLabelDiscussSerializer(instance=answer, context={"me": me})
         return s.data
+
+
+class QuestionIndexSerializer(HaystackSerializer):
+    class Meta:
+        index_classes = [QuestionIndex]
+        fields = ("text", "id", "title", "content")
