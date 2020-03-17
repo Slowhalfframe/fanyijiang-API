@@ -153,7 +153,8 @@ class AnswerInLabelDiscussSerializer(serializers.ModelSerializer):
         me = self.context["me"]
         if not me:
             return False
-        return obj.collect.filter(favorite__user_id=me).exists()  # TODO 这个查询正确吗？
+        # return obj.collect.filter(favorite__user_id=me).exists()  # TODO 这个查询正确吗？
+        return obj.collect.filter(favorite__user__uid=me).exists()  
 
 
 class QuestionInLabelDiscussSerializer(serializers.ModelSerializer):

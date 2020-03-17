@@ -17,7 +17,7 @@ from apps.userpage.serializers import (UserInfoSerializer, FavoritesSerializer, 
 from apps.userpage.validators import FavoritesValidator
 
 from apps.questions.models import Question, Answer, QuestionFollow
-from apps.questions.serializers import FollowedQuestionSerializer
+from apps.questions.serializers import FollowedQuestionSerializer, QuestionInLabelDiscussSerializer
 
 from apps.articles.models import Article
 

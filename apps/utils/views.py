@@ -24,7 +24,7 @@ class UploadImage(CustomAPIView):
         # 获取图片base64的hash值集合
         UPLOAD_IMAGE_SET = cache.get('UPLOAD_IMAGE_SET') or set()
 
-        suffix = os.path.splitext(image.name)[-1].lower()
+        suffix = os.path.splitext(image.name)[-1].lower().replace('\"', '')
         if suffix not in ['.gif', '.jpg', '.jpeg', '.bmp', '.png']:
             return self.error('不支持的文件格式', 10036)
 
