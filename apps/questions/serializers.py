@@ -117,31 +117,19 @@ class QACommentDetailSerializer(serializers.ModelSerializer):
 
 class AnswerInLabelDiscussSerializer(serializers.ModelSerializer):
     """只用于序列化，使用时通过context传入me的值"""
-    create_at = serializers.DateTimeField(format="%Y%m%d %H:%M:%S", read_only=True)
-    nickname = serializers.SerializerMethodField()
-    slug = serializers.SerializerMethodField()
-    avatar = serializers.SerializerMethodField()
+    create_at = serializers.DateTimeField(format="%Y%m%d %H:%M:%S")
     vote_count = serializers.SerializerMethodField()
     comment_count = serializers.SerializerMethodField()
-    collected = serializers.SerializerMethodField()
+    answer_id = serializers.IntegerField(source="id")
+    answer_content = serializers.CharField(source="content")
+    currentUserVote = serializers.SerializerMethodField(method_name="get_voted")
+    author_info = serializers.SerializerMethodField()
 
     class Meta:
         model = Answer
         fields = (
-            "id", "content", "create_at", "nickname", "slug", "avatar", "vote_count", "comment_count", "collected"
+            "answer_id", "answer_content", "create_at", "vote_count", "comment_count", "currentUserVote", "author_info"
         )
-
-    def get_nickname(self, obj):
-        user = UserProfile.objects.get(uid=obj.user_id)
-        return user.nickname
-
-    def get_slug(self, obj):
-        user = UserProfile.objects.get(uid=obj.user_id)
-        return user.slug
-
-    def get_avatar(self, obj):
-        user = UserProfile.objects.get(uid=obj.user_id)
-        return user.avatar
 
     def get_vote_count(self, obj):
         return obj.vote.filter(value=True).count() - obj.vote.filter(value=False).count()
@@ -149,23 +137,42 @@ class AnswerInLabelDiscussSerializer(serializers.ModelSerializer):
     def get_comment_count(self, obj):
         return obj.comment.count()
 
-    def get_collected(self, obj):
-        me = self.context["me"]
+    def get_voted(self, obj):
+        """返回None表示未投票，True表示赞成，False表示反对"""
+        me = self.context["me"]  # None或者当前登录的UserProfile对象
         if not me:
-            return False
-        return obj.collect.filter(favorite__user_id=me).exists()  # TODO 这个查询正确吗？
+            return None
+        my_vote = obj.vote.filter(user_id=me.uid).first()
+        if not my_vote:
+            return None
+        return my_vote.value
+
+    def get_author_info(self, obj: Answer):
+        author = UserProfile.objects.get(uid=obj.user_id)
+        data = {
+            "nickname": author.nickname,
+            "avatar": author.avatar,
+            "autograph": author.autograph,
+            "slug": author.slug,
+        }
+        return data
 
 
 class QuestionInLabelDiscussSerializer(serializers.ModelSerializer):
     """只用于序列化，使用时通过context传入me的值"""
     top_answer = serializers.SerializerMethodField()
+    question_id = serializers.IntegerField(source="id")
+    question_title = serializers.CharField(source="title")
 
     class Meta:
         model = Question
-        fields = ("id", "title", "content", "top_answer")
+        fields = ("question_id", "question_title", "content", "top_answer")
 
     def get_top_answer(self, obj: Question):
-        answer = obj.answer_set.first()  # TODO 返回哪个回答
+        answers = obj.answer_set.all()
+        if not answers:
+            return {}
+        top_answer = max(answers, key=lambda x: x.comment.count())  # TODO 暂定为评论数量最多的回答
         me = self.context["me"]
-        s = AnswerInLabelDiscussSerializer(instance=answer, context={"me": me})
+        s = AnswerInLabelDiscussSerializer(instance=top_answer, context={"me": me})
         return s.data

@@ -5,6 +5,7 @@ from apps.utils.api import CustomAPIView
 from apps.utils.decorators import validate_identity
 from apps.utils import errorcode
 from apps.questions.serializers import QuestionInLabelDiscussSerializer
+from apps.userpage.models import UserProfile
 from .serializers import LabelCreateSerializer, ChildLabelSerializer, LabelUpdateSerializer, LabelDetailSerializer
 from .models import Label, LabelFollow
 
@@ -173,10 +174,10 @@ class LabelDetailView(CustomAPIView):
         try:
             res = requests.get(url=url, headers=headers)
             res_data = res.json()
-            me = res_data['data']
+            me = UserProfile.objects.get(uid=res_data['data'])
         except:
-            me = ""
-        s = LabelDetailSerializer(instance=label, context={"me": me})  # me是用户的UID或者空字符串，表示谁登录或无人登录
+            me = None
+        s = LabelDetailSerializer(instance=label, context={"me": me})  # me是UserProfile对象或者None，表示谁登录或无人登录
         return self.success(s.data)
 
 
@@ -191,9 +192,9 @@ class LabelDiscussView(CustomAPIView):
         try:
             res = requests.get(url=url, headers=headers)
             res_data = res.json()
-            me = res_data['data']
+            me = UserProfile.objects.get(uid=res_data['data'])
         except:
-            me = ""
+            me = None
         questions = label.question_set.filter(answer__isnull=False).all()  # TODO 除了要有答案外，还有什么要求？
         s = QuestionInLabelDiscussSerializer(instance=questions, many=True, context={"me": me})
         return self.success(s.data)

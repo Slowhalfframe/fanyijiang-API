@@ -51,7 +51,7 @@ class LabelDetailSerializer(serializers.ModelSerializer):
         return obj.labelfollow_set.count()
 
     def get_followed(self, obj: Label):
-        me = self.context["me"]
+        me = self.context["me"]  # None或UserProfile对象
         if not me:  # 无人登录时，看作未关注
             return False
-        return obj.labelfollow_set.filter(user_id=me).exists()  # 登录时，返回用户的关注状态
+        return obj.labelfollow_set.filter(user_id=me.uid).exists()  # 登录时，返回用户的关注状态
