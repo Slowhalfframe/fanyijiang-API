@@ -30,3 +30,28 @@ class LabelUpdateSerializer(serializers.Serializer):
 class ChildLabelSerializer(serializers.Serializer):
     parent = LabelCreateSerializer()
     children = LabelCreateSerializer(many=True)
+
+
+class LabelDetailSerializer(serializers.ModelSerializer):
+    """只用于序列化，使用时通过context传入me的值"""
+    question_count = serializers.SerializerMethodField()
+    follower_count = serializers.SerializerMethodField()
+    followed = serializers.SerializerMethodField()
+    parent = serializers.StringRelatedField(source="label_set", many=True)
+    children = serializers.StringRelatedField(many=True)
+
+    class Meta:
+        model = Label
+        fields = ("id", "name", "intro", "question_count", "follower_count", "followed", "parent", "children",)
+
+    def get_question_count(self, obj):
+        return obj.question_set.count()
+
+    def get_follower_count(self, obj):
+        return obj.labelfollow_set.count()
+
+    def get_followed(self, obj: Label):
+        me = self.context["me"]
+        if not me:  # 无人登录时，看作未关注
+            return False
+        return obj.labelfollow_set.filter(user_id=me).exists()  # 登录时，返回用户的关注状态

@@ -1,7 +1,11 @@
+from django.conf import settings
+import requests
+
 from apps.utils.api import CustomAPIView
 from apps.utils.decorators import validate_identity
 from apps.utils import errorcode
-from .serializers import LabelCreateSerializer, ChildLabelSerializer, LabelUpdateSerializer
+from apps.questions.serializers import QuestionInLabelDiscussSerializer
+from .serializers import LabelCreateSerializer, ChildLabelSerializer, LabelUpdateSerializer, LabelDetailSerializer
 from .models import Label, LabelFollow
 
 
@@ -162,19 +166,34 @@ class LabelDetailView(CustomAPIView):
     def get(self, request, label_id):
         try:
             label = Label.objects.get(pk=label_id)
-            questions = label.question_set.all()
-            questions = [{"id": i.pk, "title": i.title, "content": i.content} for i in questions]
-            articles = label.article_set.all()
-            articles = [{"id": i.pk, "title": i.title, "content": i.content} for i in articles]
         except Label.DoesNotExist:
             return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
-        except Exception:
-            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
-        data = {
-            "id": label.pk,
-            "name": label.name,
-            "intro": label.intro,
-            "questions": questions,
-            "articles": articles,
-        }
-        return self.success(data)
+        url = settings.USER_CENTER_GATEWAY + '/api/verify'
+        headers = {'authorization': request.META.get("HTTP_AUTHORIZATION")}
+        try:
+            res = requests.get(url=url, headers=headers)
+            res_data = res.json()
+            me = res_data['data']
+        except:
+            me = ""
+        s = LabelDetailSerializer(instance=label, context={"me": me})  # me是用户的UID或者空字符串，表示谁登录或无人登录
+        return self.success(s.data)
+
+
+class LabelDiscussView(CustomAPIView):
+    def get(self, request, label_id):
+        try:
+            label = Label.objects.get(pk=label_id)
+        except Label.DoesNotExist:
+            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
+        url = settings.USER_CENTER_GATEWAY + '/api/verify'
+        headers = {'authorization': request.META.get("HTTP_AUTHORIZATION")}
+        try:
+            res = requests.get(url=url, headers=headers)
+            res_data = res.json()
+            me = res_data['data']
+        except:
+            me = ""
+        questions = label.question_set.filter(answer__isnull=False).all()  # TODO 除了要有答案外，还有什么要求？
+        s = QuestionInLabelDiscussSerializer(instance=questions, many=True, context={"me": me})
+        return self.success(s.data)

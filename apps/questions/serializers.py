@@ -113,3 +113,59 @@ class QACommentDetailSerializer(serializers.ModelSerializer):
     def get_nickname(self, obj):
         user = UserProfile.objects.get(uid=obj.user_id)
         return user.nickname
+
+
+class AnswerInLabelDiscussSerializer(serializers.ModelSerializer):
+    """只用于序列化，使用时通过context传入me的值"""
+    create_at = serializers.DateTimeField(format="%Y%m%d %H:%M:%S", read_only=True)
+    nickname = serializers.SerializerMethodField()
+    slug = serializers.SerializerMethodField()
+    avatar = serializers.SerializerMethodField()
+    vote_count = serializers.SerializerMethodField()
+    comment_count = serializers.SerializerMethodField()
+    collected = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Answer
+        fields = (
+            "id", "content", "create_at", "nickname", "slug", "avatar", "vote_count", "comment_count", "collected"
+        )
+
+    def get_nickname(self, obj):
+        user = UserProfile.objects.get(uid=obj.user_id)
+        return user.nickname
+
+    def get_slug(self, obj):
+        user = UserProfile.objects.get(uid=obj.user_id)
+        return user.slug
+
+    def get_avatar(self, obj):
+        user = UserProfile.objects.get(uid=obj.user_id)
+        return user.avatar
+
+    def get_vote_count(self, obj):
+        return obj.vote.filter(value=True).count() - obj.vote.filter(value=False).count()
+
+    def get_comment_count(self, obj):
+        return obj.comment.count()
+
+    def get_collected(self, obj):
+        me = self.context["me"]
+        if not me:
+            return False
+        return obj.collect.filter(favorite__user_id=me).exists()  # TODO 这个查询正确吗？
+
+
+class QuestionInLabelDiscussSerializer(serializers.ModelSerializer):
+    """只用于序列化，使用时通过context传入me的值"""
+    top_answer = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Question
+        fields = ("id", "title", "content", "top_answer")
+
+    def get_top_answer(self, obj: Question):
+        answer = obj.answer_set.first()  # TODO 返回哪个回答
+        me = self.context["me"]
+        s = AnswerInLabelDiscussSerializer(instance=answer, context={"me": me})
+        return s.data
