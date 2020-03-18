@@ -8,5 +8,6 @@ urlpatterns = [
     url(r"^(?P<label_id>\d+)/discussion/$", views.LabelDiscussView.as_view(), name="label_discuss"),
     url(r"^relations/$", views.LabelRelationView.as_view(), name="relations"),
     url(r"^relations/(?P<pk>\d+)$", views.ChildLabelView.as_view(), name="child"),
-    url(r"^follows/$", views.LabelFollowView.as_view(), name="follows")
+    url(r"^follows/$", views.LabelFollowView.as_view(), name="follows"),
+    url(r"^search/$", views.LabelSearchView.as_view(), name="search"),
 ]
