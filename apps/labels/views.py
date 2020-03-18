@@ -1,12 +1,9 @@
-from django.conf import settings
 from django.db.models import Q
-import requests
 
 from apps.utils.api import CustomAPIView
 from apps.utils.decorators import validate_identity
 from apps.utils import errorcode
 from apps.questions.serializers import QuestionInLabelDiscussSerializer
-from apps.userpage.models import UserProfile
 from .serializers import LabelCreateSerializer, ChildLabelSerializer, LabelUpdateSerializer, LabelDetailSerializer
 from .models import Label, LabelFollow
 
@@ -170,15 +167,8 @@ class LabelDetailView(CustomAPIView):
             label = Label.objects.get(pk=label_id)
         except Label.DoesNotExist:
             return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
-        url = settings.USER_CENTER_GATEWAY + '/api/verify'
-        headers = {'authorization': request.META.get("HTTP_AUTHORIZATION")}
-        try:
-            res = requests.get(url=url, headers=headers)
-            res_data = res.json()
-            me = UserProfile.objects.get(uid=res_data['data'])
-        except:
-            me = None
-        s = LabelDetailSerializer(instance=label, context={"me": me})  # me是UserProfile对象或者None，表示谁登录或无人登录
+        me = self.get_user_profile(request)
+        s = LabelDetailSerializer(instance=label, context={"me": me})
         return self.success(s.data)
 
 
@@ -188,14 +178,7 @@ class LabelDiscussView(CustomAPIView):
             label = Label.objects.get(pk=label_id)
         except Label.DoesNotExist:
             return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
-        url = settings.USER_CENTER_GATEWAY + '/api/verify'
-        headers = {'authorization': request.META.get("HTTP_AUTHORIZATION")}
-        try:
-            res = requests.get(url=url, headers=headers)
-            res_data = res.json()
-            me = UserProfile.objects.get(uid=res_data['data'])
-        except:
-            me = None
+        me = self.get_user_profile(request)
         questions = label.question_set.filter(answer__isnull=False).all()  # TODO 除了要有答案外，还有什么要求？
         s = QuestionInLabelDiscussSerializer(instance=questions, many=True, context={"me": me})
         return self.success(s.data)

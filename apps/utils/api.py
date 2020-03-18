@@ -1,5 +1,9 @@
 from rest_framework.views import APIView
+from django.conf import settings
 from django.http.response import JsonResponse
+import requests
+
+from apps.userpage.models import UserProfile
 
 
 class CustomAPIView(APIView):
@@ -60,3 +64,16 @@ class CustomAPIView(APIView):
         data = {"results": results,
                 "total": count}
         return data
+
+    def get_user_profile(self, request):
+        """返回None或者登录的UserProfile对象，用于那些不强制登录的视图获取登录者"""
+
+        url = settings.USER_CENTER_GATEWAY + '/api/verify'
+        headers = {'authorization': request.META.get("HTTP_AUTHORIZATION")}
+        try:
+            res = requests.get(url=url, headers=headers)
+            res_data = res.json()
+            me = UserProfile.objects.get(uid=res_data['data'])
+        except:
+            me = None
+        return me
