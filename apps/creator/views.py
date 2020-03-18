@@ -450,10 +450,12 @@ class RecommendQuestion(object):
             for label in labels:
                 label_question = self.get_label_question(label)
                 # 判断是否有问题存在，不存在则从所有问题内添加
-                if len(label_question): questions.append(label_question)
+                if len(label_question): questions.extend(label_question)
 
         q = self.get_all_question()
 
+        # print(self.limit)
+        # print(len(questions))
         # 若question不足limit的数量,依次从全部问题内添加
         while len(questions) < self.limit:
             if not len(q):
