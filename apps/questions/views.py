@@ -47,6 +47,11 @@ class QuestionDetailView(CustomAPIView):
             return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
         answer_ids = [i.pk for i in question.answer_set.all()]  # TODO 返回哪些答案
         user = UserProfile.objects.get(uid=question.user_id)  # TODO 用户不存在怎么处理？
+        me = self.get_user_profile(request)
+        if not me:
+            followed = False
+        else:
+            followed = question.questionfollow_set.filter(user_id=me.uid).exists()
         data = {
             "id": question.pk,
             "answer_numbers": question.answer_set.count(),
@@ -56,9 +61,10 @@ class QuestionDetailView(CustomAPIView):
             "user_id": question.user_id,
             "nickname": user.nickname,
             "create_at": question.create_at.strftime(format="%Y%m%d %H:%M:%S"),
-            "labels": [name[0] for name in question.labels.values_list("name")],
+            "labels": [{"id": i.id, "name": i.name} for i in question.labels.all()],
             "follow_numbers": question.questionfollow_set.count(),
             "comment_numbers": question.comment.count(),
+            "followed": followed,
             # TODO 阅读量、问题的评论等其他信息
         }
         return self.success(data)
