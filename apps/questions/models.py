@@ -8,6 +8,7 @@ from apps.labels.models import Label
 from apps.userpage.models import FavoriteCollection
 from apps.creator.models import ReadNums
 
+
 class ACVote(models.Model):
     """对回答或问答的评论的投票，不能重复投票"""
     user_id = models.CharField(max_length=40, null=False, verbose_name="投票者ID")
