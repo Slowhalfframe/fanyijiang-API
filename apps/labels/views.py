@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.db.models import Q
 import requests
 
 from apps.utils.api import CustomAPIView
@@ -198,3 +199,15 @@ class LabelDiscussView(CustomAPIView):
         questions = label.question_set.filter(answer__isnull=False).all()  # TODO 除了要有答案外，还有什么要求？
         s = QuestionInLabelDiscussSerializer(instance=questions, many=True, context={"me": me})
         return self.success(s.data)
+
+
+class LabelSearchView(CustomAPIView):
+    def get(self, request):
+        keyword = request.GET.get("kw", "")
+        if not keyword:
+            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
+        labels = Label.objects.filter(Q(name__contains=keyword) | Q(intro__contains=keyword))
+        if not labels:
+            return self.error("没有匹配的标签", errorcode.INVALID_DATA)
+        data = [{"id": i.id, "name": i.name} for i in labels]
+        return self.success(data)
