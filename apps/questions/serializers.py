@@ -141,6 +141,7 @@ class AnswerInLabelDiscussSerializer(serializers.ModelSerializer):
         """返回None表示未投票，True表示赞成，False表示反对"""
         me = self.context["me"]  # None或者当前登录的UserProfile对象
         if not me:
+# <<<<<<< master
             return None
         my_vote = obj.vote.filter(user_id=me.uid).first()
         if not my_vote:
@@ -156,6 +157,11 @@ class AnswerInLabelDiscussSerializer(serializers.ModelSerializer):
             "slug": author.slug,
         }
         return data
+# =======
+            # return False
+        # return obj.collect.filter(favorite__user_id=me).exists()  # TODO 这个查询正确吗？
+        # return obj.collect.filter(favorite__user__uid=me).exists()  
+# >>>>>>> master
 
 
 class QuestionInLabelDiscussSerializer(serializers.ModelSerializer):

@@ -410,8 +410,8 @@ class RecommendQuestion(object):
 
     def __init__(self, user, offset, limit):
         self.user = user
-        self.offset = offset
-        self.limit = limit
+        self.offset = int(offset)
+        self.limit = int(limit)
 
     def get_user_followed_labels(self):
         '''获取用户关注的所有话题'''
@@ -653,7 +653,8 @@ class CreatorDataDetailAPIView(CustomAPIView):
 
         include = request.GET.get('include')
 
-        yesterday = datetime.date.today()
+        today = datetime.date.today()
+        yesterday = today - datetime.timedelta(days=1)
         yesterday_str = datetime.date.strftime(yesterday, '%Y%m%d')
         if not include:
             return self.error('缺少include', 400)
@@ -682,10 +683,12 @@ class CreatorDataDetailAPIView(CustomAPIView):
             instance = ThinkReadNums(user=user)
             create_data = {
                 'total_count': instance.get_queryset().count(),
-                'read_nums': instance.get_queryset_total_num(),
+                # 'read_nums': instance.get_queryset_total_num(),
                 'upvote_nums': ThinkVoteStatistics(user).get_total_upvote_nums(),  # TODO
                 'ysd_read_nums': instance.get_queryset_date_num(yesterday_str),
-                'ysd_upvote_nums': ThinkVoteStatistics(user).get_date_upvote_nums(yesterday_str)  # TODO
+                'ysd_upvote_nums': ThinkVoteStatistics(user).get_date_upvote_nums(yesterday_str),  # TODO
+                'comment_count': sum([query.ideacomment_set.all().count() for query in instance.get_queryset()]),
+                'ysd_comment_count': sum([query.ideacomment_set.filter(create_at__gte=yesterday, create_at__lte=today).count() for query in instance.get_queryset()])
             }
         return self.success(create_data)
 
@@ -702,10 +705,15 @@ class StatisticsDateAPIView(CustomAPIView):
             return self.error('用户不存在', 404)
 
         data_type = request.GET.get('data_type')
+
         begin_date = request.GET.get('begin_date')
         end_date = request.GET.get('end_date')
-        begin_da = datetime.datetime.strptime(begin_date, '%Y%m%d')
-        end_da = datetime.datetime.strptime(end_date, '%Y%m%d')
+        if begin_date and end_date:
+            begin_da = datetime.datetime.strptime(begin_date, '%Y%m%d')
+            end_da = datetime.datetime.strptime(end_date, '%Y%m%d')
+        else:
+            end_da = datetime.date.today()
+            begin_da = end_da - datetime.timedelta(days=7)
 
         if not data_type:
             return self.error('请选择数据类型', 404)
@@ -751,16 +759,21 @@ class SingleDataStatisticsAPIView(CustomAPIView):
         data_type = request.GET.get('data_type')
         begin_date = request.GET.get('begin_date')
         end_date = request.GET.get('end_date')
-        begin_da = datetime.datetime.strptime(begin_date, '%Y%m%d')
-        end_da = datetime.datetime.strptime(end_date, '%Y%m%d')
 
+        if begin_date and end_date:
+            begin_da = datetime.datetime.strptime(begin_date, '%Y%m%d')
+            end_da = datetime.datetime.strptime(end_date, '%Y%m%d')
+        else:
+            end_da = datetime.date.today()
+            begin_da = end_da - datetime.timedelta(days=7)
         data_list = list()
         if data_type == 'answer':
-            answers = Answer.objects.filter(create_at__gte=begin_da, create_at__lte=end_da)
+            answers = Answer.objects.filter(create_at__gte=begin_da, create_at__lte=end_da, user_id=uid)
             for answer in answers:
                 data = dict()
                 data['id'] = answer.id
-                data['title'] = answer.content
+                data['q_id'] = answer.question.id
+                data['title'] = answer.content[:8] + '...' if len(answer.content) > 8 else answer.content
                 data['create_at'] = answer.create_at
                 data['read_nums'] = AnswerReadNums(user).get_instance_total_nums(answer.id)
                 data['comment_nums'] = AnswerCommentStatistics(user).get_instance_total_nums(answer.id)
@@ -769,11 +782,11 @@ class SingleDataStatisticsAPIView(CustomAPIView):
                 data_list.append(data)
 
         if data_type == 'article':
-            articles = Article.objects.filter(create_at__gte=begin_da, create_at__lte=end_da)
+            articles = Article.objects.filter(create_at__gte=begin_da, create_at__lte=end_da, user_id=uid)
             for article in articles:
                 data = dict()
                 data['id'] = article.id
-                data['title'] = article.title
+                data['title'] = article.title[:8] + '...' if len(article.title) > 8 else article.title
                 data['create_at'] = article.create_at
                 data['read_nums'] = ArticleReadNums(user).get_instance_total_nums(article.id)
                 data['comment_nums'] = ArticleCommentStatistics(user).get_instance_total_nums(article.id)
@@ -781,11 +794,11 @@ class SingleDataStatisticsAPIView(CustomAPIView):
                 data['collect_nums'] = ArticleCollectStatistics(user).get_instance_total_nums(article.id)
                 data_list.append(data)
         if data_type == 'think':
-            thinks = Idea.objects.filter(create_at__gte=begin_da, create_at__lte=end_da)
+            thinks = Idea.objects.filter(create_at__gte=begin_da, create_at__lte=end_da, user_id=uid)
             for think in thinks:
                 data = dict()
                 data['id'] = think.id
-                data['title'] = think.content
+                data['title'] = think.content[:8] + '...' if len(think.content) > 8 else think.content
                 data['create_at'] = think.create_at
                 data['read_nums'] = ThinkReadNums(user).get_instance_total_nums(think.id)
                 data['comment_nums'] = ThinkCommentStatistics(user).get_instance_total_nums(think.id)
@@ -796,6 +809,7 @@ class SingleDataStatisticsAPIView(CustomAPIView):
 
 class RecommendQuestionAPIVIew(CustomAPIView):
     '''问题推荐视图'''
+
     @validate_identity
     def get(self, request):
         # uid = request.GET.get('uid')
