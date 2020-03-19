@@ -37,7 +37,7 @@ class LabelView(CustomAPIView):
         """删除标签，同时删除它与其他标签、文章、问答等的关系"""
 
         uid = request._request.uid  # TODO 删除标签的权限
-        name = request.data.get("name", None)
+        name = request.GET.get("name", None)
         try:
             label = Label.objects.get(name=name)
             label.delete()  # TODO 与其他标签、文章、问答等的关系都自动删除了，可能使文章、问答等失去标签
@@ -91,8 +91,8 @@ class LabelRelationView(CustomAPIView):
         """删除标签关系"""
 
         uid = request._request.uid  # TODO 删除子标签的权限
-        parent = request.data.get("parent", None)
-        child = request.data.get("child", None)
+        parent = request.GET.get("parent", None)
+        child = request.GET.get("child", None)
         try:
             parent = Label.objects.get(name=parent)
             child = Label.objects.get(name=child)
@@ -141,7 +141,7 @@ class LabelFollowView(CustomAPIView):
         """取消关注标签。"""
 
         user_id = request._request.uid
-        name = request.data.get("name", None)
+        name = request.GET.get("name", None)
         try:
             LabelFollow.objects.get(user_id=user_id, label__name=name).delete()  # 只能取消自己关注的标签
         except LabelFollow.DoesNotExist:

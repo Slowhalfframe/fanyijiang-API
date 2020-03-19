@@ -13,23 +13,23 @@ class IdeaValidator(serializers.ModelSerializer):
 class IdeaDetailSerializer(serializers.ModelSerializer):
     create_at = serializers.DateTimeField(format="%Y%m%d %H:%M:%S")
     agree_count = serializers.SerializerMethodField()
-    nickname = serializers.SerializerMethodField()
-    avatar = serializers.SerializerMethodField()
+    author_info = serializers.SerializerMethodField()
 
     class Meta:
         model = Idea
-        fields = ("user_id", "content", "create_at", "id", "agree_count", "nickname", "avatar")
+        fields = ("id", "content", "create_at", "agree_count", "author_info")
 
     def get_agree_count(self, obj):
         return obj.agree.count()
 
-    def get_nickname(self, obj):
-        user = UserProfile.objects.get(uid=obj.user_id)
-        return user.nickname
-
-    def get_avatar(self, obj):
-        user = UserProfile.objects.get(uid=obj.user_id)
-        return user.avatar
+    def get_author_info(self, obj):
+        author = UserProfile.objects.get(uid=obj.user_id)
+        data = {
+            "nickname": author.nickname,
+            "avatar": author.avatar,
+            "slug": author.slug
+        }
+        return data
 
 
 class IdeaCommentValidator(serializers.ModelSerializer):
