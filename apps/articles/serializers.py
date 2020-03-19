@@ -5,6 +5,7 @@ from rest_framework import serializers
 
 from .models import Article, ArticleComment
 from apps.labels.models import Label
+from apps.labels.serializers import SimpleLabelSerializer
 from apps.userpage.models import UserProfile
 
 
@@ -42,41 +43,50 @@ class NewArticleSerializer(serializers.ModelSerializer):
     """只用于序列化输出"""
     create_at = serializers.DateTimeField(format="%Y%m%d %H:%M:%S", read_only=True)
     update_at = serializers.DateTimeField(format="%Y%m%d %H:%M:%S", read_only=True)
-    labels = serializers.StringRelatedField(many=True)
-    nickname = serializers.SerializerMethodField()
-    avatar = serializers.SerializerMethodField()
+    labels = SimpleLabelSerializer(many=True)
+    author_info = serializers.SerializerMethodField()
 
     class Meta:
         model = Article
         fields = (
-            "id", "user_id", "nickname", "avatar", "title", "content", "image", "status", "create_at", "update_at",
-            "labels",
+            "id", "author_info", "title", "content", "image", "status", "create_at", "update_at", "labels",
         )
 
-    def get_nickname(self, obj):
-        user = UserProfile.objects.get(uid=obj.user_id)
-        return user.nickname
-
-    def get_avatar(self, obj):
-        user = UserProfile.objects.get(uid=obj.user_id)
-        return user.avatar
+    def get_author_info(self, obj):
+        author = UserProfile.objects.get(uid=obj.user_id)
+        data = {
+            "nickname": author.nickname,
+            "avatar": author.avatar,
+            "slug": author.slug,
+            "autograph": author.autograph,
+        }
+        return data
 
 
 class ArticleDetailSerializer(serializers.ModelSerializer):
     create_at = serializers.DateTimeField(format="%Y%m%d %H:%M:%S", read_only=True)
     update_at = serializers.DateTimeField(format="%Y%m%d %H:%M:%S", read_only=True)
-    labels = serializers.StringRelatedField(many=True)
+    labels = SimpleLabelSerializer(many=True)
     vote_count = serializers.SerializerMethodField()
     comment_count = serializers.SerializerMethodField()
-    nickname = serializers.SerializerMethodField()
-    avatar = serializers.SerializerMethodField()
+    author_info = serializers.SerializerMethodField()
 
     class Meta:
         model = Article
         fields = (
-            "id", "user_id", "nickname", "avatar", "title", "content", "image", "status", "create_at", "update_at",
+            "id", "author_info", "title", "content", "image", "status", "create_at", "update_at",
             "labels", "vote_count", "comment_count"
         )
+
+    def get_author_info(self, obj):
+        author = UserProfile.objects.get(uid=obj.user_id)
+        data = {
+            "nickname": author.nickname,
+            "avatar": author.avatar,
+            "slug": author.slug,
+            "autograph": author.autograph,
+        }
+        return data
 
     def get_vote_count(self, obj):
         return obj.vote.filter(value=True).count() - obj.vote.filter(value=False).count()
@@ -84,24 +94,44 @@ class ArticleDetailSerializer(serializers.ModelSerializer):
     def get_comment_count(self, obj):
         return obj.articlecomment_set.count()
 
-    def get_nickname(self, obj):
-        user = UserProfile.objects.get(uid=obj.user_id)
-        return user.nickname
-
-    def get_avatar(self, obj):
-        user = UserProfile.objects.get(uid=obj.user_id)
-        return user.avatar
-
 
 class ArticleCommentSerializer(serializers.ModelSerializer):
     create_at = serializers.DateTimeField(format="%Y%m%d %H:%M:%S", read_only=True)
     vote_count = serializers.SerializerMethodField()
-    nickname = serializers.SerializerMethodField()
+    author_info = serializers.SerializerMethodField()
+    receiver_info = serializers.SerializerMethodField()
 
     class Meta:
         model = ArticleComment
-        fields = ("article", "user_id", "nickname", "content", "reply_to_user", "id", "create_at", "vote_count")
-        read_only_fields = ("id", "create_at", "reply_to_user", "vote_count")
+        fields = ("id", "article", "user_id", "author_info", "receiver_info", "content", "reply_to_user", "create_at",
+                  "vote_count")
+        read_only_fields = ("id", "create_at", "vote_count", "author_info", "receiver_info")
+        extra_kwargs = {
+            "user_id": {
+                "write_only": True
+            },
+            "reply_to_user": {
+                "write_only": True
+            }
+        }
+
+    def get_author_info(self, obj):
+        author = UserProfile.objects.get(uid=obj.user_id)
+        data = {
+            "nickname": author.nickname,
+            "avatar": author.avatar,
+            "slug": author.slug,
+        }
+        return data
+
+    def get_receiver_info(self, obj):
+        receiver = UserProfile.objects.get(uid=obj.reply_to_user)
+        data = {
+            "nickname": receiver.nickname,
+            "avatar": receiver.avatar,
+            "slug": receiver.slug,
+        }
+        return data
 
     def validate_article(self, value):
         if value.status != "published":
@@ -110,7 +140,3 @@ class ArticleCommentSerializer(serializers.ModelSerializer):
 
     def get_vote_count(self, obj):
         return obj.vote.filter(value=True).count() - obj.vote.filter(value=False).count()
-
-    def get_nickname(self, obj):
-        user = UserProfile.objects.get(uid=obj.user_id)
-        return user.nickname
