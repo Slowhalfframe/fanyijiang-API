@@ -2,7 +2,7 @@ from apps.taskapp.celery import app
 from django.core.cache import cache
 
 import datetime, time
-from apps.questions.models import Answer
+from apps.questions.models import Answer, Question
 
 from apps.taskapp.utils import creator_list
 
@@ -58,6 +58,20 @@ def thinks_pv_record(remote_addr, think_id):
         cache.set(addr_key, 1, 60 * 5)
 
 
+@app.task(name='question_pv_record')
+def question_pv_record(remote_addr, think_id):
+    today = datetime.date.today()
+    today_str = datetime.date.strftime(today, '%Y%m%d')
+    redis_key = 'question_' + str(think_id) + "_" + today_str
+    read_nums = cache.get(redis_key) or 0
+    addr_key = remote_addr + '_' + redis_key
+    if not cache.get(addr_key):
+        # 不存在则说明第一次访问或者已经超过一个小时，PV加1
+        cache.set(redis_key, int(read_nums) + 1, 60 * 60 * 24 * 30)
+        # 存入访问时间
+        cache.set(addr_key, 1, 60 * 5)
+
+
 @app.task(name='read_nums_in_database')
 def read_nums_in_database():
     today = datetime.date.today()
@@ -74,11 +88,13 @@ def read_nums_in_database():
     # 写入想法阅读量
     # TODO
     write_read_in_database('think', yesterday_str)
+    # 问题阅读量
+    write_read_in_database('question', yesterday_str)
 
 
 # 定时写入数据库任务
 def write_read_in_database(content_type, yesterday_str):
-    content_type_dict = {'answer': Answer, 'article': Article, 'think': Idea}
+    content_type_dict = {'answer': Answer, 'article': Article, 'think': Idea, 'question': Question}
     which_model = content_type_dict[content_type]
     cache_key_list = cache.keys(content_type + '_*_' + yesterday_str)
     data_list = [{'nums': cache.get(key), 'id': key.replace(content_type + '_', '').replace('_' + yesterday_str, '')}

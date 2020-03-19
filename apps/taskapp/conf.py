@@ -18,27 +18,38 @@ CELERY_QUEUES = (
     Queue('answers_pv_queue', Exchange("answers_pv_queue"), routing_key='answer_router'),
     Queue('articles_pv_queue', Exchange("articles_pv_queue"),routing_key='article_router'),
     Queue('thinks_pv_queue', Exchange("thinks_pv_queue"),routing_key='think_router'),
+    Queue('question_pv_queue', Exchange("question_pv_queue"),routing_key='question_router'),
     Queue('write_in_db', Exchange("write_in_db"),routing_key='in_db_router'),
     Queue('write_creator_list_db', Exchange("write_creator_list_db"),routing_key='creator_list'),
 )
 #
 CELERY_ROUTES = {
+    # 回答队列
     'answers_pv_record': {
         'queue': 'answers_pv_queue',
         'routing_key': 'answer_router',
     },
+    # 文章队列
     'articles_pv_record': {
         'queue': 'articles_pv_queue',
         'routing_key': 'article_router',
     },
+    # 想法
     'thinks_pv_record': {
         'queue': 'thinks_pv_queue',
         'routing_key': 'think_router',
     },
+    # 问题
+    'question_pv_record': {
+        'queue': 'question_pv_queue',
+        'routing_key': 'question_router',
+    },
+    # 从缓存中写入数据库
     'read_nums_in_database': {
         'queue': 'write_in_db',
         'routing_key': 'in_db_router',
     },
+    # 定期统计创作者中心v榜单
     'write_creator_in_database': {
         'queue': 'write_creator_list_db',
         'routing_key': 'creator_list',

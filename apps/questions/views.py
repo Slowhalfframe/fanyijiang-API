@@ -14,7 +14,7 @@ from apps.userpage.models import UserProfile
 
 from apps.notifications.views import notification_handler
 
-from apps.taskapp.tasks import answers_pv_record
+from apps.taskapp.tasks import answers_pv_record, question_pv_record
 
 
 class QuestionView(CustomAPIView):
@@ -74,6 +74,9 @@ class QuestionDetailView(CustomAPIView):
             "followed": followed,
             # TODO 阅读量、问题的评论等其他信息
         }
+        
+        # TODO 记录阅读量
+        question_pv_record.delay(request.META.get('REMOTE_ADDR'), question.id)
         return self.success(data)
 
 

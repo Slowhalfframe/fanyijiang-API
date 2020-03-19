@@ -53,6 +53,7 @@ class Question(models.Model):
     labels = models.ManyToManyField(to=Label, verbose_name="问题的标签")
     user_id = models.CharField(max_length=40, null=False, verbose_name="提问者ID")
     comment = GenericRelation(to=QAComment)
+    read_nums = GenericRelation(to=ReadNums)
 
     class Meta:
         db_table = "db_questions"
