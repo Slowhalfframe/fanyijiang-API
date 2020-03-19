@@ -206,7 +206,10 @@ class AnswerWithAuthorInfoSerializer(serializers.ModelSerializer):
         return obj.comment.count()
 
     def get_i_agreed(self, obj: Answer):
-        me = obj.me  # 当前登录的UserProfile对象或None
+        if "me" in self.context:  # 当前登录的UserProfile对象或None，有两种获取方式
+            me = self.context["me"]
+        else:
+            me = obj.me
         if not me:
             return None
         my_vote = obj.vote.filter(user_id=me.uid)
