@@ -300,6 +300,20 @@ class InvitationView(CustomAPIView):
         return self.success(s.data)
 
 
+class HelperView(CustomAPIView):
+    @validate_identity
+    def get(self, request):
+        """获取当前用户可邀请的用户，不能邀请已邀请过的用户"""
+
+        user_id = request._request.uid
+        invited = QuestionInvite.objects.filter(inviting=user_id).values("invited")
+        helpers = UserProfile.objects.exclude(uid=user_id).exclude(uid__in=invited)  # TODO 主动拒绝邀请的也要排除
+        if len(helpers) > 15:  # 用户超过15个时，随机抽取15个
+            helpers = random.sample(list(helpers), 15)
+        data = [{"nickname": user.nickname, "avatar": user.avatar, "slug": user.slug} for user in helpers]
+        return self.success(data)
+
+
 class CommentView(CustomAPIView):
     @validate_identity
     def post(self, request):
