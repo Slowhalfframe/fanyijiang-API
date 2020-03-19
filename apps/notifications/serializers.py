@@ -7,10 +7,11 @@ class NotificationsSerializer(serializers.ModelSerializer):
     actor = serializers.SerializerMethodField()
     verb = serializers.SerializerMethodField()
     target = serializers.SerializerMethodField()
+    format_time = serializers.DateTimeField(format="%Y-%m-%d", read_only=True, source='created_at')
 
     class Meta:
         model = Notification
-        fields = ('actor', 'verb', 'target', 'created_at')
+        fields = ('actor', 'verb', 'target', 'created_at', 'format_time')
 
     def get_actor(self, obj):
         actor = obj.actor

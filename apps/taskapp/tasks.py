@@ -77,8 +77,8 @@ def read_nums_in_database():
     today = datetime.date.today()
     one_day = datetime.timedelta(days=1)
     yesterday = today - one_day
-    yesterday_str = datetime.date.strftime(yesterday, '%Y%m%d')
-    # yesterday_str = datetime.datetime.strftime(today, '%Y%m%d')
+    # yesterday_str = datetime.date.strftime(yesterday, '%Y%m%d')
+    yesterday_str = datetime.datetime.strftime(today, '%Y%m%d')
     print(yesterday_str)
     # 写入回答阅读量
     write_read_in_database('answer', yesterday_str)
