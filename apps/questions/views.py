@@ -224,10 +224,15 @@ class InvitationView(CustomAPIView):
     def post(self, request):
         """邀请回答，不能邀请自己、已回答用户，不能重复邀请同一用户回答同一问题"""
 
+        invited_slug = request.data.get("invited_slug", None)
+        try:
+            invited = UserProfile.objects.get(slug=invited_slug).uid
+        except:
+            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
         data = {
             "question": request.data.get("id", None),
             "inviting": request._request.uid,
-            "invited": request.data.get("invited", None)  # TODO 被邀请者，暂时采用ID
+            "invited": invited
         }
         s = InviteCreateSerializer(data=data)
         s.is_valid()
