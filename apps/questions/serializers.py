@@ -3,7 +3,7 @@ from rest_framework import serializers
 from .models import Question, Answer, QuestionFollow, QuestionInvite, QAComment
 from apps.labels.models import Label
 from apps.articles.models import Article
-from apps.userpage.models import UserProfile
+from apps.userpage.models import UserProfile, FollowedUser
 
 
 class QuestionCreateSerializer(serializers.ModelSerializer):
@@ -199,31 +199,47 @@ class AnswerWithAuthorInfoSerializer(serializers.ModelSerializer):
         fields = ("id", "content", "vote_count", "comment_count", "i_agreed", "create_at", "author_info")
 
     def get_vote_count(self, obj):
-        # return obj.vote.filter(value=True).count()
         return obj.vote.filter(value=True).count() - obj.vote.filter(value=False).count()
 
     def get_comment_count(self, obj):
         return obj.comment.count()
 
-    def get_i_agreed(self, obj: Answer):
-        me = obj.me  # 当前登录的UserProfile对象或None
+    def get_i_agreed(self, obj):
+        if "me" in self.context:  # 当前登录的UserProfile对象或None，有两种获取方式
+            me = self.context["me"]
+        else:
+            me = obj.me
         if not me:
             return None
-        my_vote = obj.vote.filter(user_id=me.uid)
-        if not my_vote.exists():
+        my_vote = obj.vote.filter(user_id=me.uid).first()
+        if not my_vote:
             return None
-        return my_vote.first().value
+        return my_vote.value
 
     def get_author_info(self, obj):
-        author = UserProfile.objects.get(uid=obj.user_id)
-        data = {
-            "nickname": author.nickname,
-            "avatar": author.avatar,
-            "autograph": author.autograph,
-            "slug": author.slug,
-            "answer_count": Answer.objects.filter(user_id=author.uid).count(),
-            "article_count": Article.objects.filter(user_id=author.uid).count(),
-        }
+        if "me" in self.context:
+            me = self.context["me"]
+        else:
+            me = obj.me
+        if not me:  # 为未登录用户返回粗糙的数据
+            data = {
+                "nickname": "旗渡用户",
+                "avatar": None,
+                "autograph": None,
+                "slug": None,
+            }
+        else:
+            author = UserProfile.objects.get(uid=obj.user_id)
+            data = {
+                "nickname": author.nickname,
+                "avatar": author.avatar,
+                "autograph": author.autograph,
+                "slug": author.slug,
+                "answer_count": Answer.objects.filter(user_id=author.uid).count(),
+                "article_count": Article.objects.filter(user_id=author.uid).count(),
+                "follower_count": author.as_idol.count(),
+                "i_followed_author": FollowedUser.objects.filter(fans=me, idol=author).exists()
+            }
         return data
 
 
@@ -234,7 +250,7 @@ class TwoAnswersSerializer(serializers.Serializer):
 
     def get_question(self, obj: dict):
         answer = obj["answer"]
-        question: Question = answer.question
+        question = answer.question
         me = self.context["me"]
         if not me:
             followed = False

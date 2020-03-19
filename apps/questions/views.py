@@ -8,7 +8,7 @@ from apps.utils.decorators import validate_identity
 from apps.utils import errorcode
 from .serializers import QuestionCreateSerializer, NewQuestionSerializer, AnswerCreateSerializer, \
     QuestionFollowSerializer, FollowedQuestionSerializer, InviteCreateSerializer, QACommentCreateSerializer, \
-    QACommentDetailSerializer, TwoAnswersSerializer
+    QACommentDetailSerializer, TwoAnswersSerializer, AnswerWithAuthorInfoSerializer
 from .models import Question, Answer, QuestionFollow, QuestionInvite, QAComment, ACVote
 from apps.userpage.models import UserProfile
 
@@ -47,17 +47,22 @@ class QuestionDetailView(CustomAPIView):
             question = Question.objects.get(pk=question_id)
         except Question.DoesNotExist:
             return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
-        answer_ids = [i.pk for i in question.answer_set.all()]  # TODO 返回哪些答案
         user = UserProfile.objects.get(uid=question.user_id)  # TODO 用户不存在怎么处理？
         me = self.get_user_profile(request)
         if not me:
             followed = False
+            answered = False
         else:
             followed = question.questionfollow_set.filter(user_id=me.uid).exists()
+            answered = question.answer_set.filter(user_id=me.uid).first()
+            answered = False if not answered else answered.id
         data = {
             "id": question.pk,
             "answer_numbers": question.answer_set.count(),
-            "answer_ids": answer_ids,
+            "answered": answered,  # 当前登录用户未回答时为False，否则为回答的ID
+            "answers": self.paginate_data(request, query_set=question.answer_set.all(),
+                                          object_serializer=AnswerWithAuthorInfoSerializer,
+                                          serializer_context={"me": me}),
             "title": question.title,
             "content": question.content,
             "user_id": question.user_id,

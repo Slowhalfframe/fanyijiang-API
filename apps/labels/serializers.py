@@ -55,3 +55,9 @@ class LabelDetailSerializer(serializers.ModelSerializer):
         if not me:  # 无人登录时，看作未关注
             return False
         return obj.labelfollow_set.filter(user_id=me.uid).exists()  # 登录时，返回用户的关注状态
+
+
+class SimpleLabelSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Label
+        fields = ("id", "name",)
