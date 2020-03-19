@@ -205,18 +205,11 @@ class VoteView(CustomAPIView):
         value = request.data.get("value", None)
         value = bool(value)  # TODO value的具体规则
         try:
-            vote = which_object.vote.create(user_id=user_id, value=value)
+            which_object.vote.create(user_id=user_id, value=value)
         except Exception as e:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
-        data = {
-            "user_id": vote.user_id,
-            "value": vote.value,
-            "ac_id": vote.object_id,
-            "id": vote.pk
-        }
-
         # TODO 触发消息通知
-        return self.success(data)
+        return self.success()
 
     @validate_identity
     def delete(self, request):
@@ -242,5 +235,5 @@ class ArticleCommentDetailView(CustomAPIView):
         except Article.DoesNotExist:
             return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
         comments = article.articlecomment_set.all()  # TODO 过滤条件
-        s = ArticleCommentSerializer(instance=comments, many=True)
-        return self.success(s.data)
+        data = self.paginate_data(request, query_set=comments, object_serializer=ArticleCommentSerializer)
+        return self.success(data)

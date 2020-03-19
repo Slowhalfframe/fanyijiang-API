@@ -74,7 +74,7 @@ class QuestionDetailView(CustomAPIView):
             "followed": followed,
             # TODO 阅读量、问题的评论等其他信息
         }
-        
+
         # TODO 记录阅读量
         question_pv_record.delay(request.META.get('REMOTE_ADDR'), question.id)
         return self.success(data)
