@@ -200,7 +200,7 @@ class IdeaLikeView(CustomAPIView):
 
         user_id = request._request.uid
         try:
-            IdeaLike.objects.get(pk=request.data.get("id", None), user_id=user_id).delete()
+            IdeaLike.objects.get(pk=request.GET.get("id", None), user_id=user_id).delete()
         except IdeaLike.DoesNotExist:
             pass
         except Exception as e:

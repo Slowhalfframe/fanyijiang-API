@@ -1,3 +1,5 @@
+import random
+
 from django.db.models import Q
 from django.db import transaction
 
@@ -6,7 +8,7 @@ from apps.utils.decorators import validate_identity
 from apps.utils import errorcode
 from .serializers import QuestionCreateSerializer, NewQuestionSerializer, AnswerCreateSerializer, \
     QuestionFollowSerializer, FollowedQuestionSerializer, InviteCreateSerializer, QACommentCreateSerializer, \
-    QACommentDetailSerializer
+    QACommentDetailSerializer, TwoAnswersSerializer
 from .models import Question, Answer, QuestionFollow, QuestionInvite, QAComment, ACVote
 from apps.userpage.models import UserProfile
 
@@ -82,26 +84,25 @@ class QuestionCommentView(CustomAPIView):
 
 
 class AnswerDetailView(CustomAPIView):
-    def get(self, request, answer_id):
+    def get(self, request, question_id, answer_id):
         try:
-            answer = Answer.objects.get(pk=answer_id)
-        except Answer.DoesNotExist:
+            question = Question.objects.get(pk=question_id)
+            answer = Answer.objects.get(pk=answer_id, question_id=question_id)
+        except (Question.DoesNotExist, Answer.DoesNotExist):
             return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
-        user = UserProfile.objects.get(uid=answer.user_id)  # TODO 用户不存在怎么办？
-        data = {
-            "id": answer.pk,
-            "votes": answer.vote.filter(value=True).count() - answer.vote.filter(value=False).count(),
-            "user_id": answer.user_id,
-            "avatar": user.avatar,
-            "nickname": user.nickname,
-            "content": answer.content,
-            "create_at": answer.create_at.strftime(format="%Y%m%d %H:%M:%S"),
-            # TODO 回答的评论等信息
-        }
-
+        another_answer = question.answer_set.exclude(pk=answer_id)
+        if another_answer.exists():
+            another_answer = random.choice(another_answer)
+        else:
+            another_answer = None
+        me = self.get_user_profile(request)
+        answer.me = me  # me不便通过context传递给AnswerWithAuthorInfoSerializer
+        if another_answer:
+            another_answer.me = me
+        s = TwoAnswersSerializer(instance={"answer": answer, "another_answer": another_answer}, context={"me": me})
         # TODO 记录阅读量
         answers_pv_record.delay(request.META.get('REMOTE_ADDR'), answer.id)
-        return self.success(data)
+        return self.success(s.data)
 
 
 class AnswerView(CustomAPIView):
@@ -191,7 +192,7 @@ class QuestionFollowView(CustomAPIView):
     def delete(self, request):
         """取消关注问题"""
 
-        question = request.data.get("id", None)
+        question = request.GET.get("id", None)
         try:
             QuestionFollow.objects.get(question=question, user_id=request._request.uid).delete()
         except QuestionFollow.DoesNotExist:
@@ -240,10 +241,15 @@ class InvitationView(CustomAPIView):
     def delete(self, request):
         """撤销邀请，只能撤销本人发出的未回答的邀请"""
 
+        invited_slug = request.GET.get("invited_slug", None)
+        try:
+            invited = UserProfile.objects.get(slug=invited_slug)
+        except UserProfile.DoesNotExist:
+            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
         data = {
-            "question": request.data.get("id", None),
+            "question": request.GET.get("id", None),
             "inviting": request._request.uid,
-            "invited": request.data.get("invited", None),  # TODO 被邀请者，暂时采用ID
+            "invited": invited.uid,
             "status": 0  # 未回答
         }
         try:
@@ -331,7 +337,7 @@ class CommentView(CustomAPIView):
         """撤销本人发表的问答评论"""
 
         try:
-            QAComment.objects.get(pk=request.data.get("id", None), user_id=request._request.uid).delete()
+            QAComment.objects.get(pk=request.GET.get("id", None), user_id=request._request.uid).delete()
         except QAComment.DoesNotExist:
             pass
         except Exception as e:
@@ -397,7 +403,7 @@ class VoteView(CustomAPIView):
     def delete(self, request):
         """撤销投票"""
 
-        pk = request.data.get("id", None)
+        pk = request.GET.get("id", None)
         user_id = request._request.uid
         try:
             ACVote.objects.get(pk=pk, user_id=user_id).delete()

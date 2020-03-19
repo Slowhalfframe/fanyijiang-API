@@ -164,7 +164,7 @@ class CommentView(CustomAPIView):
 
         user_id = request._request.uid
         try:
-            ArticleComment.objects.get(pk=request.data.get("id", None), user_id=user_id).delete()
+            ArticleComment.objects.get(pk=request.GET.get("id", None), user_id=user_id).delete()
         except ArticleComment.DoesNotExist:
             pass
         except Exception as e:
@@ -223,7 +223,7 @@ class VoteView(CustomAPIView):
         """撤销投票"""
 
         user_id = request._request.uid
-        pk = request.data.get("id", None)
+        pk = request.GET.get("id", None)
         try:
             ArticleVote.objects.get(pk=pk, user_id=user_id).delete()
         except ArticleVote.DoesNotExist:

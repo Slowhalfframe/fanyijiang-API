@@ -2,6 +2,7 @@ from rest_framework import serializers
 
 from .models import Question, Answer, QuestionFollow, QuestionInvite, QAComment
 from apps.labels.models import Label
+from apps.articles.models import Article
 from apps.userpage.models import UserProfile
 
 
@@ -141,7 +142,7 @@ class AnswerInLabelDiscussSerializer(serializers.ModelSerializer):
         """返回None表示未投票，True表示赞成，False表示反对"""
         me = self.context["me"]  # None或者当前登录的UserProfile对象
         if not me:
-# <<<<<<< master
+            # <<<<<<< master
             return None
         my_vote = obj.vote.filter(user_id=me.uid).first()
         if not my_vote:
@@ -157,10 +158,12 @@ class AnswerInLabelDiscussSerializer(serializers.ModelSerializer):
             "slug": author.slug,
         }
         return data
+
+
 # =======
-            # return False
-        # return obj.collect.filter(favorite__user_id=me).exists()  # TODO 这个查询正确吗？
-        # return obj.collect.filter(favorite__user__uid=me).exists()  
+# return False
+# return obj.collect.filter(favorite__user_id=me).exists()  # TODO 这个查询正确吗？
+# return obj.collect.filter(favorite__user__uid=me).exists()
 # >>>>>>> master
 
 
@@ -174,7 +177,7 @@ class QuestionInLabelDiscussSerializer(serializers.ModelSerializer):
         model = Question
         fields = ("question_id", "question_title", "content", "top_answer")
 
-    def get_top_answer(self, obj: Question):
+    def get_top_answer(self, obj):
         answers = obj.answer_set.all()
         if not answers:
             return {}
@@ -182,3 +185,66 @@ class QuestionInLabelDiscussSerializer(serializers.ModelSerializer):
         me = self.context["me"]
         s = AnswerInLabelDiscussSerializer(instance=top_answer, context={"me": me})
         return s.data
+
+
+class AnswerWithAuthorInfoSerializer(serializers.ModelSerializer):
+    create_at = serializers.DateTimeField(format="%Y%m%d %H:%M:%S")
+    vote_count = serializers.SerializerMethodField()
+    author_info = serializers.SerializerMethodField()
+    comment_count = serializers.SerializerMethodField()
+    i_agreed = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Answer
+        fields = ("id", "content", "vote_count", "comment_count", "i_agreed", "create_at", "author_info")
+
+    def get_vote_count(self, obj):
+        # return obj.vote.filter(value=True).count()
+        return obj.vote.filter(value=True).count() - obj.vote.filter(value=False).count()
+
+    def get_comment_count(self, obj):
+        return obj.comment.count()
+
+    def get_i_agreed(self, obj: Answer):
+        me = obj.me  # 当前登录的UserProfile对象或None
+        if not me:
+            return None
+        my_vote = obj.vote.filter(user_id=me.uid)
+        if not my_vote.exists():
+            return None
+        return my_vote.first().value
+
+    def get_author_info(self, obj):
+        author = UserProfile.objects.get(uid=obj.user_id)
+        data = {
+            "nickname": author.nickname,
+            "avatar": author.avatar,
+            "autograph": author.autograph,
+            "slug": author.slug,
+            "answer_count": Answer.objects.filter(user_id=author.uid).count(),
+            "article_count": Article.objects.filter(user_id=author.uid).count(),
+        }
+        return data
+
+
+class TwoAnswersSerializer(serializers.Serializer):
+    question = serializers.SerializerMethodField()
+    answer = AnswerWithAuthorInfoSerializer()
+    another_answer = AnswerWithAuthorInfoSerializer()
+
+    def get_question(self, obj: dict):
+        answer = obj["answer"]
+        question: Question = answer.question
+        me = self.context["me"]
+        if not me:
+            followed = False
+        else:
+            followed = question.questionfollow_set.filter(user_id=me.uid).exists()
+        data = {
+            "id": question.id,
+            "title": question.title,
+            "answer_count": question.answer_set.count(),
+            "comment_count": question.comment.count(),
+            "followed": followed,
+        }
+        return data
