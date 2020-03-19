@@ -74,7 +74,7 @@ class QuestionDetailView(CustomAPIView):
             "followed": followed,
             # TODO 阅读量、问题的评论等其他信息
         }
-        
+
         # TODO 记录阅读量
         question_pv_record.delay(request.META.get('REMOTE_ADDR'), question.id)
         return self.success(data)
@@ -224,10 +224,15 @@ class InvitationView(CustomAPIView):
     def post(self, request):
         """邀请回答，不能邀请自己、已回答用户，不能重复邀请同一用户回答同一问题"""
 
+        invited_slug = request.data.get("invited_slug", None)
+        try:
+            invited = UserProfile.objects.get(slug=invited_slug).uid
+        except:
+            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
         data = {
             "question": request.data.get("id", None),
             "inviting": request._request.uid,
-            "invited": request.data.get("invited", None)  # TODO 被邀请者，暂时采用ID
+            "invited": invited
         }
         s = InviteCreateSerializer(data=data)
         s.is_valid()
@@ -298,6 +303,20 @@ class InvitationView(CustomAPIView):
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         s = InviteCreateSerializer(instance=query_set, many=True)
         return self.success(s.data)
+
+
+class HelperView(CustomAPIView):
+    @validate_identity
+    def get(self, request):
+        """获取当前用户可邀请的用户，不能邀请已邀请过的用户"""
+
+        user_id = request._request.uid
+        invited = QuestionInvite.objects.filter(inviting=user_id).values("invited")
+        helpers = UserProfile.objects.exclude(uid=user_id).exclude(uid__in=invited)  # TODO 主动拒绝邀请的也要排除
+        if len(helpers) > 15:  # 用户超过15个时，随机抽取15个
+            helpers = random.sample(list(helpers), 15)
+        data = [{"nickname": user.nickname, "avatar": user.avatar, "slug": user.slug} for user in helpers]
+        return self.success(data)
 
 
 class CommentView(CustomAPIView):

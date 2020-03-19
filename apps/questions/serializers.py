@@ -44,16 +44,26 @@ class FollowedQuestionSerializer(serializers.ModelSerializer):
 
 
 class AnswerCreateSerializer(serializers.ModelSerializer):
-    nickname = serializers.SerializerMethodField(read_only=True)
+    author_info = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Answer
-        fields = ("question", "content", "user_id", "id", "nickname")
-        read_only_fields = ("id",)
+        fields = ("question", "content", "user_id", "id", "author_info")
+        read_only_fields = ("id", "author_info")
+        extra_kwargs = {
+            "user_id": {
+                "write_only": True
+            }
+        }
 
-    def get_nickname(self, obj):
-        user = UserProfile.objects.get(uid=obj.user_id)
-        return user.nickname
+    def get_author_info(self, obj: Answer):
+        author = UserProfile.objects.get(uid=obj.user_id)
+        data = {
+            "nickname": author.nickname,
+            "slug": author.slug,
+            "avatar": author.avatar,
+        }
+        return data
 
 
 class QuestionFollowSerializer(serializers.ModelSerializer):

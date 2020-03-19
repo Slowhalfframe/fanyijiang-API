@@ -10,6 +10,7 @@ urlpatterns = [
     url(r"^(?P<question_id>\d+)/answers/(?P<answer_id>\d+)/$", views.AnswerDetailView.as_view(), name="answer_detail"),
     url(r"^follows/$", views.QuestionFollowView.as_view(), name="follows"),
     url(r"^invitations/$", views.InvitationView.as_view(), name="invitations"),
+    url(r"^invitations/users/$", views.HelperView.as_view(), name="who_can_help"),
     url(r"^comments/$", views.CommentView.as_view(), name="comments"),
     url(r"^votes/$", views.VoteView.as_view(), name="votes"),
 ]
