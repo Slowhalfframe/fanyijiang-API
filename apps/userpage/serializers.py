@@ -110,14 +110,18 @@ class FavoritesContentSerializer(serializers.ModelSerializer):
 
     def get_details(self, obj):
         content_object = obj.content_object
-        if isinstance(content_object, Label):
-            content_data = LabelCreateSerializer(content_object).data
+        content_data = None
+        # if isinstance(content_object, Label):
+        #     content_data = LabelCreateSerializer(content_object).data
 
-        if isinstance(content_object, UserProfile):
-            content_data = UserInfoSerializer(content_object).data
+        # if isinstance(content_object, UserProfile):
+        #     content_data = UserInfoSerializer(content_object).data
 
         if isinstance(content_object, Answer):
             content_data = AnswerCreateSerializer(instance=content_object).data
+
+        if isinstance(content_object, Article):
+            pass
         # TODO 查询其他对象：文章、回答等
         return content_data
 

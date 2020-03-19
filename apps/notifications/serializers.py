@@ -28,31 +28,27 @@ class NotificationsSerializer(serializers.ModelSerializer):
         verb = obj.verb
         data = {}
 
-
         if verb == 'O':
             # 关注了你
             pass
 
         if verb == 'I':
-            # 邀请了你
+            # 的提问等你来答
             data['title'] = action_object.title
             data['id'] = action_object.id
             data['link'] = ''  # 问题详情
 
         if verb == 'R':
-            # 评论了你的问题
+            # 回复了你
             data['title'] = action_object.content
             data['id'] = action_object.id
-            data['link'] = ''  # 问题评论详情
+            data['link'] = ''  # 问题评论详情或者问题详情
 
         if verb == 'A':
             # 回答了你的问题
             data['title'] = action_object.question.title
             data['id'] = action_object.id
             data['link'] = ''  # 回答详情页
-
-        if verb == 'LA':
-            pass
 
         if verb == 'LAN':
             # 赞了你的问答
@@ -82,7 +78,7 @@ class NotificationsSerializer(serializers.ModelSerializer):
             # 评论了你的文章
             data['title'] = action_object.title
             data['id'] = action_object.id
-            data['link'] = ''  # 文章评论详情
+            data['link'] = ''  # 文章评论详情 或者文章详情
 
         if verb == 'CQ':
             # 评论了你的问题

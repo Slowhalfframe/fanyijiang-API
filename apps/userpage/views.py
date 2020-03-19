@@ -444,15 +444,15 @@ class SelfFavoritesAPIView(CustomAPIView):
 
     def delete(self, request, user_slug):
         '''删除收藏夹'''
-        data = QueryDict(request.body)
+        data = request.query_params.dict()
         user = UserProfile.objects.filter(slug=user_slug).first()
         if not user:
             return self.error('该用户不存在', 404)
 
-        fa = UserFavorites.objects.filter(pk=data['fa_id']).first()
+        fa = UserFavorites.objects.filter(pk=data.get('fa_id')).first()
         if not fa:
             return self.error('没有该收藏夹', 404)
-        UserFavorites.objects.filter(user=user, pk=data['fa_id']).delete()
+        UserFavorites.objects.filter(user=user, pk=data.get('fa_id')).delete()
         return self.success()
 
 
@@ -597,7 +597,7 @@ class FavoritesContentAPIView(CustomAPIView):
         fa = UserFavorites.objects.filter(pk=pk).first()
         if not fa:
             return self.error('请选择正确的收藏夹', 400)
-        delete = QueryDict(request.body)
+        delete = request.query_params.dict()
         content_type = delete.get('content_type')
         object_id = delete.get('object_id')
 

@@ -5,6 +5,7 @@ from apps.notifications.models import Notification
 from apps.notifications.serializers import NotificationsSerializer
 
 from apps.userpage.models import UserProfile
+from apps.utils.decorators import validate_identity
 
 
 def notification_handler(actor_uid, recipient_uid, verb, action_object, **kwargs):
@@ -69,13 +70,16 @@ def notification_handler(actor_uid, recipient_uid, verb, action_object, **kwargs
 
 class NotificationAPIView(CustomAPIView):
     '''获取所有通知'''
-
+    @validate_identity
     def get(self, request):
-        uid = request.GET.get('uid')
+        uid = request._request.uid
         user = UserProfile.objects.filter(uid=uid).first()
         if not user:
             return self.error('用户不存在', 404)
 
         nos = Notification.objects.filter(recipient__uid=uid)
-        data = NotificationsSerializer(nos, many=True).data
+        # 在获取的时候就已经把所有未读的变成已读
+        Notification.objects.filter(recipient__uid=uid, unread=True).update(unread=False)
+        # data = NotificationsSerializer(nos, many=True).data
+        data = self.paginate_data(request, nos, NotificationsSerializer)
         return self.success(data)
