@@ -97,33 +97,71 @@ class InviteCreateSerializer(serializers.ModelSerializer):
 class QACommentCreateSerializer(serializers.ModelSerializer):
     qa_id = serializers.PrimaryKeyRelatedField(source="content_object", read_only=True)
     create_at = serializers.DateTimeField(format="%Y%m%d %H:%M:%S", read_only=True)
-    nickname = serializers.SerializerMethodField(read_only=True)
+    author_info = serializers.SerializerMethodField(read_only=True)
+    receiver_info = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = QAComment
-        fields = ("user_id", "nickname", "content", "create_at", "reply_to_user", "qa_id", "id")
-        read_only_fields = ("id", "nickname")
+        fields = ("user_id", "author_info", "receiver_info", "content", "create_at", "reply_to_user", "qa_id", "id")
+        read_only_fields = ("id", "author_info", "receiver_info")
+        extra_kwargs = {
+            "reply_to_user": {
+                "write_only": True
+            },
+            "user_id": {
+                "write_only": True
+            }
+        }
 
-    def get_nickname(self, obj):
-        user = UserProfile.objects.get(uid=obj.user_id)
-        return user.nickname
+    def get_author_info(self, obj):
+        author = UserProfile.objects.get(uid=obj.user_id)
+        data = {
+            "nickname": author.nickname,
+            "slug": author.slug,
+            "avatar": author.avatar,
+        }
+        return data
+
+    def get_receiver_info(self, obj):
+        receiver = UserProfile.objects.get(uid=obj.reply_to_user)
+        data = {
+            "nickname": receiver.nickname,
+            "slug": receiver.slug,
+            "avatar": receiver.avatar,
+        }
+        return data
 
 
 class QACommentDetailSerializer(serializers.ModelSerializer):
     vote_count = serializers.SerializerMethodField()
     create_at = serializers.DateTimeField(format="%Y%m%d %H:%M:%S", read_only=True)
-    nickname = serializers.SerializerMethodField()
+    author_info = serializers.SerializerMethodField()
+    receiver_info = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = QAComment
-        fields = ("id", "user_id", "nickname", "content", "create_at", "reply_to_user", "vote_count")
+        fields = ("id", "author_info", "receiver_info", "content", "create_at", "reply_to_user", "vote_count")
 
     def get_vote_count(self, obj):
         return obj.vote.filter(value=True).count() - obj.vote.filter(value=False).count()
 
-    def get_nickname(self, obj):
-        user = UserProfile.objects.get(uid=obj.user_id)
-        return user.nickname
+    def get_author_info(self, obj):
+        author = UserProfile.objects.get(uid=obj.user_id)
+        data = {
+            "nickname": author.nickname,
+            "slug": author.slug,
+            "avatar": author.avatar,
+        }
+        return data
+
+    def get_receiver_info(self, obj):
+        receiver = UserProfile.objects.get(uid=obj.reply_to_user)
+        data = {
+            "nickname": receiver.nickname,
+            "slug": receiver.slug,
+            "avatar": receiver.avatar,
+        }
+        return data
 
 
 class AnswerInLabelDiscussSerializer(serializers.ModelSerializer):
