@@ -17,7 +17,7 @@ from apps.userpage.serializers import (UserInfoSerializer, FavoritesSerializer, 
 from apps.userpage.validators import FavoritesValidator
 
 from apps.questions.models import Question, Answer, QuestionFollow
-from apps.questions.serializers import FollowedQuestionSerializer, QuestionInLabelDiscussSerializer
+from apps.questions.serializers import FollowedQuestionSerializer, QuestionInLabelDiscussSerializer, AnswerInLabelDiscussSerializer
 
 from apps.articles.models import Article
 
@@ -370,7 +370,7 @@ class AnswerListAPIView(CustomAPIView):
 
         # TODO 查询相关数据库
         answers = Answer.objects.filter(user_id=user.uid)
-        data = self.paginate_data(request, answers, UserPageAnswerSerializer)
+        data = self.paginate_data(request, answers, UserPageAnswerSerializer, serializer_context={'me':user})
         return self.success(data)
 
 

@@ -8,7 +8,7 @@ from apps.labels.models import Label
 from apps.labels.serializers import LabelCreateSerializer
 
 from apps.questions.models import Question, QuestionFollow, Answer
-from apps.questions.serializers import AnswerCreateSerializer
+from apps.questions.serializers import AnswerCreateSerializer, AnswerInLabelDiscussSerializer
 
 from apps.articles.models import Article
 
@@ -140,28 +140,17 @@ class UserPageQuestionSerializer(serializers.ModelSerializer):
 
 class UserPageAnswerSerializer(serializers.ModelSerializer):
     question_title = serializers.SerializerMethodField()
-    author_info = serializers.SerializerMethodField()
-    upvote_count = serializers.SerializerMethodField()
-    comment_count = serializers.SerializerMethodField()
-    create_time = serializers.DateTimeField(format="%Y%m%d %H:%M:%S", source="create_at", read_only=True)
+    top_answer = serializers.SerializerMethodField()
     class Meta:
         model = Answer
-        fields = ('id', 'content', 'question_id', 'question_title', 'author_info',
-                  'upvote_count', 'comment_count', 'create_time')
+        fields = ('question_id', 'question_title', 'top_answer')
 
-    def get_author_info(self, obj):
-        user = UserProfile.objects.filter(uid=obj.user_id).only('nickname', 'avatar', 'slug').first()
-        data = {'nickname': user.nickname, 'avatar': user.avatar, 'slug': user.slug, 'autograph':user.autograph}
+    def get_top_answer(self, obj):
+        data = AnswerInLabelDiscussSerializer(obj, context=self.context).data
         return data
 
     def get_question_title(self, obj):
         return obj.question.title
-
-    def get_upvote_count(self, obj):
-        return obj.vote.filter(value=True).count()
-
-    def get_comment_count(self, obj):
-        return obj.comment.all().count()
 
 
 class UserPageArticleSerializer(serializers.ModelSerializer):
