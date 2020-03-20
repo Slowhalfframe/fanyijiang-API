@@ -400,8 +400,7 @@ class VoteView(CustomAPIView):
 
         user_id = request._request.uid
         which_model = Answer if request.data.get("type", "") == "answer" else QAComment
-        instance_pk = request.data.get("id", None)
-        which_object = which_model.objects.filter(pk=instance_pk).first()  # 被投票的对象，可以是回答或者问答评论
+        which_object = which_model.objects.filter(pk=request.data.get("id", None)).first()  # 被投票的对象，可以是回答或者问答评论
         if not which_object:
             return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
         # TODO 能否给自己投票？

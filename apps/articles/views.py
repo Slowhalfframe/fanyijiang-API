@@ -166,12 +166,12 @@ class CommentView(CustomAPIView):
         """删除本人的评论"""
 
         user_id = request._request.uid
-        try:
-            ArticleComment.objects.get(pk=request.GET.get("id", None), user_id=user_id).delete()
-        except ArticleComment.DoesNotExist:
-            pass
-        except Exception as e:
-            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
+        comment = ArticleComment.objects.filter(pk=request.GET.get("id", None), user_id=user_id).first()
+        if comment:
+            try:
+                comment.delete()
+            except:
+                return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         return self.success()
 
     @validate_identity
@@ -182,13 +182,15 @@ class CommentView(CustomAPIView):
         content = request.data.get("content", None)
         if not content:
             return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
+        comment = ArticleComment.objects.filter(pk=request.data.get("id", None)).first()
+        if not comment:
+            return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
+        if comment.user_id != user_id:
+            return self.error(errorcode.MSG_NOT_OWNER, errorcode.NOT_OWNER)
         try:
-            comment = ArticleComment.objects.get(pk=request.data.get("id", None), user_id=user_id)
             comment.content = content
             comment.save()
-        except ArticleComment.DoesNotExist:
-            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
-        except Exception as e:
+        except:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         s = ArticleCommentSerializer(instance=comment)
         return self.success(s.data)
@@ -201,15 +203,15 @@ class VoteView(CustomAPIView):
 
         user_id = request._request.uid
         which_model = Article if request.data.get("type", "") == "article" else ArticleComment
-        try:
-            which_object = which_model.objects.get(pk=request.data.get("id", None))  # TODO 能否给自己投票
-        except which_model.DoesNotExist:
-            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
+        which_object = which_model.objects.filter(pk=request.data.get("id", None)).first()
+        if not which_object:
+            return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
+        # TODO 能否给自己投票
         value = request.data.get("value", None)
         value = bool(value)  # TODO value的具体规则
         try:
-            which_object.vote.create(user_id=user_id, value=value)
-        except Exception as e:
+            which_object.vote.update_or_create(user_id=user_id, defaults={"value": value})
+        except:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         # TODO 触发消息通知
         return self.success()
@@ -219,12 +221,16 @@ class VoteView(CustomAPIView):
         """撤销投票"""
 
         user_id = request._request.uid
-        pk = request.GET.get("id", None)
+        which_model = Article if request.data.get("type", "") == "article" else ArticleComment
+        which_object = which_model.objects.filter(pk=request.data.get("id", None)).first()
+        if not which_object:
+            return self.success()
+        old_vote = which_object.vote.filter(user_id=user_id).first()
+        if not old_vote:
+            return self.success()
         try:
-            ArticleVote.objects.get(pk=pk, user_id=user_id).delete()
-        except ArticleVote.DoesNotExist:
-            pass
-        except Exception as e:
+            old_vote.delete()
+        except:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         return self.success()
 
@@ -233,10 +239,9 @@ class ArticleCommentDetailView(CustomAPIView):
     def get(self, request, article_id):
         """获取指定文章的所有评论"""
 
-        try:
-            article = Article.objects.get(pk=article_id, status="published")
-        except Article.DoesNotExist:
-            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
+        article = Article.objects.filter(pk=article_id, status="published").first()
+        if not article:
+            return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
         comments = article.articlecomment_set.all()  # TODO 过滤条件
         data = self.paginate_data(request, query_set=comments, object_serializer=ArticleCommentSerializer)
         return self.success(data)
