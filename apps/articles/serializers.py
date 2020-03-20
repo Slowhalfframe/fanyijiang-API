@@ -17,11 +17,16 @@ class ArticleCreateSerializer(serializers.ModelSerializer):
         model = Article
         fields = ("user_id", "title", "content", "image", "status", "labels",)
 
-    def validate_labels(self, value):
-        value = Label.objects.filter(name__in=value)
-        if not value:
-            raise serializers.ValidationError("标签不存在")
-        return value
+    def validate(self, attrs):
+        status = attrs["status"]
+        label_names = attrs.pop("labels")
+        labels = Label.objects.filter(name__in=label_names)
+        attrs["labels"] = labels
+        if status not in ("draft", "published"):
+            raise serializers.ValidationError("状态只有两种")
+        if status == "published" and not labels:
+            raise serializers.ValidationError("只有草稿可以没有标签")
+        return attrs
 
     def validate_image(self, value):
         # TODO 应该检查以确保文件是存在的，至少是合格的文件路径
