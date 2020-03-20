@@ -88,6 +88,8 @@ class ArticleView(CustomAPIView):
         if article.user_id != request._request.uid:
             return self.error(errorcode.MSG_NOT_OWNER, errorcode.NOT_OWNER)
         if article.status == "draft":
+            if not article.labels.exists():
+                return self.error(errorcode.MSG_NO_LABELS, errorcode.NO_LABELS)
             article.status = "published"
             try:
                 article.save()
