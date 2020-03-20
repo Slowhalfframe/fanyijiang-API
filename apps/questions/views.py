@@ -9,7 +9,7 @@ from apps.utils import errorcode
 from .serializers import QuestionCreateSerializer, NewQuestionSerializer, AnswerCreateSerializer, \
     QuestionFollowSerializer, FollowedQuestionSerializer, InviteCreateSerializer, QACommentCreateSerializer, \
     QACommentDetailSerializer, TwoAnswersSerializer, AnswerWithAuthorInfoSerializer
-from .models import Question, Answer, QuestionFollow, QuestionInvite, QAComment, ACVote
+from .models import Question, Answer, QuestionFollow, QuestionInvite, QAComment
 from apps.userpage.models import UserProfile
 
 from apps.notifications.views import notification_handler
@@ -43,10 +43,9 @@ class QuestionView(CustomAPIView):
 
 class QuestionDetailView(CustomAPIView):
     def get(self, request, question_id):
-        try:
-            question = Question.objects.get(pk=question_id)
-        except Question.DoesNotExist:
-            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
+        question = Question.objects.filter(pk=question_id).first()
+        if not question:
+            return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
         user = UserProfile.objects.get(uid=question.user_id)  # TODO 用户不存在怎么处理？
         me = self.get_user_profile(request)
         if not me:
@@ -85,10 +84,9 @@ class QuestionDetailView(CustomAPIView):
 
 class QuestionCommentView(CustomAPIView):
     def get(self, request, question_id):
-        try:
-            question = Question.objects.get(pk=question_id)
-        except Question.DoesNotExist:
-            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
+        question = Question.objects.filter(pk=question_id).first()
+        if not question:
+            return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
         comments = question.comment.all()
         data = self.paginate_data(request, query_set=comments, object_serializer=QACommentDetailSerializer)
         return self.success(data)
@@ -96,11 +94,10 @@ class QuestionCommentView(CustomAPIView):
 
 class AnswerDetailView(CustomAPIView):
     def get(self, request, question_id, answer_id):
-        try:
-            question = Question.objects.get(pk=question_id)
-            answer = Answer.objects.get(pk=answer_id, question_id=question_id)
-        except (Question.DoesNotExist, Answer.DoesNotExist):
-            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
+        question = Question.objects.filter(pk=question_id).first()
+        answer = Answer.objects.filter(pk=answer_id, question_id=question_id).first()
+        if not question or not answer:
+            return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
         another_answer = question.answer_set.exclude(pk=answer_id)
         if another_answer.exists():
             another_answer = random.choice(another_answer)
@@ -136,17 +133,11 @@ class AnswerView(CustomAPIView):
                 instance = s.create(s.validated_data)
                 # 保存回答后，把该用户收到的该问题的未回答邀请都设置为已回答
                 QuestionInvite.objects.filter(question=question_id, invited=user_id, status=0).update(status=2)
-        except Exception as e:
+        except:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
 
         s = AnswerCreateSerializer(instance=instance)
-        # TODO 触发消息通知
-        try:
-            print('触发消息通知')
-            question = Question.objects.get(pk=question_id)
-            notification_handler(user_id, question.user_id, 'A', instance)
-        except Question.DoesNotExist as e:
-            return self.error(e.args, errorcode.INVALID_DATA)
+        notification_handler(user_id, instance.question.user_id, 'A', instance)
         return self.success(s.data)
 
     @validate_identity
@@ -155,15 +146,14 @@ class AnswerView(CustomAPIView):
 
         user_id = request._request.uid
         content = request.data.get("content", None)
+        instance = Answer.objects.filter(question=question_id, user_id=user_id).first()
+        if not instance:
+            return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
         try:
-            instance = Answer.objects.get(question=question_id, user_id=user_id)
             instance.content = content
             instance.save()
-        except Answer.DoesNotExist:
-            return self.error(errorcode.MSG_NOT_OWNER, errorcode.INVALID_DATA)
         except Exception as e:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
-
         s = AnswerCreateSerializer(instance=instance)
         return self.success(s.data)
 
@@ -171,11 +161,12 @@ class AnswerView(CustomAPIView):
     def delete(self, request, question_id):
         """删除回答，只能删除本人的回答"""
 
+        answer = Answer.objects.filter(question=question_id, user_id=request._request.uid).first()
+        if not answer:
+            return self.success()
         try:
-            Answer.objects.get(question=question_id, user_id=request._request.uid).delete()
-        except Answer.DoesNotExist:
-            pass
-        except Exception as e:
+            answer.delete()
+        except:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         return self.success()
 
@@ -204,11 +195,12 @@ class QuestionFollowView(CustomAPIView):
         """取消关注问题"""
 
         question = request.GET.get("id", None)
+        instance = QuestionFollow.objects.filter(question=question, user_id=request._request.uid).first()
+        if not instance:
+            return self.success()
         try:
-            QuestionFollow.objects.get(question=question, user_id=request._request.uid).delete()
-        except QuestionFollow.DoesNotExist:
-            pass
-        except Exception as e:
+            instance.delete()
+        except:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         return self.success()
 
@@ -216,10 +208,9 @@ class QuestionFollowView(CustomAPIView):
     def get(self, request):
         """查看本人关注的问题"""
 
-        follows = QuestionFollow.objects.filter(user_id=request._request.uid)
-        questions = [i.question for i in follows]
-        s = FollowedQuestionSerializer(instance=questions, many=True)
-        return self.success(s.data)
+        questions = Question.objects.filter(questionfollow__user_id=request._request.uid).all()
+        data = self.paginate_data(request, query_set=questions, object_serializer=FollowedQuestionSerializer)
+        return self.success(data)
 
 
 class InvitationView(CustomAPIView):
@@ -227,15 +218,14 @@ class InvitationView(CustomAPIView):
     def post(self, request):
         """邀请回答，不能邀请自己、已回答用户，不能重复邀请同一用户回答同一问题"""
 
-        invited_slug = request.data.get("invited_slug", None)
-        try:
-            invited = UserProfile.objects.get(slug=invited_slug).uid
-        except:
+        slug = request.data.get("invited_slug", None)
+        invited = UserProfile.objects.filter(slug=slug).first()
+        if not invited:
             return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
         data = {
             "question": request.data.get("id", None),
             "inviting": request._request.uid,
-            "invited": invited
+            "invited": invited.uid,
         }
         s = InviteCreateSerializer(data=data)
         s.is_valid()
@@ -258,21 +248,22 @@ class InvitationView(CustomAPIView):
         """撤销邀请，只能撤销本人发出的未回答的邀请"""
 
         invited_slug = request.GET.get("invited_slug", None)
-        try:
-            invited = UserProfile.objects.get(slug=invited_slug)
-        except UserProfile.DoesNotExist:
+        invited = UserProfile.objects.filter(slug=invited_slug).first()
+        if not invited:
             return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
         data = {
             "question": request.GET.get("id", None),
             "inviting": request._request.uid,
             "invited": invited.uid,
-            "status": 0  # 未回答
         }
+        instance = QuestionInvite.objects.filter(**data).first()
+        if not instance:
+            return self.success()
+        if instance.status != 0:  # 0表示未回答
+            return self.error(errorcode.MSG_INVITATION_DONE, errorcode.INVITATION_DONE)
         try:
-            QuestionInvite.objects.get(**data).delete()
-        except QuestionInvite.DoesNotExist:
-            return self.error(errorcode.MSG_NOT_OWNER, errorcode.INVALID_DATA)
-        except Exception as e:
+            instance.delete()
+        except:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         return self.success()
 
@@ -280,18 +271,17 @@ class InvitationView(CustomAPIView):
     def put(self, request):
         """拒绝收到的未回答的邀请"""
 
-        data = {
-            "pk": request.data.get("id", None),
-            "invited": request._request.uid,  # 用户需要是被邀请者
-            "status": 0,  # 未回答
-        }
+        instance = QuestionInvite.objects.filter(pk=request.data.get("id", None)).first()
+        if not instance:
+            return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
+        if instance.invited != request._request.uid:
+            return self.error(errorcode.MSG_NOT_OWNER, errorcode.NOT_OWNER)
+        if instance.status != 0:
+            return self.error(errorcode.MSG_INVITATION_DONE, errorcode.INVITATION_DONE)
         try:
-            instance = QuestionInvite.objects.get(**data)
             instance.status = 1  # 已拒绝
             instance.save()
-        except QuestionInvite.DoesNotExist:
-            return self.error(errorcode.MSG_NOT_OWNER, errorcode.INVALID_DATA)
-        except Exception as e:
+        except:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         return self.success()
 
@@ -300,10 +290,7 @@ class InvitationView(CustomAPIView):
         """查询用户发出和收到的邀请"""
 
         user_id = request._request.uid
-        try:
-            query_set = QuestionInvite.objects.filter(Q(invited=user_id) | Q(inviting=user_id))  # TODO 进一步，过滤哪些状态？
-        except Exception as e:
-            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
+        query_set = QuestionInvite.objects.filter(Q(invited=user_id) | Q(inviting=user_id))  # TODO 进一步，过滤哪些状态？
         s = InviteCreateSerializer(instance=query_set, many=True)
         return self.success(s.data)
 
@@ -314,7 +301,8 @@ class HelperView(CustomAPIView):
         """获取当前用户可邀请的用户，不能邀请已邀请过的用户"""
 
         user_id = request._request.uid
-        invited = QuestionInvite.objects.filter(inviting=user_id).values("invited")
+        question = request.GET.get("question", None)
+        invited = QuestionInvite.objects.filter(inviting=user_id, question=question).values("invited")
         helpers = UserProfile.objects.exclude(uid=user_id).exclude(uid__in=invited)  # TODO 主动拒绝邀请的也要排除
         if len(helpers) > 15:  # 用户超过15个时，随机抽取15个
             helpers = random.sample(list(helpers), 15)
@@ -329,12 +317,11 @@ class CommentView(CustomAPIView):
         """对问题或回答发表评论"""
 
         user_id = request._request.uid
-        which_model = Question if request.data.get("type", "") == "question" else Answer
+        which_model = Question if request.data.get("type", "") == "question" else Answer  # TODO 对评论发表评论
         instance_pk = request.data.get("id", None)
-        try:
-            which_object = which_model.objects.get(pk=instance_pk)  # 被评论的问题或回答对象
-        except which_model.DoesNotExist:
-            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
+        which_object = which_model.objects.filter(pk=instance_pk).first()
+        if not which_object:
+            return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
         data = {
             "user_id": user_id,  # 评论者ID
             "content": request.data.get("content", None),  # 评论内容
@@ -367,11 +354,14 @@ class CommentView(CustomAPIView):
     def delete(self, request):
         """撤销本人发表的问答评论"""
 
+        comment = QAComment.objects.filter(pk=request.GET.get("id", None)).first()
+        if not comment:
+            return self.success()
+        if comment.user_id != request._request.uid:
+            return self.error(errorcode.MSG_NOT_OWNER, errorcode.NOT_OWNER)
         try:
-            QAComment.objects.get(pk=request.GET.get("id", None), user_id=request._request.uid).delete()
-        except QAComment.DoesNotExist:
-            pass
-        except Exception as e:
+            comment.delete()
+        except:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         return self.success()
 
@@ -379,15 +369,16 @@ class CommentView(CustomAPIView):
     def patch(self, request):
         """修改本人发表的问答评论"""
 
-        pk = request.data.get("id", None)
+        comment = QAComment.objects.filter(pk=request.data.get("id", None)).first()
+        if not comment:
+            return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
+        if comment.user_id != request._request.uid:
+            return self.error(errorcode.MSG_NOT_OWNER, errorcode.NOT_OWNER)
         content = request.data.get("content", None)
         try:
-            comment = QAComment.objects.get(pk=pk, user_id=request._request.uid)
             comment.content = content
             comment.save()
-        except QAComment.DoesNotExist:
-            return self.error(errorcode.MSG_NOT_OWNER, errorcode.INVALID_DATA)
-        except Exception as e:
+        except:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         s = QACommentCreateSerializer(instance=comment)
         return self.success(s.data)

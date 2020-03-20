@@ -165,13 +165,15 @@ class CommentView(CustomAPIView):
     def delete(self, request):
         """删除本人的评论"""
 
-        user_id = request._request.uid
-        comment = ArticleComment.objects.filter(pk=request.GET.get("id", None), user_id=user_id).first()
-        if comment:
-            try:
-                comment.delete()
-            except:
-                return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
+        comment = ArticleComment.objects.filter(pk=request.GET.get("id", None)).first()
+        if not comment:
+            return self.success()
+        if comment.user_id != request._request.uid:
+            return self.error(errorcode.MSG_NOT_OWNER, errorcode.NOT_OWNER)
+        try:
+            comment.delete()
+        except:
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         return self.success()
 
     @validate_identity

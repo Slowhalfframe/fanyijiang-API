@@ -5,7 +5,7 @@ from apps.utils.decorators import validate_identity
 from apps.utils import errorcode
 from apps.questions.serializers import QuestionInLabelDiscussSerializer
 from .serializers import LabelCreateSerializer, ChildLabelSerializer, LabelUpdateSerializer, LabelDetailSerializer
-from .models import Label, LabelFollow
+from .models import Label
 
 
 class LabelView(CustomAPIView):
@@ -20,30 +20,31 @@ class LabelView(CustomAPIView):
             return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
         try:
             instance = s.create(s.validated_data)
-        except Exception as e:
+        except:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         s = LabelCreateSerializer(instance=instance)
         return self.success(s.data)
 
     def get(self, request):
-        """获取所有顶级标签。"""
+        """获取所有顶级标签"""
 
-        query_set = Label.objects.filter(label__isnull=True)
-        s = LabelCreateSerializer(instance=query_set, many=True)  # TODO 获取更多信息，需要更换序列化器
-        return self.success(s.data)
+        top_labels = Label.objects.filter(label__isnull=True)
+        data = self.paginate_data(request, query_set=top_labels, object_serializer=LabelCreateSerializer)
+        return self.success(data)
 
     @validate_identity
     def delete(self, request):
         """删除标签，同时删除它与其他标签、文章、问答等的关系"""
 
         uid = request._request.uid  # TODO 删除标签的权限
-        name = request.GET.get("name", None)
+        label = Label.objects.filter(name=request.GET.get("name", None)).first()
+        if not label:
+            return self.success()
+        if label.article_set.exists() or label.question_set.exists():  # 被文章或问题使用了的标签不可删除，以防它们失去标签
+            return self.error(errorcode.MSG_LABEL_USING, errorcode.LABEL_USING)
         try:
-            label = Label.objects.get(name=name)
-            label.delete()  # TODO 与其他标签、文章、问答等的关系都自动删除了，可能使文章、问答等失去标签
-        except Label.DoesNotExist:
-            pass
-        except Exception as e:
+            label.delete()  # 与其他标签的父子关系会自动删除
+        except:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         return self.success()
 
@@ -61,7 +62,7 @@ class LabelView(CustomAPIView):
         instance.intro = s.validated_data.get("intro")
         try:
             instance.save()
-        except Exception as e:
+        except:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         s = LabelCreateSerializer(instance=instance)
         return self.success(s.data)
@@ -73,16 +74,13 @@ class LabelRelationView(CustomAPIView):
         """新建标签关系"""
 
         uid = request._request.uid  # TODO 新建子标签的权限
-        parent = request.data.get("parent", None)
-        child = request.data.get("child", None)
-        try:
-            parent = Label.objects.get(name=parent)
-            child = Label.objects.get(name=child)
-        except Label.DoesNotExist:
-            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
+        parent = Label.objects.filter(name=request.data.get("parent", None)).first()
+        child = Label.objects.filter(name=request.data.get("child", None)).first()
+        if not parent or not child:
+            return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
         try:
             parent.children.add(child)  # 自动生成的底层数据表有唯一约束，不会重复添加
-        except Exception as e:
+        except:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         return self.success({"parent": parent.name, "child": child.name})
 
@@ -91,16 +89,13 @@ class LabelRelationView(CustomAPIView):
         """删除标签关系"""
 
         uid = request._request.uid  # TODO 删除子标签的权限
-        parent = request.GET.get("parent", None)
-        child = request.GET.get("child", None)
-        try:
-            parent = Label.objects.get(name=parent)
-            child = Label.objects.get(name=child)
-        except Label.DoesNotExist:
-            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
+        parent = Label.objects.filter(name=request.GET.get("parent", None)).first()
+        child = Label.objects.filter(name=request.GET.get("child", None)).first()
+        if not parent or not child:
+            return self.success()
         try:
             parent.children.remove(child)
-        except Exception as e:
+        except:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         return self.success()
 
@@ -109,13 +104,10 @@ class ChildLabelView(CustomAPIView):
     def get(self, request, pk):
         """根据指定的主键，获取该标签和它的子标签。"""
 
-        try:
-            parent = Label.objects.get(pk=pk)
-            children = parent.children.all()
-        except Label.DoesNotExist:
-            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
-        except Exception:
-            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
+        parent = Label.objects.filter(pk=pk).first()
+        if not parent:
+            return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
+        children = parent.children.all()
         s = ChildLabelSerializer(instance={"parent": parent, "children": children})
         return self.success(s.data)
 
@@ -123,30 +115,30 @@ class ChildLabelView(CustomAPIView):
 class LabelFollowView(CustomAPIView):
     @validate_identity
     def post(self, request):
-        """关注标签。"""
+        """关注标签"""
 
-        user_id = request._request.uid
-        name = request.data.get("name", None)
+        label = Label.objects.filter(name=request.data.get("name", None)).first()
+        if not label:
+            return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
         try:
-            label = Label.objects.get(name=name)
-            LabelFollow.objects.create(user_id=user_id, label=label)
-        except Label.DoesNotExist:
-            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
-        except Exception as e:
+            label.labelfollow_set.update_or_create(user_id=request._request.uid, defaults=None)
+        except:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         return self.success()
 
     @validate_identity
     def delete(self, request):
-        """取消关注标签。"""
+        """取消关注标签"""
 
-        user_id = request._request.uid
-        name = request.GET.get("name", None)
+        label = Label.objects.filter(name=request.GET.get("name", None)).first()
+        if not label:
+            return self.success()
+        my_follow = label.labelfollow_set.filter(user_id=request._request.uid).first()
+        if not my_follow:
+            return self.success()
         try:
-            LabelFollow.objects.get(user_id=user_id, label__name=name).delete()  # 只能取消自己关注的标签
-        except LabelFollow.DoesNotExist:
-            return self.error(errorcode.MSG_NOT_OWNER, errorcode.INVALID_DATA)
-        except Exception as e:
+            my_follow.delete()
+        except:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         return self.success()
 
@@ -155,18 +147,16 @@ class LabelFollowView(CustomAPIView):
         """查看本人关注的标签。"""
 
         user_id = request._request.uid
-        follows = LabelFollow.objects.filter(user_id=user_id)
-        labels = [i.label for i in follows]
+        labels = Label.objects.filter(labelfollow__user_id=user_id).all()
         s = LabelCreateSerializer(instance=labels, many=True)
         return self.success(s.data)
 
 
 class LabelDetailView(CustomAPIView):
     def get(self, request, label_id):
-        try:
-            label = Label.objects.get(pk=label_id)
-        except Label.DoesNotExist:
-            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
+        label = Label.objects.filter(pk=label_id).first()
+        if not label:
+            return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
         me = self.get_user_profile(request)
         s = LabelDetailSerializer(instance=label, context={"me": me})
         return self.success(s.data)
@@ -174,10 +164,9 @@ class LabelDetailView(CustomAPIView):
 
 class LabelDiscussView(CustomAPIView):
     def get(self, request, label_id):
-        try:
-            label = Label.objects.get(pk=label_id)
-        except Label.DoesNotExist:
-            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
+        label = Label.objects.filter(pk=label_id).first()
+        if not label:
+            return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
         me = self.get_user_profile(request)
         questions = label.question_set.filter(answer__isnull=False).all()  # TODO 除了要有答案外，还有什么要求？
         s = QuestionInLabelDiscussSerializer(instance=questions, many=True, context={"me": me})
@@ -190,7 +179,5 @@ class LabelSearchView(CustomAPIView):
         if not keyword:
             return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
         labels = Label.objects.filter(Q(name__contains=keyword) | Q(intro__contains=keyword))
-        if not labels:
-            return self.error("没有匹配的标签", errorcode.INVALID_DATA)
         data = [{"id": i.id, "name": i.name} for i in labels]
         return self.success(data)
