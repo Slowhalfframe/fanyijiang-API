@@ -25,11 +25,11 @@ class Article(models.Model):
 
     # 阅读量
     read_nums = GenericRelation(to=ReadNums)
+
     class Meta:
         db_table = "db_articles"
         verbose_name = "文章"
         verbose_name_plural = verbose_name
-        unique_together = ("user_id", "title",),
 
     def __str__(self):
         return self.title

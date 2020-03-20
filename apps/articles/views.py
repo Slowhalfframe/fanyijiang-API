@@ -211,8 +211,8 @@ class VoteView(CustomAPIView):
         if not which_object:
             return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
         # TODO 能否给自己投票
-        value = request.data.get("value", None)
-        value = bool(value)  # TODO value的具体规则
+        value = request.data.get("value", "0")
+        value = bool(int(value))  # value采用数字
         try:
             which_object.vote.update_or_create(user_id=user_id, defaults={"value": value})
         except:
