@@ -318,7 +318,8 @@ class HelperView(CustomAPIView):
         helpers = UserProfile.objects.exclude(uid=user_id).exclude(uid__in=invited)  # TODO 主动拒绝邀请的也要排除
         if len(helpers) > 15:  # 用户超过15个时，随机抽取15个
             helpers = random.sample(list(helpers), 15)
-        data = [{"nickname": user.nickname, "avatar": user.avatar, "slug": user.slug} for user in helpers]
+        data = [{"nickname": user.nickname, "avatar": user.avatar, "slug": user.slug, "status": False} for user in
+                helpers]  # status表示是否已经邀请过
         return self.success(data)
 
 
@@ -395,44 +396,40 @@ class CommentView(CustomAPIView):
 class VoteView(CustomAPIView):
     @validate_identity
     def post(self, request):
-        """对回答、问答评论进行投票"""
+        """对回答、问答评论进行投票或者修改已有的投票"""
 
         user_id = request._request.uid
         which_model = Answer if request.data.get("type", "") == "answer" else QAComment
-        instance_pk = request.data.get("id", None)
-        try:
-            which_object = which_model.objects.get(pk=instance_pk)  # 被投票的对象，可以是回答或者问答评论
-            # TODO 能否给自己投票？
-        except which_model.DoesNotExist:
-            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
+        which_object = which_model.objects.filter(pk=request.data.get("id", None)).first()  # 被投票的对象，可以是回答或者问答评论
+        if not which_object:
+            return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
+        # TODO 能否给自己投票？
         value = request.data.get("value", None)
         value = bool(value)  # TODO 具体哪些值看作True，哪些看作False?
-        data = {
-            "user_id": user_id,  # 投票者ID
-            "value": value,
-            "content_object": which_object
-        }
         try:
-            vote = ACVote(**data)
-            vote.save()
-        except Exception as e:
+            which_object.vote.update_or_create(user_id=user_id, defaults={'value': value})
+        except:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         # TODO 触发消息通知
         if request.data.get("type", "") == "answer" and value == True:
             notification_handler(user_id, which_object.user_id, 'LAN', which_object)
-
         return self.success()
 
     @validate_identity
     def delete(self, request):
         """撤销投票"""
 
-        pk = request.GET.get("id", None)
         user_id = request._request.uid
+        pk = request.GET.get("id", None)  # 回答或评论的ID
+        which_model = Answer if request.GET.get("type", "") == "answer" else QAComment
+        which_object = which_model.objects.filter(pk=pk).first()  # 此票所属对象
+        if not which_object:
+            return self.success()
+        old_vote = which_object.vote.filter(user_id=user_id).first()  # 要撤销的票
+        if not old_vote:
+            return self.success()
         try:
-            ACVote.objects.get(pk=pk, user_id=user_id).delete()
-        except ACVote.DoesNotExist:
-            pass
-        except Exception as e:
+            old_vote.delete()
+        except:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         return self.success()
