@@ -35,6 +35,7 @@ class QAComment(models.Model):
     content_type = models.ForeignKey(to=ContentType, verbose_name="被评论对象的类型")
     object_id = models.CharField(max_length=20, null=False, verbose_name="被评论对象的ID")
     content_object = GenericForeignKey()
+    child_comment = GenericRelation(to='self')
 
     class Meta:
         db_table = "db_qa_comments"

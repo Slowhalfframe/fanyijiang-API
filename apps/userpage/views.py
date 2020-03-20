@@ -24,7 +24,7 @@ from apps.articles.models import Article
 from apps.labels.models import Label, LabelFollow
 from apps.labels.serializers import LabelCreateSerializer
 
-from apps.notifications.views import notification_handler
+from apps.taskapp.tasks import notification_handler
 
 from apps.ideas.models import Idea
 from apps.ideas.serializers import IdeaDetailSerializer
@@ -272,7 +272,7 @@ class FollowingUserAPIView(CustomAPIView):
         FollowedUser.objects.create(fans=fans, idol=idol_user)
 
         # TODO 触发消息通知
-        notification_handler(uid, idol_user.uid, 'O', idol_user)
+        notification_handler.delay(uid, idol_user.uid, 'O', idol_user.uid)
         return self.success()
 
     # 取关该用户

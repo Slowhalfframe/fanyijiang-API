@@ -12,7 +12,7 @@ from .serializers import QuestionCreateSerializer, NewQuestionSerializer, Answer
 from .models import Question, Answer, QuestionFollow, QuestionInvite, QAComment, ACVote
 from apps.userpage.models import UserProfile
 
-from apps.notifications.views import notification_handler
+from apps.taskapp.tasks import notification_handler
 
 from apps.taskapp.tasks import answers_pv_record, question_pv_record
 
@@ -144,7 +144,12 @@ class AnswerView(CustomAPIView):
         try:
             print('触发消息通知')
             question = Question.objects.get(pk=question_id)
-            notification_handler(user_id, question.user_id, 'A', instance)
+            notification_handler.delay(user_id, question.user_id, 'A', instance.id)
+
+            # TODO 是否也要给关注该问题的人发送通知，是否要异步发送
+            question_follows = QuestionFollow.objects.filter(question=question)
+            for follow in question_follows:
+                notification_handler.delay(user_id, follow.user_id, 'AF', instance.id)
         except Question.DoesNotExist as e:
             return self.error(e.args, errorcode.INVALID_DATA)
         return self.success(s.data)
@@ -250,7 +255,7 @@ class InvitationView(CustomAPIView):
 
         # TODO 发送消息通知
         question = Question.objects.filter(pk=data.get('question')).first()
-        notification_handler(instance.inviting, instance.invited, 'I', question)
+        notification_handler.delay(instance.inviting, instance.invited, 'I', question.id)
         return self.success(s.data)
 
     @validate_identity
@@ -358,9 +363,11 @@ class CommentView(CustomAPIView):
 
         # TODO 触发消息通知
         if request.data.get("type", "") == "question":
-            notification_handler(user_id, which_object.user_id, 'CQ', which_object)
+            # 评论问题
+            notification_handler.delay(user_id, which_object.user_id, 'CQ', comment.id)
         else:
-            notification_handler(user_id, which_object.user_id, 'CAN', which_object)
+            # 评论回答
+            notification_handler.delay(user_id, which_object.user_id, 'CAN', comment.id)
         return self.success(s.data)
 
     @validate_identity
@@ -411,9 +418,17 @@ class VoteView(CustomAPIView):
         except:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         # TODO 触发消息通知
+<<<<<<< Updated upstream
         if request.data.get("type", "") == "answer" and value == True:
             notification_handler(user_id, which_object.user_id, 'LAN', which_object)
         return self.success()
+=======
+        if which_model == Answer and value == True:
+            notification_handler.delay(user_id, which_object.user_id, 'LAN', which_object.id)
+        elif which_model == QAComment and value == True:
+            notification_handler.delay(user_id, which_object.user_id, 'LQAC', which_object.id)
+        return self.success(data)
+>>>>>>> Stashed changes
 
     @validate_identity
     def delete(self, request):

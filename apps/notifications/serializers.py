@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from .models import Notification
 
+from apps.questions.models import Answer, Question
+
 
 class NotificationsSerializer(serializers.ModelSerializer):
     # detail = serializers.SerializerMethodField()
@@ -51,6 +53,12 @@ class NotificationsSerializer(serializers.ModelSerializer):
             data['id'] = action_object.id
             data['link'] = ''  # 回答详情页
 
+        if verb == 'AF':
+            # 某人回答了你关注的问题，回答对象
+            data['title'] = action_object.question.title
+            data['id'] = action_object.id
+            data['link'] = ''  # 回答详情页
+
         if verb == 'LAN':
             # 赞了你的问答
             data['title'] = action_object.question.title
@@ -63,27 +71,58 @@ class NotificationsSerializer(serializers.ModelSerializer):
             data['id'] = action_object.id
             data['link'] = ''  # 文章详情
 
-        if verb == 'LC':
+        # if verb == 'LC':
+        #     # 赞了你的评论
+        #     data['title'] = action_object.content
+        #     data['id'] = action_object.id
+        #     data['link'] = ''  # 评论详情
+
+        if verb == 'LQAC':
             # 赞了你的评论
-            data['title'] = action_object.content
-            data['id'] = action_object.id
-            data['link'] = ''  # 评论详情
+            content_object = action_object.content_object
+            if isinstance(content_object, Question):
+                data['title'] = action_object.title
+                data['id'] = content_object.id
+                data['link'] = ''  # 评论详情
+            if isinstance(content_object, Answer):
+                data['title'] = action_object.question.title
+                data['id'] = content_object.id
+                data['link'] = ''  # 评论详情
+
+        if verb == 'LAC':
+            # 赞了你的文章评论
+            data['title'] = action_object.article.title
+            data['id'] = action_object.article.id
+            data['link'] = ''  # 文章详情
+
+        if verb == 'LIC':
+            # 赞了你的想法评论
+            data['title'] = action_object.think.content
+            data['id'] = action_object.think.id
+            data['link'] = ''  # 想法详情
 
         if verb == 'CAN':
             # 评论了你的回答
-            data['title'] = action_object.question.title
+            data['title'] = action_object.content
             data['id'] = action_object.id
-            data['link'] = ''  # 回答评论详情
+            data['link'] = ''  # 回答详情
 
         if verb == 'CAR':
             # 评论了你的文章
-            data['title'] = action_object.title
+            data['title'] = action_object.content
             data['id'] = action_object.id
             data['link'] = ''  # 文章评论详情 或者文章详情
 
         if verb == 'CQ':
             # 评论了你的问题
-            data['title'] = action_object.question.title
+            data['title'] = action_object.content
             data['id'] = action_object.id
-            data['link'] = ''  # 问题评论详情
+            data['link'] = ''  # 问题详情
+
+        if verb == 'CI':
+            # 评论了你的想法
+            data['title'] = action_object.content[:8] + '...' if len(
+                action_object.content) > 8 else action_object.content
+            data['id'] = action_object.id
+            data['link'] = ''  # 想法详情
         return data
