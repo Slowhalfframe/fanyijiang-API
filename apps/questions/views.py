@@ -418,17 +418,11 @@ class VoteView(CustomAPIView):
         except:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         # TODO 触发消息通知
-<<<<<<< Updated upstream
-        if request.data.get("type", "") == "answer" and value == True:
-            notification_handler(user_id, which_object.user_id, 'LAN', which_object)
-        return self.success()
-=======
         if which_model == Answer and value == True:
             notification_handler.delay(user_id, which_object.user_id, 'LAN', which_object.id)
         elif which_model == QAComment and value == True:
             notification_handler.delay(user_id, which_object.user_id, 'LQAC', which_object.id)
         return self.success(data)
->>>>>>> Stashed changes
 
     @validate_identity
     def delete(self, request):
