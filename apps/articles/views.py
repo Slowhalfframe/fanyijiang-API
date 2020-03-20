@@ -39,6 +39,11 @@ class ArticleView(CustomAPIView):
         """更新文章，成品不能改为草稿"""
 
         user_id = request._request.uid
+        article = Article.objects.filter(pk=request.data.get("id", None)).first()
+        if not article:
+            return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
+        if article.user_id != user_id:
+            return self.error(errorcode.MSG_NOT_OWNER, errorcode.NOT_OWNER)
         data = {
             "user_id": user_id,
             # TODO 使用序列化器来验证数据，需要绕过作者和标题的唯一性，因此使用假标题。
@@ -53,10 +58,6 @@ class ArticleView(CustomAPIView):
         s.is_valid()
         if s.errors:
             return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
-        try:
-            article = Article.objects.get(pk=request.data.get("id", None), user_id=user_id)
-        except Article.DoesNotExist as e:
-            return self.error(errorcode.MSG_NOT_OWNER, errorcode.INVALID_DATA)
         title = request.data.get("title", "")
         if not title:
             return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
@@ -81,16 +82,17 @@ class ArticleView(CustomAPIView):
     def patch(self, request):
         """把草稿变为成品"""
 
-        try:
-            article = Article.objects.get(pk=request.data.get("id", None), user_id=request._request.uid)
-        except Article.DoesNotExist as e:
-            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
-        try:
-            if article.status == "draft":
-                article.status = "published"
+        article = Article.objects.filter(pk=request.data.get("id", None)).first()
+        if not article:
+            return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
+        if article.user_id != request._request.uid:
+            return self.error(errorcode.MSG_NOT_OWNER, errorcode.NOT_OWNER)
+        if article.status == "draft":
+            article.status = "published"
+            try:
                 article.save()
-        except Exception as e:
-            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
+            except:
+                return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         return self.success()
 
     def get(self, request):
@@ -103,17 +105,18 @@ class ArticleView(CustomAPIView):
 
 
 class ArticleDetailView(CustomAPIView):
-    @validate_identity
     def get(self, request, article_id):
         """查看文章详情，只有作者能查看草稿"""
 
-        try:
-            article = Article.objects.get(pk=article_id)
-        except Article.DoesNotExist as e:
-            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
+        article = Article.objects.filter(pk=article_id).first()
+        if not article:
+            return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
         if article.status == "draft":
-            if article.user_id != request._request.uid:  # TODO 查看草稿必须登录，非草稿不需要@validate_identity
-                return self.error(errorcode.MSG_NOT_OWNER, errorcode.INVALID_DATA)
+            me = self.get_user_profile(request)
+            if not me:
+                return self.error(errorcode.MSG_LOGIN_REQUIRED, errorcode.LOGIN_REQUIRED)
+            if article.user_id != me.uid:
+                return self.error(errorcode.MSG_NOT_OWNER, errorcode.NOT_OWNER)
         s = ArticleDetailSerializer(instance=article)
 
         # TODO 记录阅读量
