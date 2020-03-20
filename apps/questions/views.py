@@ -65,8 +65,11 @@ class QuestionDetailView(CustomAPIView):
                                           serializer_context={"me": me}),
             "title": question.title,
             "content": question.content,
-            "user_id": question.user_id,
-            "nickname": user.nickname,
+            "author_info": {
+                "nickname": user.nickname,
+                "avatar": user.avatar,
+                "slug": user.slug,
+            },
             "create_at": question.create_at.strftime(format="%Y%m%d %H:%M:%S"),
             "labels": [{"id": i.id, "name": i.name} for i in question.labels.all()],
             "follow_numbers": question.questionfollow_set.count(),
@@ -87,8 +90,8 @@ class QuestionCommentView(CustomAPIView):
         except Question.DoesNotExist:
             return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
         comments = question.comment.all()
-        s = QACommentDetailSerializer(instance=comments, many=True)
-        return self.success(s.data)
+        data = self.paginate_data(request, query_set=comments, object_serializer=QACommentDetailSerializer)
+        return self.success(data)
 
 
 class AnswerDetailView(CustomAPIView):
@@ -414,17 +417,11 @@ class VoteView(CustomAPIView):
             vote.save()
         except Exception as e:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
-        data = {
-            "user_id": vote.user_id,
-            "value": vote.value,
-            "ac_id": vote.object_id,
-            "id": vote.pk,
-        }
         # TODO 触发消息通知
         if request.data.get("type", "") == "answer" and value == True:
             notification_handler(user_id, which_object.user_id, 'LAN', which_object)
 
-        return self.success(data)
+        return self.success()
 
     @validate_identity
     def delete(self, request):
