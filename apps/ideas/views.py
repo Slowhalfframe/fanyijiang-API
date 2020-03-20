@@ -47,22 +47,23 @@ class MonoIdeaView(CustomAPIView):
         """删除自己的想法"""
 
         user_id = request._request.uid
+        idea = Idea.objects.filter(pk=idea_pk).first()
+        if not idea:
+            return self.success()
+        if idea.user_id != user_id:
+            return self.error(errorcode.MSG_NOT_OWNER, errorcode.NOT_OWNER)
         try:
-            idea = Idea.objects.get(pk=idea_pk, user_id=user_id)
             idea.delete()  # TODO 收藏、点赞等都自动删除了吗
-        except Idea.DoesNotExist:
-            pass
-        except Exception as e:
+        except:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         return self.success()
 
     def get(self, request, idea_pk):
         """查看想法详情"""
 
-        try:
-            idea = Idea.objects.get(pk=idea_pk)
-        except Idea.DoesNotExist:
-            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
+        idea = Idea.objects.filter(pk=idea_pk).first()
+        if not idea:
+            return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
         s = IdeaDetailSerializer(instance=idea)
 
         # TODO 记录阅读量
@@ -82,13 +83,15 @@ class MonoIdeaView(CustomAPIView):
         s.is_valid()
         if s.errors:
             return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
+        idea = Idea.objects.filter(pk=idea_pk).first()
+        if not idea:
+            return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
+        if idea.user_id != user_id:
+            return self.error(errorcode.MSG_NOT_OWNER, errorcode.NOT_OWNER)
         try:
-            idea = Idea.objects.get(pk=idea_pk, user_id=user_id)
             idea.content = s.validated_data["content"]
             idea.save()
-        except Idea.DoesNotExist:
-            return self.error(errorcode.MSG_NOT_OWNER, errorcode.INVALID_DATA)
-        except Exception as e:
+        except:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         s = IdeaDetailSerializer(instance=idea)
         return self.success(s.data)
@@ -118,15 +121,12 @@ class IdeaCommentView(CustomAPIView):
     def get(self, request, idea_pk):
         """查看想法的所有评论"""
 
-        try:
-            idea = Idea.objects.get(pk=idea_pk)
-            comments = idea.ideacomment_set.all()
-        except Idea.DoesNotExist:
-            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
-        except Exception as e:
-            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
-        s = IdeaCommentSerializer(instance=comments, many=True)
-        return self.success(s.data)
+        idea = Idea.objects.filter(pk=idea_pk).first()
+        if not idea:
+            return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
+        comments = idea.ideacomment_set.all()
+        data = self.paginate_data(request, query_set=comments, object_serializer=IdeaCommentSerializer)
+        return self.success(data)
 
 
 class MonoIdeaCommentView(CustomAPIView):
@@ -134,11 +134,14 @@ class MonoIdeaCommentView(CustomAPIView):
     def delete(self, request, idea_pk, comment_pk):
         """删除评论"""
 
+        comment = IdeaComment.objects.filter(pk=comment_pk, think=idea_pk).first()
+        if not comment:
+            return self.success()
+        if comment.user_id != request._request.uid:
+            return self.error(errorcode.MSG_NOT_OWNER, errorcode.NOT_OWNER)
         try:
-            IdeaComment.objects.get(pk=comment_pk, user_id=request._request.uid, think=idea_pk).delete()
-        except IdeaComment.DoesNotExist:
-            pass
-        except Exception as e:
+            comment.delete()
+        except:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         return self.success()
 
@@ -156,13 +159,15 @@ class MonoIdeaCommentView(CustomAPIView):
         s.is_valid()
         if s.errors:
             return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
+        comment = IdeaComment.objects.filter(pk=comment_pk, think=idea_pk).first()
+        if not comment:
+            return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
+        if comment.user_id != user_id:
+            return self.error(errorcode.MSG_NOT_OWNER, errorcode.NOT_OWNER)
         try:
-            comment = IdeaComment.objects.get(pk=comment_pk, think=idea_pk, user_id=user_id)
             comment.content = s.validated_data["content"]
             comment.save()
-        except IdeaComment.DoesNotExist:
-            return self.error(errorcode.MSG_NOT_OWNER, errorcode.INVALID_DATA)
-        except Exception as e:
+        except:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         s = IdeaCommentSerializer(instance=comment)
         return self.success(s.data)
@@ -170,10 +175,9 @@ class MonoIdeaCommentView(CustomAPIView):
     def get(self, request, idea_pk, comment_pk):
         """查看评论"""
 
-        try:
-            comment = IdeaComment.objects.get(pk=comment_pk, think=idea_pk)
-        except IdeaComment.DoesNotExist:
-            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
+        comment = IdeaComment.objects.filter(pk=comment_pk, think=idea_pk).first()
+        if not comment:
+            return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
         s = IdeaCommentSerializer(instance=comment)
         return self.success(s.data)
 
@@ -183,14 +187,14 @@ class IdeaLikeView(CustomAPIView):
     def post(self, request):
         """想法及其评论点赞"""
 
-        user_id = request._request.uid
         which_model = Idea if request.data.get("type", "") == "idea" else IdeaComment
+        which_object = which_model.objects.filter(pk=request.data.get("id", None)).first()
+        if not which_object:
+            return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
+        # TODO 能否给自己点赞
         try:
-            which_object = which_model.objects.get(pk=request.data.get("id", None))  # TODO 能否给自己点赞
-            which_object.agree.create(user_id=user_id)
-        except which_model.DoesNotExist:
-            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
-        except Exception as e:
+            which_object.agree.update_or_create(user_id=request._request.uid, defaults=None)
+        except:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         return self.success()
 
@@ -198,11 +202,15 @@ class IdeaLikeView(CustomAPIView):
     def delete(self, request):
         """取消点赞"""
 
-        user_id = request._request.uid
+        which_model = Idea if request.GET.get("type", "") == "idea" else IdeaComment
+        which_object = which_model.objects.filter(pk=request.GET.get("id", None)).first()
+        if not which_object:
+            return self.success()
+        mylike = which_object.agree.filter(user_id=request._request.uid).first()
+        if not mylike:
+            return self.success()
         try:
-            IdeaLike.objects.get(pk=request.GET.get("id", None), user_id=user_id).delete()
-        except IdeaLike.DoesNotExist:
-            pass
-        except Exception as e:
+            mylike.delete()
+        except:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         return self.success()
