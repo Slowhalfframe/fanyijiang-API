@@ -5,7 +5,7 @@ from apps.utils.decorators import validate_identity
 from apps.utils import errorcode
 from .serializers import ArticleCreateSerializer, NewArticleSerializer, ArticleDetailSerializer, \
     ArticleCommentSerializer
-from .models import Article, ArticleComment, ArticleVote
+from .models import Article, ArticleComment
 
 from apps.taskapp.tasks import articles_pv_record
 
@@ -124,6 +124,22 @@ class ArticleDetailView(CustomAPIView):
         # TODO 记录阅读量
         articles_pv_record.delay(request.META.get('REMOTE_ADDR'), article.id)
         return self.success(s.data)
+
+    @validate_identity
+    def delete(self, request, article_id):
+        """删除文章"""
+
+        article = Article.objects.filter(pk=article_id, is_deleted=False).first()
+        if not article:
+            return self.success()
+        if article.user_id != request._request.uid:
+            return self.error(errorcode.MSG_NOT_OWNER, errorcode.NOT_OWNER)
+        article.is_deleted = True
+        try:
+            article.save()
+        except:
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
+        return self.success()
 
 
 class DraftView(CustomAPIView):

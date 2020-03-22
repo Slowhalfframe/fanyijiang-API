@@ -18,6 +18,7 @@ class Article(models.Model):
                               verbose_name="草稿或成品")
     create_at = models.DateTimeField(auto_now_add=True, verbose_name="发表时间")
     update_at = models.DateTimeField(auto_now=True, verbose_name="更新时间")
+    is_deleted = models.BooleanField(null=False, blank=True, verbose_name="逻辑删除", default=False)
     labels = models.ManyToManyField(to=Label, verbose_name="文章的标签")
     vote = GenericRelation(to="ArticleVote", verbose_name="文章投票")
     # TODO 阅读量
