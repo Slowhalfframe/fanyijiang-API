@@ -469,7 +469,6 @@ class RecommendQuestion(object):
     def get_json_data(self, data_list):
         data_l = list()
         for question in data_list:
-            print(question)
             data = {}
             data['id'] = question.id
             data['title'] = question.title
@@ -519,7 +518,7 @@ class RecentCreateContent(object):
         return answer_data
 
     def recent_article(self):
-        articles = Article.objects.filter(user_id=self.user.uid, is_deleted=False).order_by('create_at')[:3]
+        articles = Article.objects.filter(user_id=self.user.uid, status='published', is_deleted=False).order_by('create_at')[:3]
         article_data = []
         for article in articles:
             data = dict()
@@ -786,8 +785,9 @@ class SingleDataStatisticsAPIView(CustomAPIView):
                 data_list.append(data)
 
         if data_type == 'article':
-            articles = Article.objects.filter(create_at__gte=begin_da, create_at__lte=end_da, user_id=uid,
-                                              is_deleted=False)
+
+            articles = Article.objects.filter(create_at__gte=begin_da, create_at__lte=end_da, user_id=uid, status='published', is_deleted=False)
+
             for article in articles:
                 data = dict()
                 data['id'] = article.id

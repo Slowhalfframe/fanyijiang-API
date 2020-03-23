@@ -40,7 +40,7 @@ class ArticleCreateSerializer(serializers.ModelSerializer):
         return value
 
     def validate_content(self, value):
-        value = html.escape(value)
+        # value = html.escape(value)
         return value
 
 

@@ -82,7 +82,7 @@ class UserInfoAPIView(CustomAPIView):
         create_content_nums = {
             'question_count': Question.objects.filter(user_id=user.uid).count(),
             'answer_count': Answer.objects.filter(user_id=user.uid).count(),
-            'article_count': Article.objects.filter(user_id=user.uid, is_deleted=False).count(),
+            'article_count': Article.objects.filter(user_id=user.uid, status='published', is_deleted=False).count(),
             'think_count': Idea.objects.filter(user_id=user.uid).count(),
             'collect_count': user.favorites.all().count(),
         }
@@ -193,7 +193,8 @@ class HoverUserInfoAPIView(CustomAPIView):
         has_followed = True if FollowedUser.objects.filter(fans__uid=uid, idol__uid=user.uid).exists() else False
         create_count = {
             'answer_count': Answer.objects.filter(user_id=user.uid).count(),
-            'article_count': Article.objects.filter(user_id=user.uid, is_deleted=False).count(),
+            'article_count': Article.objects.filter(user_id=user.uid, status='published', is_deleted=False).count(),
+
             'fans_count': FollowedUser.objects.filter(idol=user).count(),
             'has_followed': has_followed
         }
@@ -403,7 +404,8 @@ class ArticleListAPIView(CustomAPIView):
             return self.error('该用户不存在', 404)
 
         # TODO 查询相关数据库
-        articles = Article.objects.filter(user_id=user.uid, is_deleted=False)
+        articles = Article.objects.filter(user_id=user.uid, status='published', is_deleted=False)
+
         data = self.paginate_data(request, articles, UserPageArticleSerializer)
         # data = {'results': [], 'total': 0}
         return self.success(data)
@@ -592,7 +594,7 @@ class FavoritesContentAPIView(CustomAPIView):
             answer = Answer.objects.filter(pk=object_id).first()
             answer.collect.update_or_create(favorite=fa)
         if content_type == 'article':
-            article = Article.objects.filter(pk=object_id, is_deleted=False).first()
+            article = Article.objects.filter(pk=object_id, status='published', is_deleted=False).first()
             article.mark.update_or_create(favorite=fa)
 
         return self.success()
@@ -610,7 +612,7 @@ class FavoritesContentAPIView(CustomAPIView):
             answer.collect.get(favorite=fa).delete()
 
         if content_type == 'article':
-            article = Article.objects.filter(pk=object_id, is_deleted=False).first()
+            article = Article.objects.filter(pk=object_id, status='published', is_deleted=False).first()
             article.mark.get(favorite=fa).delete()
 
         return self.success()
@@ -626,7 +628,7 @@ class CollectedAPIView(CustomAPIView):
         if content_type == 'answer':
             instance = Answer.objects.filter(pk=object_id).first()
         if content_type == 'article':
-            instance = Article.objects.filter(pk=object_id, is_deleted=False).first()
+            instance = Article.objects.filter(pk=object_id, status='published', is_deleted=False).first()
 
         for data in data_list:
             # 检查是否已收藏
