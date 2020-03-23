@@ -3,6 +3,7 @@ from django.db import transaction
 from apps.utils.api import CustomAPIView
 from apps.utils.decorators import validate_identity
 from apps.utils import errorcode
+from apps.userpage.models import UserProfile
 from .serializers import ArticleCreateSerializer, NewArticleSerializer, ArticleDetailSerializer, \
     ArticleCommentSerializer
 from .models import Article, ArticleComment
@@ -174,7 +175,7 @@ class CommentView(CustomAPIView):
             comment = s.create(s.validated_data)
         except Exception as e:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
-        s = ArticleCommentSerializer(instance=comment)
+        s = ArticleCommentSerializer(instance=comment, context={"me": UserProfile.objects.get(pk=request._request.uid)})
 
         # TODO 触发消息通知
 

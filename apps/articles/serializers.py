@@ -86,11 +86,17 @@ class ArticleDetailSerializer(serializers.ModelSerializer):
 
     def get_author_info(self, obj):
         author = UserProfile.objects.get(uid=obj.user_id)
+        me = self.context["me"]
+        if not me:
+            followed = False
+        else:
+            followed = author.as_idol.filter(fans__uid=me.uid).exists()
         data = {
             "nickname": author.nickname,
             "avatar": author.avatar,
             "slug": author.slug,
             "autograph": author.autograph,
+            "followed": followed
         }
         return data
 
