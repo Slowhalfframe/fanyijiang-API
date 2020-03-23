@@ -71,12 +71,6 @@ class NotificationsSerializer(serializers.ModelSerializer):
             data['id'] = action_object.id
             data['link'] = ''  # 文章详情
 
-        # if verb == 'LC':
-        #     # 赞了你的评论
-        #     data['title'] = action_object.content
-        #     data['id'] = action_object.id
-        #     data['link'] = ''  # 评论详情
-
         if verb == 'LQAC':
             # 赞了你的评论
             content_object = action_object.content_object

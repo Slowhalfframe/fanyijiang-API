@@ -152,14 +152,19 @@ def notification_handler(actor_uid, recipient_uid, verb, action_object_id, **kwa
     NOTIFICATION_TYPE = (
         ('LAN', '赞了你的回答'),  # like answer
         ('LAR', '赞了你的文章'),  # like article
-        ('LC', '赞了你的评论'),  # like comment
+        ('LQAC', '赞了你的评论'),  # like comment回答的评论
+        ('LAC', '赞了你的评论'),  # like comment文章的评论
+        ('LIC', '赞了你的评论'),  # like comment想法的评论
+        # ('LQC', '赞了你的评论'),  # like comment问题的评论
+        # ('LRC', '赞了你的评论'),  # like comment文章的评论
+        # ('LTC', '赞了你的评论'),  # like comment想法的评论
         ('CAN', '评论了你的回答'),  # comment answer
         ('CAR', '评论了你的文章'),  # comment article
         ('CQ', '评论了你的问题'),  # comment question
+        ('CI', '评论了你的想法'),  # comment idea
         ('R', '回复了你'),  # reply
-        ('FAN', '收藏了你的回答'),  # favor answer
-        ('FAR', '收藏了你的文章'),  # favor article
         ('A', '回答了你的问题'),  # answer
+        ('AF', '回答了你关注的问题'),  # answer
         ('I', '的提问等你来答'),  # invited
         ('O', '关注了你'),  # follow
     )
