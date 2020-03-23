@@ -75,13 +75,13 @@ class ArticleDetailSerializer(serializers.ModelSerializer):
     vote_count = serializers.SerializerMethodField()
     comment_count = serializers.SerializerMethodField()
     author_info = serializers.SerializerMethodField()
-    commented = serializers.SerializerMethodField()
+    voted = serializers.SerializerMethodField()
 
     class Meta:
         model = Article
         fields = (
             "id", "author_info", "title", "content", "image", "status", "create_at", "update_at",
-            "labels", "vote_count", "comment_count", "commented",
+            "labels", "vote_count", "comment_count", "voted",
         )
 
     def get_author_info(self, obj):
@@ -100,11 +100,14 @@ class ArticleDetailSerializer(serializers.ModelSerializer):
     def get_comment_count(self, obj):
         return obj.articlecomment_set.count()
 
-    def get_commented(self, obj):
+    def get_voted(self, obj):
         me = self.context["me"]
         if not me:
             return None
-        return obj.articlecomment_set.filter(user_id=me.uid).exists()
+        my_vote = obj.vote.filter(user_id=me.uid).first()
+        if not my_vote:
+            return None
+        return my_vote.value
 
 
 class ArticleCommentSerializer(serializers.ModelSerializer):
