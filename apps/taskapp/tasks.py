@@ -185,7 +185,7 @@ def notification_handler(actor_uid, recipient_uid, verb, action_object_id, **kwa
         # 传入评论对象, 评论回答
         action_object = QAComment.objects.get(pk=action_object_id)
         obj = action_object.content_object
-        is_object = recipient_uid == obj.answer.user_id
+        is_object = recipient_uid == obj.user_id
     elif verb == 'CQ':
         # 传入评论对象, 评论问题
         action_object = QAComment.objects.get(pk=action_object_id)

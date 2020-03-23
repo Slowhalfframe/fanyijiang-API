@@ -29,7 +29,7 @@ class NotificationAPIView(CustomAPIView):
         # 在获取的时候就已经把所有未读的变成已读
         Notification.objects.filter(recipient__uid=uid, unread=True).update(unread=False)
         # data = NotificationsSerializer(nos, many=True).data
-
+        # nos = [no for no in nos if no.action_object != None]
         data = self.paginate_data(request, nos, NotificationsSerializer)
         # 重组数据格式
         if display_type == 'all':

@@ -30,7 +30,8 @@ class NotificationsSerializer(serializers.ModelSerializer):
         action_object = obj.action_object
         verb = obj.verb
         data = {}
-
+        if action_object == None:
+            return '作者已删除'
         if verb == 'O':
             # 关注了你
             pass
@@ -79,7 +80,7 @@ class NotificationsSerializer(serializers.ModelSerializer):
                 data['id'] = content_object.id
                 data['link'] = ''  # 评论详情
             if isinstance(content_object, Answer):
-                data['title'] = action_object.question.title
+                data['title'] = content_object.content
                 data['id'] = content_object.id
                 data['link'] = ''  # 评论详情
 

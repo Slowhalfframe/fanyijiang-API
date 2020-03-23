@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from django.conf import settings
+import json
 
 from apps.userpage.models import (UserProfile, UserEmploymentHistory, UserEducationHistory,
                                   UserLocations, UserFavorites, FollowedFavorites, FavoriteCollection)
@@ -191,10 +192,11 @@ class UserPageThinksSerializer(serializers.ModelSerializer):
     comment_count = serializers.SerializerMethodField()
     upvote_count = serializers.SerializerMethodField()
     author_info = serializers.SerializerMethodField()
+    avatars = serializers.SerializerMethodField()
 
     class Meta:
         model = Idea
-        fields = ('id', 'content', 'create_time', 'comment_count', 'upvote_count', 'author_info')
+        fields = ('id', 'content', 'create_time', 'comment_count', 'upvote_count', 'author_info', 'avatars',)
 
     def get_comment_count(self, obj):
         return obj.ideacomment_set.all().count()
@@ -210,6 +212,11 @@ class UserPageThinksSerializer(serializers.ModelSerializer):
             'slug': author.slug,
             'autograph': author.autograph,
         }
+        return data
+
+    def get_avatars(self, obj):
+        picture = obj.avatars
+        data = picture.replace('[', '').replace(']','').replace('\"', '').split(',')
         return data
 
 
