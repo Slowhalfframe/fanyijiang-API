@@ -119,7 +119,8 @@ class ArticleDetailView(CustomAPIView):
                 return self.error(errorcode.MSG_LOGIN_REQUIRED, errorcode.LOGIN_REQUIRED)
             if article.user_id != me.uid:
                 return self.error(errorcode.MSG_NOT_OWNER, errorcode.NOT_OWNER)
-        s = ArticleDetailSerializer(instance=article)
+        me = self.get_user_profile(request)
+        s = ArticleDetailSerializer(instance=article, context={"me": me})
 
         # TODO 记录阅读量
         articles_pv_record.delay(request.META.get('REMOTE_ADDR'), article.id)
@@ -263,5 +264,7 @@ class ArticleCommentDetailView(CustomAPIView):
         if not article:
             return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
         comments = article.articlecomment_set.all()  # TODO 过滤条件
-        data = self.paginate_data(request, query_set=comments, object_serializer=ArticleCommentSerializer)
+        me = self.get_user_profile(request)
+        data = self.paginate_data(request, query_set=comments, object_serializer=ArticleCommentSerializer,
+                                  serializer_context={"me": me})
         return self.success(data)

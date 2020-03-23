@@ -75,12 +75,13 @@ class ArticleDetailSerializer(serializers.ModelSerializer):
     vote_count = serializers.SerializerMethodField()
     comment_count = serializers.SerializerMethodField()
     author_info = serializers.SerializerMethodField()
+    commented = serializers.SerializerMethodField()
 
     class Meta:
         model = Article
         fields = (
             "id", "author_info", "title", "content", "image", "status", "create_at", "update_at",
-            "labels", "vote_count", "comment_count"
+            "labels", "vote_count", "comment_count", "commented",
         )
 
     def get_author_info(self, obj):
@@ -99,18 +100,25 @@ class ArticleDetailSerializer(serializers.ModelSerializer):
     def get_comment_count(self, obj):
         return obj.articlecomment_set.count()
 
+    def get_commented(self, obj):
+        me = self.context["me"]
+        if not me:
+            return None
+        return obj.articlecomment_set.filter(user_id=me.uid).exists()
+
 
 class ArticleCommentSerializer(serializers.ModelSerializer):
     create_at = serializers.DateTimeField(format="%Y%m%d %H:%M:%S", read_only=True)
     vote_count = serializers.SerializerMethodField()
     author_info = serializers.SerializerMethodField()
     receiver_info = serializers.SerializerMethodField()
+    voted = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = ArticleComment
         fields = ("id", "article", "user_id", "author_info", "receiver_info", "content", "reply_to_user", "create_at",
-                  "vote_count")
-        read_only_fields = ("id", "create_at", "vote_count", "author_info", "receiver_info")
+                  "vote_count", "voted")
+        read_only_fields = ("id", "create_at", "vote_count", "author_info", "receiver_info", "voted")
         extra_kwargs = {
             "user_id": {
                 "write_only": True
@@ -145,3 +153,12 @@ class ArticleCommentSerializer(serializers.ModelSerializer):
 
     def get_vote_count(self, obj):
         return obj.vote.filter(value=True).count() - obj.vote.filter(value=False).count()
+
+    def get_voted(self, obj: ArticleComment):
+        me = self.context["me"]
+        if not me:
+            return None
+        my_vote = obj.vote.filter(user_id=me.uid).first()
+        if not my_vote:
+            return None
+        return my_vote.value
