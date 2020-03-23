@@ -18,7 +18,11 @@ def creator_list(date):
     end_date = date - datetime.timedelta(days=1)
     # 获取上周创作的回答内容
     answers = Answer.objects.filter(create_at__gte=begin_date, create_at__lte=end_date)
+<<<<<<< Updated upstream
     articles = Article.objects.filter(create_at__gte=begin_date, create_at__lte=end_date, is_deleted=False)
+=======
+    articles = Article.objects.filter(create_at__gte=begin_date, create_at__lte=end_date, status='published', is_deleted=False)
+>>>>>>> Stashed changes
 
     answer_data = [
         {'content_type': 'answer', 'id': answer.id, 'title': answer.question.title, 'score': get_answer_score(answer),
