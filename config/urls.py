@@ -21,6 +21,7 @@ from django.views.static import serve
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r"^api/labels/", include("apps.labels.urls", namespace="labels")),
+    url(r"^api/v2/labels/", include("apps.labels_v2.urls", namespace="labels_v2")),
     url(r"^api/questions/", include("apps.questions.urls", namespace="questions")),
     url(r"^api/userpage/", include("apps.userpage.urls", namespace="userpage")),
     url(r"^api/articles/", include("apps.articles.urls", namespace="articles")),
