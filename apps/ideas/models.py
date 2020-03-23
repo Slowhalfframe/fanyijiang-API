@@ -11,6 +11,7 @@ class Idea(models.Model):
     create_at = models.DateTimeField(auto_now_add=True, verbose_name="提出时间")
     agree = GenericRelation(to="IdeaLike", verbose_name="想法点赞")
     read_nums = GenericRelation(to=ReadNums)
+    avatars = models.CharField(max_length=800, null=False, blank=True, default="")  # 图片的路径列表，最多有9张图
 
     class Meta:
         db_table = "db_thinks"

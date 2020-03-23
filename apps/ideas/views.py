@@ -1,3 +1,5 @@
+import json
+
 from apps.utils.api import CustomAPIView
 from apps.utils.decorators import validate_identity
 from apps.utils import errorcode
@@ -13,9 +15,11 @@ class IdeaView(CustomAPIView):
         """发表想法"""
 
         user_id = request._request.uid
+        avatars = json.dumps(request.data.getlist("avatars", []))
         data = {
             "user_id": user_id,
-            "content": request.data.get("content", None)
+            "content": request.data.get("content", None),
+            "avatars": avatars,
         }
         s = IdeaValidator(data=data)
         s.is_valid()

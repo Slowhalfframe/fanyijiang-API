@@ -1,3 +1,5 @@
+import json
+
 from rest_framework import serializers
 
 from .models import Idea, IdeaComment
@@ -7,17 +9,23 @@ from apps.userpage.models import UserProfile
 class IdeaValidator(serializers.ModelSerializer):
     class Meta:
         model = Idea
-        fields = ("user_id", "content")
+        fields = ("user_id", "content", "avatars")
+
+    def validate_avatars(self, value):
+        file_path_list = json.loads(value)
+        # TODO 验证图片路径和格式
+        return value
 
 
 class IdeaDetailSerializer(serializers.ModelSerializer):
     create_at = serializers.DateTimeField(format="%Y%m%d %H:%M:%S")
     agree_count = serializers.SerializerMethodField()
     author_info = serializers.SerializerMethodField()
+    avatars = serializers.SerializerMethodField()
 
     class Meta:
         model = Idea
-        fields = ("id", "content", "create_at", "agree_count", "author_info")
+        fields = ("id", "content", "create_at", "agree_count", "author_info", "avatars")
 
     def get_agree_count(self, obj):
         return obj.agree.count()
@@ -30,6 +38,9 @@ class IdeaDetailSerializer(serializers.ModelSerializer):
             "slug": author.slug
         }
         return data
+
+    def get_avatars(self, obj):
+        return json.loads(obj.avatars)
 
 
 class IdeaCommentValidator(serializers.ModelSerializer):
