@@ -179,7 +179,7 @@ class CommentView(CustomAPIView):
 
         # TODO 触发消息通知
         # 某人评论了你的文章
-        notification_handler.delay(request._request.uid, article, 'CAR', comment.id)
+        notification_handler.delay(request._request.uid, article.user_id, 'CAR', comment.id)
         return self.success(s.data)
 
     @validate_identity
