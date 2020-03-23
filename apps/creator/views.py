@@ -519,7 +519,7 @@ class RecentCreateContent(object):
         return answer_data
 
     def recent_article(self):
-        articles = Article.objects.filter(user_id=self.user.uid).order_by('create_at')[:3]
+        articles = Article.objects.filter(user_id=self.user.uid, is_deleted=False).order_by('create_at')[:3]
         article_data = []
         for article in articles:
             data = dict()
@@ -690,7 +690,9 @@ class CreatorDataDetailAPIView(CustomAPIView):
                 'ysd_read_nums': instance.get_queryset_date_num(yesterday_str),
                 'ysd_upvote_nums': ThinkVoteStatistics(user).get_date_upvote_nums(yesterday_str),  # TODO
                 'comment_count': sum([query.ideacomment_set.all().count() for query in instance.get_queryset()]),
-                'ysd_comment_count': sum([query.ideacomment_set.filter(create_at__gte=yesterday, create_at__lte=today).count() for query in instance.get_queryset()])
+                'ysd_comment_count': sum(
+                    [query.ideacomment_set.filter(create_at__gte=yesterday, create_at__lte=today).count() for query in
+                     instance.get_queryset()])
             }
         return self.success(create_data)
 
@@ -784,7 +786,8 @@ class SingleDataStatisticsAPIView(CustomAPIView):
                 data_list.append(data)
 
         if data_type == 'article':
-            articles = Article.objects.filter(create_at__gte=begin_da, create_at__lte=end_da, user_id=uid)
+            articles = Article.objects.filter(create_at__gte=begin_da, create_at__lte=end_da, user_id=uid,
+                                              is_deleted=False)
             for article in articles:
                 data = dict()
                 data['id'] = article.id
@@ -866,7 +869,7 @@ class CreatorListAPIView(CustomAPIView):
                     data['score'] = content.score
 
                 if content_type == 'article':
-                    article = Article.objects.get(pk=data['id'])
+                    article = Article.objects.get(pk=data['id'], is_deleted=False)
                     data['title'] = article.title
                     user = UserProfile.objects.get(uid=article.user_id)
                     user_data = {'avatar': user.avatar, 'nickname': user.nickname}

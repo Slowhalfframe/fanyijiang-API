@@ -294,7 +294,7 @@ class AnswerWithAuthorInfoSerializer(serializers.ModelSerializer):
                 "autograph": author.autograph,
                 "slug": author.slug,
                 "answer_count": Answer.objects.filter(user_id=author.uid).count(),
-                "article_count": Article.objects.filter(user_id=author.uid).count(),
+                "article_count": Article.objects.filter(user_id=author.uid, is_deleted=False).count(),
                 "follower_count": author.as_idol.count(),
                 "i_followed_author": FollowedUser.objects.filter(fans=me, idol=author).exists()
             }

@@ -39,7 +39,7 @@ class ArticleView(CustomAPIView):
         """更新文章，成品不能改为草稿"""
 
         user_id = request._request.uid
-        article = Article.objects.filter(pk=request.data.get("id", None)).first()
+        article = Article.objects.filter(pk=request.data.get("id", None), is_deleted=False).first()
         if not article:
             return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
         if article.user_id != user_id:
@@ -82,7 +82,7 @@ class ArticleView(CustomAPIView):
     def patch(self, request):
         """把草稿变为成品"""
 
-        article = Article.objects.filter(pk=request.data.get("id", None)).first()
+        article = Article.objects.filter(pk=request.data.get("id", None), is_deleted=False).first()
         if not article:
             return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
         if article.user_id != request._request.uid:
@@ -100,7 +100,7 @@ class ArticleView(CustomAPIView):
     def get(self, request):
         """查看文章，不包括草稿"""
 
-        articles = Article.objects.filter(status="published")
+        articles = Article.objects.filter(status="published", is_deleted=False)
         # TODO 返回哪部分数据？
         data = self.paginate_data(request, query_set=articles, object_serializer=NewArticleSerializer)
         return self.success(data)
@@ -110,7 +110,7 @@ class ArticleDetailView(CustomAPIView):
     def get(self, request, article_id):
         """查看文章详情，只有作者能查看草稿"""
 
-        article = Article.objects.filter(pk=article_id).first()
+        article = Article.objects.filter(pk=article_id, is_deleted=False).first()
         if not article:
             return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
         if article.status == "draft":
@@ -119,7 +119,8 @@ class ArticleDetailView(CustomAPIView):
                 return self.error(errorcode.MSG_LOGIN_REQUIRED, errorcode.LOGIN_REQUIRED)
             if article.user_id != me.uid:
                 return self.error(errorcode.MSG_NOT_OWNER, errorcode.NOT_OWNER)
-        s = ArticleDetailSerializer(instance=article)
+        me = self.get_user_profile(request)
+        s = ArticleDetailSerializer(instance=article, context={"me": me})
 
         # TODO 记录阅读量
         articles_pv_record.delay(request.META.get('REMOTE_ADDR'), article.id)
@@ -147,7 +148,7 @@ class DraftView(CustomAPIView):
     def get(self, request):
         """查看草稿箱"""
 
-        drafts = Article.objects.filter(user_id=request._request.uid, status="draft")
+        drafts = Article.objects.filter(user_id=request._request.uid, status="draft", is_deleted=False)
         # TODO 返回哪部分数据？
         data = self.paginate_data(request, query_set=drafts, object_serializer=ArticleDetailSerializer)
         return self.success(data)
@@ -259,9 +260,11 @@ class ArticleCommentDetailView(CustomAPIView):
     def get(self, request, article_id):
         """获取指定文章的所有评论"""
 
-        article = Article.objects.filter(pk=article_id, status="published").first()
+        article = Article.objects.filter(pk=article_id, status="published", is_deleted=False).first()
         if not article:
             return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
         comments = article.articlecomment_set.all()  # TODO 过滤条件
-        data = self.paginate_data(request, query_set=comments, object_serializer=ArticleCommentSerializer)
+        me = self.get_user_profile(request)
+        data = self.paginate_data(request, query_set=comments, object_serializer=ArticleCommentSerializer,
+                                  serializer_context={"me": me})
         return self.success(data)
