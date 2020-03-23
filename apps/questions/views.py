@@ -88,7 +88,9 @@ class QuestionCommentView(CustomAPIView):
         if not question:
             return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
         comments = question.comment.all()
-        data = self.paginate_data(request, query_set=comments, object_serializer=QACommentDetailSerializer)
+        me = self.get_user_profile(request)
+        data = self.paginate_data(request, query_set=comments, object_serializer=QACommentDetailSerializer,
+                                  serializer_context={"me": me})
         return self.success(data)
 
 
@@ -111,6 +113,21 @@ class AnswerDetailView(CustomAPIView):
         # TODO 记录阅读量
         answers_pv_record.delay(request.META.get('REMOTE_ADDR'), answer.id)
         return self.success(s.data)
+
+
+class AnswerCommentView(CustomAPIView):
+    def get(self, request, question_id, answer_id):
+        """获取回答的所有评论"""
+
+        question = Question.objects.filter(pk=question_id).first()
+        answer = Answer.objects.filter(pk=answer_id, question_id=question_id).first()
+        if not question or not answer:
+            return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
+        comments = answer.comment.all()
+        me = self.get_user_profile(request)
+        data = self.paginate_data(request, query_set=comments, object_serializer=QACommentDetailSerializer,
+                                  serializer_context={"me": me})
+        return self.success(data)
 
 
 class AnswerView(CustomAPIView):
@@ -409,8 +426,8 @@ class VoteView(CustomAPIView):
         if not which_object:
             return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
         # TODO 能否给自己投票？
-        value = request.data.get("value", None)
-        value = bool(value)  # TODO 具体哪些值看作True，哪些看作False?
+        value = request.data.get("value", "0")
+        value = bool(int(value))  # value采用数字
         try:
             which_object.vote.update_or_create(user_id=user_id, defaults={'value': value})
         except:

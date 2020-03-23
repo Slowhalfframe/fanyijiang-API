@@ -5,7 +5,7 @@ from apps.utils.decorators import validate_identity
 from apps.utils import errorcode
 from .serializers import ArticleCreateSerializer, NewArticleSerializer, ArticleDetailSerializer, \
     ArticleCommentSerializer
-from .models import Article, ArticleComment, ArticleVote
+from .models import Article, ArticleComment
 
 from apps.taskapp.tasks import articles_pv_record
 
@@ -125,6 +125,22 @@ class ArticleDetailView(CustomAPIView):
         articles_pv_record.delay(request.META.get('REMOTE_ADDR'), article.id)
         return self.success(s.data)
 
+    @validate_identity
+    def delete(self, request, article_id):
+        """删除文章"""
+
+        article = Article.objects.filter(pk=article_id, is_deleted=False).first()
+        if not article:
+            return self.success()
+        if article.user_id != request._request.uid:
+            return self.error(errorcode.MSG_NOT_OWNER, errorcode.NOT_OWNER)
+        article.is_deleted = True
+        try:
+            article.save()
+        except:
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
+        return self.success()
+
 
 class DraftView(CustomAPIView):
     @validate_identity
@@ -211,8 +227,8 @@ class VoteView(CustomAPIView):
         if not which_object:
             return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
         # TODO 能否给自己投票
-        value = request.data.get("value", None)
-        value = bool(value)  # TODO value的具体规则
+        value = request.data.get("value", "0")
+        value = bool(int(value))  # value采用数字
         try:
             which_object.vote.update_or_create(user_id=user_id, defaults={"value": value})
         except:
