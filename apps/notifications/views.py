@@ -34,7 +34,7 @@ class NotificationAPIView(CustomAPIView):
         # 重组数据格式
         if display_type == 'all':
             results = data['results']
-            results_data = []
+            results_data = list()
             while 0 < len(results):
                 first_result = results[0]
                 first_time = first_result.get('format_time')

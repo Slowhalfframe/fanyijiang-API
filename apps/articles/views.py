@@ -8,7 +8,7 @@ from .serializers import ArticleCreateSerializer, NewArticleSerializer, ArticleD
     ArticleCommentSerializer
 from .models import Article, ArticleComment
 
-from apps.taskapp.tasks import articles_pv_record
+from apps.taskapp.tasks import articles_pv_record, notification_handler
 
 
 class ArticleView(CustomAPIView):
@@ -178,7 +178,8 @@ class CommentView(CustomAPIView):
         s = ArticleCommentSerializer(instance=comment, context={"me": UserProfile.objects.get(pk=request._request.uid)})
 
         # TODO 触发消息通知
-
+        # 某人评论了你的文章
+        notification_handler.delay(request._request.uid, article, 'CAR', comment.id)
         return self.success(s.data)
 
     @validate_identity
@@ -236,6 +237,12 @@ class VoteView(CustomAPIView):
         except:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         # TODO 触发消息通知
+        if which_model == Article and value == True:
+            # 给文章点赞
+            notification_handler.delay(user_id, which_object.user_id, 'LAR', which_object.id)
+        elif which_model == ArticleComment and value == True:
+            # 给文章评论点赞
+            notification_handler.delay(user_id, which_object.user_id, 'LAC', which_object.id)
         return self.success()
 
     @validate_identity
