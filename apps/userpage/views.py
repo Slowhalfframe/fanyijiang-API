@@ -17,7 +17,8 @@ from apps.userpage.serializers import (UserInfoSerializer, FavoritesSerializer, 
 from apps.userpage.validators import FavoritesValidator
 
 from apps.questions.models import Question, Answer, QuestionFollow
-from apps.questions.serializers import FollowedQuestionSerializer, QuestionInLabelDiscussSerializer, AnswerInLabelDiscussSerializer
+from apps.questions.serializers import FollowedQuestionSerializer, QuestionInLabelDiscussSerializer, \
+    AnswerInLabelDiscussSerializer
 
 from apps.articles.models import Article
 
@@ -81,7 +82,7 @@ class UserInfoAPIView(CustomAPIView):
         create_content_nums = {
             'question_count': Question.objects.filter(user_id=user.uid).count(),
             'answer_count': Answer.objects.filter(user_id=user.uid).count(),
-            'article_count': Article.objects.filter(user_id=user.uid).count(),
+            'article_count': Article.objects.filter(user_id=user.uid, is_deleted=False).count(),
             'think_count': Idea.objects.filter(user_id=user.uid).count(),
             'collect_count': user.favorites.all().count(),
         }
@@ -175,6 +176,7 @@ class UcUpdateAPIView(CustomAPIView):
 
 class HoverUserInfoAPIView(CustomAPIView):
     '''但鼠标放在用户头像上时，显示用户部分信息'''
+
     @validate_identity
     def get(self, request, user_slug):
         uid = request._request.uid
@@ -184,13 +186,14 @@ class HoverUserInfoAPIView(CustomAPIView):
         user_info = {'avatar': user.avatar, 'nickname': user.nickname, 'autograph': user.autograph,
                      'slug': user.slug
                      }
-        employment = {'company': user.user_employment_history.first().company if user.user_employment_history.first() else None,
-                      'position': user.user_employment_history.first().position if user.user_employment_history.first() else None,
-                      }
+        employment = {
+            'company': user.user_employment_history.first().company if user.user_employment_history.first() else None,
+            'position': user.user_employment_history.first().position if user.user_employment_history.first() else None,
+            }
         has_followed = True if FollowedUser.objects.filter(fans__uid=uid, idol__uid=user.uid).exists() else False
         create_count = {
             'answer_count': Answer.objects.filter(user_id=user.uid).count(),
-            'article_count': Article.objects.filter(user_id=user.uid).count(),
+            'article_count': Article.objects.filter(user_id=user.uid, is_deleted=False).count(),
             'fans_count': FollowedUser.objects.filter(idol=user).count(),
             'has_followed': has_followed
         }
@@ -205,6 +208,7 @@ class HoverUserInfoAPIView(CustomAPIView):
 
 class HoverLabelInfoAPIView(CustomAPIView):
     '''但鼠标放在用户头像上时，显示用户部分信息'''
+
     def get(self, request, pk):
         label = Label.objects.filter(pk=pk).first()
         if not label:
@@ -336,7 +340,7 @@ class FavoritesListAPIView(CustomAPIView):
         if not user:
             return self.error('该用户不存在', 404)
         if user.uid == uid:
-        # 获取该用户下所有收藏夹
+            # 获取该用户下所有收藏夹
             favorites = user.favorites.all()
         else:
             favorites = user.favorites.filter(status='public')
@@ -370,7 +374,7 @@ class AnswerListAPIView(CustomAPIView):
 
         # TODO 查询相关数据库
         answers = Answer.objects.filter(user_id=user.uid)
-        data = self.paginate_data(request, answers, UserPageAnswerSerializer, serializer_context={'me':user})
+        data = self.paginate_data(request, answers, UserPageAnswerSerializer, serializer_context={'me': user})
         return self.success(data)
 
 
@@ -399,7 +403,7 @@ class ArticleListAPIView(CustomAPIView):
             return self.error('该用户不存在', 404)
 
         # TODO 查询相关数据库
-        articles = Article.objects.filter(user_id=user.uid)
+        articles = Article.objects.filter(user_id=user.uid, is_deleted=False)
         data = self.paginate_data(request, articles, UserPageArticleSerializer)
         # data = {'results': [], 'total': 0}
         return self.success(data)
@@ -588,7 +592,7 @@ class FavoritesContentAPIView(CustomAPIView):
             answer = Answer.objects.filter(pk=object_id).first()
             answer.collect.update_or_create(favorite=fa)
         if content_type == 'article':
-            article = Article.objects.filter(pk=object_id).first()
+            article = Article.objects.filter(pk=object_id, is_deleted=False).first()
             article.mark.update_or_create(favorite=fa)
 
         return self.success()
@@ -606,7 +610,7 @@ class FavoritesContentAPIView(CustomAPIView):
             answer.collect.get(favorite=fa).delete()
 
         if content_type == 'article':
-            article = Article.objects.filter(pk=object_id).first()
+            article = Article.objects.filter(pk=object_id, is_deleted=False).first()
             article.mark.get(favorite=fa).delete()
 
         return self.success()
@@ -622,7 +626,7 @@ class CollectedAPIView(CustomAPIView):
         if content_type == 'answer':
             instance = Answer.objects.filter(pk=object_id).first()
         if content_type == 'article':
-            instance = Article.objects.filter(pk=object_id).first()
+            instance = Article.objects.filter(pk=object_id, is_deleted=False).first()
 
         for data in data_list:
             # 检查是否已收藏

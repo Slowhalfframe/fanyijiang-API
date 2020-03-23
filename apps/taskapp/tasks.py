@@ -208,7 +208,7 @@ def notification_handler(actor_uid, recipient_uid, verb, action_object_id, **kwa
 
     elif verb == 'LAR':
         # 赞了你的文章
-        action_object = Article.objects.get(pk=action_object_id)
+        action_object = Article.objects.get(pk=action_object_id, is_deleted=False)
         is_object = recipient_uid == action_object.user_id
 
     elif verb == 'LQAC':
