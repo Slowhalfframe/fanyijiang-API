@@ -3,8 +3,9 @@ import json
 from apps.utils.api import CustomAPIView
 from apps.utils.decorators import validate_identity
 from apps.utils import errorcode
+from apps.userpage.models import UserProfile
 from .serializers import IdeaValidator, IdeaDetailSerializer, IdeaCommentValidator, IdeaCommentSerializer
-from .models import Idea, IdeaComment, IdeaLike
+from .models import Idea, IdeaComment
 
 from apps.taskapp.tasks import thinks_pv_record
 
@@ -29,20 +30,18 @@ class IdeaView(CustomAPIView):
             idea = s.create(s.validated_data)
         except Exception as e:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
-        s = IdeaDetailSerializer(instance=idea)
+        me = UserProfile.objects.get(pk=user_id)
+        s = IdeaDetailSerializer(instance=idea, context={"me": me})
         return self.success(s.data)
 
-    @validate_identity
     def get(self, request):
-        """查看本人的所有想法"""
+        """查看所有想法"""
 
-        user_id = request._request.uid
-        try:
-            ideas = Idea.objects.filter(user_id=user_id)
-        except Exception as e:
-            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
-        s = IdeaDetailSerializer(instance=ideas, many=True)
-        return self.success(s.data)
+        ideas = Idea.objects.all()
+        me = self.get_user_profile(request)
+        data = self.paginate_data(request, query_set=ideas, object_serializer=IdeaDetailSerializer,
+                                  serializer_context={"me": me})
+        return self.success(data)
 
 
 class MonoIdeaView(CustomAPIView):
@@ -68,7 +67,8 @@ class MonoIdeaView(CustomAPIView):
         idea = Idea.objects.filter(pk=idea_pk).first()
         if not idea:
             return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
-        s = IdeaDetailSerializer(instance=idea)
+        me = self.get_user_profile(request)
+        s = IdeaDetailSerializer(instance=idea, context={"me": me})
 
         # TODO 记录阅读量
         thinks_pv_record.delay(request.META.get('REMOTE_ADDR'), idea.id)
@@ -79,9 +79,11 @@ class MonoIdeaView(CustomAPIView):
         """修改自己的想法"""
 
         user_id = request._request.uid
+        avatars = json.dumps(request.data.getlist("avatars", []))
         data = {
             "user_id": user_id,
-            "content": request.data.get("content", None)
+            "content": request.data.get("content", None),
+            "avatars": avatars,
         }
         s = IdeaValidator(data=data)
         s.is_valid()
@@ -97,7 +99,8 @@ class MonoIdeaView(CustomAPIView):
             idea.save()
         except:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
-        s = IdeaDetailSerializer(instance=idea)
+        me = UserProfile.objects.get(pk=user_id)
+        s = IdeaDetailSerializer(instance=idea, context={"me": me})
         return self.success(s.data)
 
 
@@ -119,7 +122,8 @@ class IdeaCommentView(CustomAPIView):
             comment = s.create(s.validated_data)
         except Exception as e:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
-        s = IdeaCommentSerializer(instance=comment)
+        me = UserProfile.objects.get(pk=data["user_id"])
+        s = IdeaCommentSerializer(instance=comment, context={"me": me})
         return self.success(s.data)
 
     def get(self, request, idea_pk):
@@ -129,7 +133,9 @@ class IdeaCommentView(CustomAPIView):
         if not idea:
             return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
         comments = idea.ideacomment_set.all()
-        data = self.paginate_data(request, query_set=comments, object_serializer=IdeaCommentSerializer)
+        me = self.get_user_profile(request)
+        data = self.paginate_data(request, query_set=comments, object_serializer=IdeaCommentSerializer,
+                                  serializer_context={"me": me})
         return self.success(data)
 
 
@@ -173,7 +179,8 @@ class MonoIdeaCommentView(CustomAPIView):
             comment.save()
         except:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
-        s = IdeaCommentSerializer(instance=comment)
+        me = UserProfile.objects.get(pk=user_id)
+        s = IdeaCommentSerializer(instance=comment, context={"me": me})
         return self.success(s.data)
 
     def get(self, request, idea_pk, comment_pk):
@@ -182,7 +189,8 @@ class MonoIdeaCommentView(CustomAPIView):
         comment = IdeaComment.objects.filter(pk=comment_pk, think=idea_pk).first()
         if not comment:
             return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
-        s = IdeaCommentSerializer(instance=comment)
+        me = self.get_user_profile(request)
+        s = IdeaCommentSerializer(instance=comment, context={"me": me})
         return self.success(s.data)
 
 

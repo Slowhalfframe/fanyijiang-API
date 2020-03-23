@@ -22,10 +22,11 @@ class IdeaDetailSerializer(serializers.ModelSerializer):
     agree_count = serializers.SerializerMethodField()
     author_info = serializers.SerializerMethodField()
     avatars = serializers.SerializerMethodField()
+    liked = serializers.SerializerMethodField()
 
     class Meta:
         model = Idea
-        fields = ("id", "content", "create_at", "agree_count", "author_info", "avatars")
+        fields = ("id", "content", "create_at", "agree_count", "author_info", "avatars", "liked")
 
     def get_agree_count(self, obj):
         return obj.agree.count()
@@ -42,6 +43,12 @@ class IdeaDetailSerializer(serializers.ModelSerializer):
     def get_avatars(self, obj):
         return json.loads(obj.avatars)
 
+    def get_liked(self, obj):
+        me = self.context["me"]
+        if not me:
+            return False
+        return obj.agree.filter(user_id=me.uid).exists()
+
 
 class IdeaCommentValidator(serializers.ModelSerializer):
     class Meta:
@@ -54,10 +61,11 @@ class IdeaCommentSerializer(serializers.ModelSerializer):
     create_at = serializers.DateTimeField(format="%Y%m%d %H:%M:%S")
     author_info = serializers.SerializerMethodField()
     think_id = serializers.IntegerField(source="think.pk")
+    liked = serializers.SerializerMethodField()
 
     class Meta:
         model = IdeaComment
-        fields = ("id", "think_id", "content", "create_at", "agree_count", "author_info")
+        fields = ("id", "think_id", "content", "create_at", "agree_count", "author_info", "liked")
 
     def get_agree_count(self, obj):
         return obj.agree.count()
@@ -70,3 +78,9 @@ class IdeaCommentSerializer(serializers.ModelSerializer):
             "slug": author.slug
         }
         return data
+
+    def get_liked(self, obj):
+        me = self.context["me"]
+        if not me:
+            return False
+        return obj.agree.filter(user_id=me.uid).exists()
