@@ -79,9 +79,11 @@ class MonoIdeaView(CustomAPIView):
         """修改自己的想法"""
 
         user_id = request._request.uid
+        avatars = json.dumps(request.data.getlist("avatars", []))
         data = {
             "user_id": user_id,
-            "content": request.data.get("content", None)
+            "content": request.data.get("content", None),
+            "avatars": avatars,
         }
         s = IdeaValidator(data=data)
         s.is_valid()
