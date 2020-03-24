@@ -17,6 +17,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__fil
 
 # 读取.env文件, 在windows不适用，开发时可直接导入开发环境配置文件
 from dotenv import load_dotenv
+
 env_path = os.path.join(BASE_DIR, '.env')
 load_dotenv(dotenv_path=env_path)
 
@@ -48,7 +49,8 @@ DJANGO_APPS = [
 
 # 第三方app
 THIRD_APPS = [
-    'corsheaders'
+    'corsheaders',
+    'haystack',
 ]
 
 # 本地开发app
@@ -60,6 +62,7 @@ LOCAL_APPS = [
     'apps.ideas',
     'apps.creator',
     'apps.notifications',
+    'apps.search',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_APPS + LOCAL_APPS
@@ -80,7 +83,7 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, "templates"), ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -143,7 +146,7 @@ CACHES = {
         "BACKEND": "django_redis.cache.RedisCache",
         "LOCATION": "redis://127.0.0.1:6379/1",
         "OPTIONS": {
-           "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
         }
     }
 }
@@ -153,3 +156,11 @@ UPLOAD_PREFIX = '/picture'
 UPLOAD_DIR = "{}/{}".format(DATA_DIR, UPLOAD_PREFIX)
 if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
+
+HAYSTACK_CONNECTIONS = {
+    'default': {
+        'ENGINE': 'haystack.backends.elasticsearch_backend.ElasticsearchSearchEngine',
+        'URL': 'http://localhost:9200/',  # 此处为elasticsearch运行的服务器ip地址，端口号固定为9200
+        'INDEX_NAME': 'fanyijiang',  # 指定elasticsearch建立的索引库的名称
+    },
+}
