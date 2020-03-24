@@ -19,7 +19,9 @@ class NotificationsSerializer(serializers.ModelSerializer):
         actor = obj.actor
         data = {
             'nickname': actor.nickname,
-            'slug': actor.slug
+            'slug': actor.slug,
+            'avatar': actor.avatar,
+            'autograph': actor.autograph
         }
         return data
 
@@ -80,7 +82,7 @@ class NotificationsSerializer(serializers.ModelSerializer):
                 data['id'] = content_object.id
                 data['link'] = ''  # 评论详情
             if isinstance(content_object, Answer):
-                data['title'] = content_object.content
+                data['title'] = content_object.question.title
                 data['id'] = content_object.id
                 data['link'] = ''  # 评论详情
 
@@ -98,21 +100,33 @@ class NotificationsSerializer(serializers.ModelSerializer):
 
         if verb == 'CAN':
             # 评论了你的回答
-            data['title'] = action_object.content
-            data['id'] = action_object.id
-            data['link'] = ''  # 回答详情
+            content_object = action_object.content_object
+            if isinstance(content_object, Question):
+                data['title'] = action_object.title
+                data['id'] = content_object.id
+                data['link'] = ''  # 评论详情
+            if isinstance(content_object, Answer):
+                data['title'] = content_object.question.title
+                data['id'] = content_object.id
+                data['link'] = ''  # 评论详情
 
         if verb == 'CAR':
             # 评论了你的文章
-            data['title'] = action_object.content
+            data['title'] = action_object.article.title
             data['id'] = action_object.id
-            data['link'] = ''  # 文章评论详情 或者文章详情
+            data['link'] = ''  # 评论详情
 
         if verb == 'CQ':
             # 评论了你的问题
-            data['title'] = action_object.content
-            data['id'] = action_object.id
-            data['link'] = ''  # 问题详情
+            content_object = action_object.content_object
+            if isinstance(content_object, Question):
+                data['title'] = action_object.title
+                data['id'] = content_object.id
+                data['link'] = ''  # 评论详情
+            if isinstance(content_object, Answer):
+                data['title'] = content_object.question.title
+                data['id'] = content_object.id
+                data['link'] = ''  # 评论详情
 
         if verb == 'CI':
             # 评论了你的想法
