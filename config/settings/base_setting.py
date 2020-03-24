@@ -39,6 +39,7 @@ SECRET_KEY = 'gktm5s)@ob9y*iub#0+s7a(kg7lv5%6r0i=wey4ldvng*q5+6@'
 # Application definition
 # django自带的app
 DJANGO_APPS = [
+    'simpleui',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',

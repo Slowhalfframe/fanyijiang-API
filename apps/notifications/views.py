@@ -41,9 +41,16 @@ class NotificationAPIView(CustomAPIView):
                 r_data = {'no_date': first_time, 'data_list': list()}
                 for r in results[:]:
                     if r.get('format_time') == first_time:
-                        r.pop('format_time')
                         r_data['data_list'].append(r)
                         results.remove(r)
                 results_data.append(r_data)
             data['results'] = results_data
         return self.success(data)
+
+
+class UnReadCountAPIView(CustomAPIView):
+    @validate_identity
+    def get(self, request):
+        uid = request._request.uid
+        count = Notification.objects.filter(recipient__uid=uid, unread=True).count()
+        return self.success(count)

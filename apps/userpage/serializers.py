@@ -216,8 +216,12 @@ class UserPageThinksSerializer(serializers.ModelSerializer):
 
     def get_avatars(self, obj):
         picture = obj.avatars
-        data = picture.replace('[', '').replace(']','').replace('\"', '').split(',')
-        return data
+        print(picture, '哈哈的事')
+        if len(picture):
+        # data = picture.replace('[', '').replace(']','').replace('\"', '').split(',')
+            data = json.loads(picture)
+            return data
+        return None
 
 
 class UserPageLabelSerializer(serializers.ModelSerializer):
