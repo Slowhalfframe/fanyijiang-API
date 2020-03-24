@@ -103,7 +103,9 @@ class ArticleView(CustomAPIView):
 
         articles = Article.objects.filter(status="published", is_deleted=False)
         # TODO 返回哪部分数据？
-        data = self.paginate_data(request, query_set=articles, object_serializer=NewArticleSerializer)
+        me = self.get_user_profile(request)
+        data = self.paginate_data(request, query_set=articles, object_serializer=ArticleDetailSerializer,
+                                  serializer_context={"me": me})
         return self.success(data)
 
 
