@@ -17,23 +17,17 @@ from apps.userpage.serializers import (UserInfoSerializer, FavoritesSerializer, 
 from apps.userpage.validators import FavoritesValidator
 
 from apps.questions.models import Question, Answer, QuestionFollow
-from apps.questions.serializers import FollowedQuestionSerializer, QuestionInLabelDiscussSerializer, \
-    AnswerInLabelDiscussSerializer
 
 from apps.articles.models import Article
 
 from apps.labels.models import Label, LabelFollow
-from apps.labels.serializers import LabelCreateSerializer
 
 from apps.taskapp.tasks import notification_handler
 
 from apps.ideas.models import Idea
-from apps.ideas.serializers import IdeaDetailSerializer
 
 from apps.creator.views import ArticleVoteStatistics, ArticleCollectStatistics, AnswerVoteStatistics, \
     AnswerCollectStatistics, ThinkVoteStatistics
-
-from apps.notifications.models import Notification
 
 
 # @method_decorator(validate_token, name='dispatch')
@@ -129,7 +123,6 @@ class UserInfoAPIView(CustomAPIView):
         }
 
         data['followed_content'] = followed_content
-        data['notification_unread_count'] = Notification.objects.filter(recipient=user, unread=False).count()
         return self.success(data)
 
 

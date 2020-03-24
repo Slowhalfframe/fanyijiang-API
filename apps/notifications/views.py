@@ -46,3 +46,11 @@ class NotificationAPIView(CustomAPIView):
                 results_data.append(r_data)
             data['results'] = results_data
         return self.success(data)
+
+
+class UnReadCountAPIView(CustomAPIView):
+    @validate_identity
+    def get(self, request):
+        uid = request._request.uid
+        count = Notification.objects.filter(recipient__uid=uid, unread=True).count()
+        return self.success(count)
