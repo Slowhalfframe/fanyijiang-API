@@ -3,8 +3,10 @@ from rest_framework.routers import DefaultRouter
 
 from . import views
 
-urlpatterns = []
+urlpatterns = [
+    url(r"^$", views.RootView.as_view({"get": "list"}), name="root"),
+]
 
-router = DefaultRouter()
-router.register("", views.QuestionSearchViewSet, base_name="question_search")
-urlpatterns += router.urls
+# router = DefaultRouter()
+# router.register("", views.UniformSearchViewSet, base_name="uniform_search")
+# urlpatterns += router.urls
