@@ -33,6 +33,8 @@ from apps.ideas.serializers import IdeaDetailSerializer
 from apps.creator.views import ArticleVoteStatistics, ArticleCollectStatistics, AnswerVoteStatistics, \
     AnswerCollectStatistics, ThinkVoteStatistics
 
+from apps.notifications.models import Notification
+
 
 # @method_decorator(validate_token, name='dispatch')
 class UserInfoAPIView(CustomAPIView):
@@ -127,6 +129,7 @@ class UserInfoAPIView(CustomAPIView):
         }
 
         data['followed_content'] = followed_content
+        data['notification_unread_count'] = Notification.objects.filter(recipient=user, unread=False).count()
         return self.success(data)
 
 

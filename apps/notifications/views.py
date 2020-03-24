@@ -41,7 +41,6 @@ class NotificationAPIView(CustomAPIView):
                 r_data = {'no_date': first_time, 'data_list': list()}
                 for r in results[:]:
                     if r.get('format_time') == first_time:
-                        r.pop('format_time')
                         r_data['data_list'].append(r)
                         results.remove(r)
                 results_data.append(r_data)
