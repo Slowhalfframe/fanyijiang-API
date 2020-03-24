@@ -1,6 +1,6 @@
 from drf_haystack.serializers import HaystackSerializer
 
-from .search_indexes import QuestionIndex, AnswerIndex
+from .search_indexes import QuestionIndex, AnswerIndex, ArticleIndex, IdeaIndex
 
 
 #
@@ -18,5 +18,5 @@ from .search_indexes import QuestionIndex, AnswerIndex
 
 class UniformIndexSerializer(HaystackSerializer):
     class Meta:
-        index_classes = [AnswerIndex, QuestionIndex]
+        index_classes = [AnswerIndex, QuestionIndex, ArticleIndex, IdeaIndex]
         fields = ("id", "kind", "text",)
