@@ -90,7 +90,4 @@ class IdeaCommentSerializer(serializers.ModelSerializer):
         return obj.agree.filter(user_id=me.uid).exists()
 
     def get_is_author(self, obj):
-        me = self.context["me"]
-        if not me:
-            return False
-        return obj.user_id == me.uid
+        return obj.user_id == obj.think.user_id
