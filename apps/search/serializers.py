@@ -1,0 +1,1 @@
+from drf_haystack.serializers import HaystackSerializer
