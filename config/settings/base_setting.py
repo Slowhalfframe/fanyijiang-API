@@ -156,11 +156,3 @@ UPLOAD_PREFIX = '/picture'
 UPLOAD_DIR = "{}/{}".format(DATA_DIR, UPLOAD_PREFIX)
 if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
-
-HAYSTACK_CONNECTIONS = {
-    'default': {
-        'ENGINE': 'haystack.backends.elasticsearch_backend.ElasticsearchSearchEngine',
-        'URL': 'http://localhost:9200/',  # 此处为elasticsearch运行的服务器ip地址，端口号固定为9200
-        'INDEX_NAME': 'fanyijiang',  # 指定elasticsearch建立的索引库的名称
-    },
-}
