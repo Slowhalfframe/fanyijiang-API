@@ -17,13 +17,14 @@ class NotificationAPIView(CustomAPIView):
             return self.error('用户不存在', 404)
         no_type = request.GET.get('no_type')
         display_type = request.GET.get('display_type')
-
+        print(no_type)
         if no_type:
-            NOTIFICATION_TYPE = ['LAN', 'LAR', 'LC', 'CAN', 'CAR', 'CQ', 'R', 'FAN', 'FAR', 'A', 'I', 'O']
-            if no_type.upper() not in NOTIFICATION_TYPE:
-                return self.error('错误的通知类型', 10089)
+            no_type_list = no_type.upper().split(',')
+            # NOTIFICATION_TYPE = ['LAN', 'LAR', 'LC', 'CAN', 'CAR', 'CQ', 'R', 'FAN', 'FAR', 'A', 'I', 'O']
+            # if no_type.upper() not in NOTIFICATION_TYPE:
+            #     return self.error('错误的通知类型', 10089)
             # TODO 是否要根据日期进行筛选
-            nos = Notification.objects.filter(recipient__uid=uid, verb=no_type.upper())
+            nos = Notification.objects.filter(recipient__uid=uid, verb__in=no_type_list)
         else:
             nos = Notification.objects.filter(recipient__uid=uid)
         # 在获取的时候就已经把所有未读的变成已读
