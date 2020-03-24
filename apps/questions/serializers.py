@@ -138,10 +138,11 @@ class QACommentDetailSerializer(serializers.ModelSerializer):
     author_info = serializers.SerializerMethodField()
     receiver_info = serializers.SerializerMethodField(read_only=True)
     voted = serializers.SerializerMethodField()
+    is_author = serializers.SerializerMethodField()
 
     class Meta:
         model = QAComment
-        fields = ("id", "author_info", "receiver_info", "content", "create_at", "voted", "vote_count")
+        fields = ("id", "author_info", "receiver_info", "content", "create_at", "voted", "vote_count", "is_author")
 
     def get_vote_count(self, obj):
         return obj.vote.filter(value=True).count() - obj.vote.filter(value=False).count()
@@ -172,6 +173,9 @@ class QACommentDetailSerializer(serializers.ModelSerializer):
         if not my_vote:
             return None
         return my_vote.value
+
+    def get_is_author(self, obj):
+        return obj.user_id == obj.content_object.user_id
 
 
 class AnswerInLabelDiscussSerializer(serializers.ModelSerializer):

@@ -43,7 +43,7 @@ class IdeaDetailSerializer(serializers.ModelSerializer):
 
     def get_avatars(self, obj):
         avatars = json.loads(obj.avatars)
-        avatars = [settings.PICTURE_HOST + settings.UPLOAD_PREFIX + "/" + i for i in avatars]
+        avatars = [settings.PICTURE_HOST + i for i in avatars]
         return avatars
 
     def get_liked(self, obj):

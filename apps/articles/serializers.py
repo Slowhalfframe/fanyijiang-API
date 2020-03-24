@@ -122,12 +122,13 @@ class ArticleCommentSerializer(serializers.ModelSerializer):
     author_info = serializers.SerializerMethodField()
     receiver_info = serializers.SerializerMethodField()
     voted = serializers.SerializerMethodField(read_only=True)
+    is_author = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = ArticleComment
         fields = ("id", "article", "user_id", "author_info", "receiver_info", "content", "reply_to_user", "create_at",
-                  "vote_count", "voted")
-        read_only_fields = ("id", "create_at", "vote_count", "author_info", "receiver_info", "voted")
+                  "vote_count", "voted", "is_author")
+        read_only_fields = ("id", "create_at", "vote_count", "author_info", "receiver_info", "voted", "is_author")
         extra_kwargs = {
             "user_id": {
                 "write_only": True
@@ -171,3 +172,6 @@ class ArticleCommentSerializer(serializers.ModelSerializer):
         if not my_vote:
             return None
         return my_vote.value
+
+    def get_is_author(self, obj):
+        return obj.user_id == obj.article.user_id
