@@ -1,5 +1,3 @@
-from types import MethodType
-
 from drf_haystack.generics import HaystackGenericAPIView
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSetMixin
@@ -10,14 +8,11 @@ from apps.articles.models import Article
 from apps.articles.serializers import ArticleDetailSerializer
 from apps.ideas.models import Idea
 from apps.ideas.serializers import IdeaDetailSerializer
-from apps.search.serializers import UniformIndexSerializer
+from apps.userpage.models import UserProfile
+from apps.search.serializers import UniformIndexSerializer, UserIndexSerializer
 from apps.utils.api import CustomAPIView
 
 
-# class QuestionSearchViewSet(HaystackViewSet):
-#     index_models = [Question]
-#     serializer_class = QuestionIndexSerializer
-#
 class RootView(ViewSetMixin, HaystackGenericAPIView, CustomAPIView):
     index_models = [Question, Answer, Article, Idea]
     serializer_class = UniformIndexSerializer
@@ -53,4 +48,15 @@ class RootView(ViewSetMixin, HaystackGenericAPIView, CustomAPIView):
             "total": len(queryset),
 
         }
+        return Response(data)
+
+
+class FindUserView(ViewSetMixin, HaystackGenericAPIView, CustomAPIView):
+    index_models = [UserProfile]
+    serializer_class = UserIndexSerializer
+
+    def list(self, request):
+        me = self.get_user_profile(request)
+        queryset = self.filter_queryset(self.get_queryset())
+        data = self.paginate_data(request, queryset, self.get_serializer_class())
         return Response(data)
