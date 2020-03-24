@@ -1,6 +1,7 @@
 import json
 
 from rest_framework import serializers
+from django.conf import settings
 
 from .models import Idea, IdeaComment
 from apps.userpage.models import UserProfile
@@ -41,7 +42,9 @@ class IdeaDetailSerializer(serializers.ModelSerializer):
         return data
 
     def get_avatars(self, obj):
-        return json.loads(obj.avatars)
+        avatars = json.loads(obj.avatars)
+        avatars = [settings.PICTURE_HOST + settings.UPLOAD_PREFIX + "/" + i for i in avatars]
+        return avatars
 
     def get_liked(self, obj):
         me = self.context["me"]
@@ -62,10 +65,11 @@ class IdeaCommentSerializer(serializers.ModelSerializer):
     author_info = serializers.SerializerMethodField()
     think_id = serializers.IntegerField(source="think.pk")
     liked = serializers.SerializerMethodField()
+    is_author = serializers.SerializerMethodField()
 
     class Meta:
         model = IdeaComment
-        fields = ("id", "think_id", "content", "create_at", "agree_count", "author_info", "liked")
+        fields = ("id", "think_id", "content", "create_at", "agree_count", "author_info", "liked", "is_author")
 
     def get_agree_count(self, obj):
         return obj.agree.count()
@@ -84,3 +88,6 @@ class IdeaCommentSerializer(serializers.ModelSerializer):
         if not me:
             return False
         return obj.agree.filter(user_id=me.uid).exists()
+
+    def get_is_author(self, obj):
+        return obj.user_id == obj.think.user_id
