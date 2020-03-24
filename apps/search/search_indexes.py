@@ -1,6 +1,6 @@
 from haystack import indexes
 
-from .models import Question, Answer
+from apps.questions.models import Question, Answer
 
 
 class QuestionIndex(indexes.SearchIndex, indexes.Indexable):

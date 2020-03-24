@@ -1,5 +1,4 @@
 from django.conf.urls import url
-from rest_framework.routers import DefaultRouter
 
 from . import views
 
@@ -14,7 +13,3 @@ urlpatterns = [
     url(r"^comments/$", views.CommentView.as_view(), name="comments"),
     url(r"^votes/$", views.VoteView.as_view(), name="votes"),
 ]
-
-router = DefaultRouter()
-router.register("search", views.QuestionSearchViewset, base_name="question_search")
-urlpatterns += router.urls

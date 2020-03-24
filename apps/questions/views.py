@@ -1,13 +1,12 @@
 from django.db.models import Q
 from django.db import transaction
-from drf_haystack.viewsets import HaystackViewSet
 
 from apps.utils.api import CustomAPIView
 from apps.utils.decorators import validate_identity
 from apps.utils import errorcode
 from .serializers import QuestionCreateSerializer, NewQuestionSerializer, AnswerCreateSerializer, \
     QuestionFollowSerializer, FollowedQuestionSerializer, InviteCreateSerializer, QACommentCreateSerializer, \
-    QACommentDetailSerializer, QuestionIndexSerializer
+    QACommentDetailSerializer
 from .models import Question, Answer, QuestionFollow, QuestionInvite, QAComment, ACVote
 from apps.userpage.models import UserProfile
 
@@ -401,8 +400,3 @@ class VoteView(CustomAPIView):
         except Exception as e:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         return self.success()
-
-
-class QuestionSearchViewset(HaystackViewSet):
-    index_models = [Question]
-    serializer_class = QuestionIndexSerializer
