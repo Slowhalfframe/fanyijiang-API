@@ -39,7 +39,7 @@ class LabelChecker(serializers.ModelSerializer):
         return value
 
 
-class LabelSerializer(serializers.ModelSerializer):
+class SimpleLabelSerializer(serializers.ModelSerializer):
     """用于标签的序列化，需要传入当前登录用户"""
 
     followed = serializers.SerializerMethodField()
