@@ -22,6 +22,10 @@ class Label(BaseModel):
     def __str__(self):
         return self.name
 
+    @property
+    def kind(self):
+        return "label"
+
 
 class LabelFollow(BaseModel):
     """用户与标签的多对多关注关系"""

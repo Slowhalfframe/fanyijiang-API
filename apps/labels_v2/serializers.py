@@ -42,15 +42,29 @@ class LabelChecker(serializers.ModelSerializer):
 class SimpleLabelSerializer(serializers.ModelSerializer):
     """用于标签的序列化，需要传入当前登录用户"""
 
-    followed = serializers.SerializerMethodField()
+    is_followed = serializers.SerializerMethodField()
     follower_count = serializers.IntegerField(source="followers.count")
+    type = serializers.CharField(source="kind")
 
     class Meta:
         model = Label
-        fields = ("id", "name", "intro", "avatar", "followed", "follower_count",)
+        fields = ("id", "type", "name", "intro", "avatar", "is_followed", "follower_count",)
 
-    def get_followed(self, obj):
+    def get_is_followed(self, obj):
         me = self.context["me"]
         if not me:
             return False
         return obj.followers.filter(pk=me.pk).exists()
+
+
+class DetailedLabelSerializer(SimpleLabelSerializer):
+    """用于标签的序列化，需要传入当前登录用户"""
+
+    question_count = serializers.SerializerMethodField()  # TODO 问题个数
+
+    class Meta:
+        model = Label
+        fields = ("id", "type", "name", "intro", "avatar", "is_followed", "follower_count", "question_count",)
+
+    def get_question_count(self, obj):
+        return 0  # TODO 改成真实数据
