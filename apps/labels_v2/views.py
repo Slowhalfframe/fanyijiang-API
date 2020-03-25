@@ -83,7 +83,7 @@ class OneLabelView(CustomAPIView):
         """查看单个标签的详情"""
 
         label = Label.objects.filter(pk=label_id, is_deleted=False).first()
-        if not label:
+        if label is None:
             return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
         me = self.get_user_profile(request)
         formatter = DetailedLabelSerializer(instance=label, context={"me": me})
@@ -95,7 +95,7 @@ class ParentLabelView(CustomAPIView):
         """获取父标签，可分页"""
 
         label = Label.objects.filter(pk=label_id, is_deleted=False).first()
-        if not label:
+        if label is None:
             return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
         me = self.get_user_profile(request)
         qs = label.parents.filter(is_deleted=False)
@@ -108,9 +108,25 @@ class ChildLabelView(CustomAPIView):
         """获取子标签，可分页"""
 
         label = Label.objects.filter(pk=label_id, is_deleted=False).first()
-        if not label:
+        if label is None:
             return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
         me = self.get_user_profile(request)
         qs = label.children.filter(is_deleted=False)
         data = self.paginate_data(request, qs, SimpleLabelSerializer, {"me": me})
         return self.success(data)
+
+    @validate_identity
+    def post(self, request, label_id):
+        """添加子标签"""
+
+        # TODO 检查用户权限
+        label = Label.objects.filter(pk=label_id, is_deleted=False).first()
+        pk = request.data.get("id") or None
+        child = Label.objects.filter(pk=pk, is_deleted=False).first()
+        if label is None or child is None:
+            return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
+        try:
+            label.children.add(child)
+        except:
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
+        return self.success()

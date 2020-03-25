@@ -189,3 +189,32 @@ class OneLabelViewPutTest(TestCase):
         response = self.client.put(path, data, **self.headers)
         data = response.json()
         self.assertNotEqual(data["code"], 0)
+
+
+class ChildLabelViewPostTest(TestCase):
+    def setUp(self):
+        common_prepare(self)
+        Label.objects.create(name="标签1")
+        Label.objects.create(name="标签2")
+        self.path = reverse("labels_v2:child", kwargs={"label_id": 1})
+
+    def test_no_login(self):
+        response = self.client.post(self.path, {"id": 2})
+        data = response.json()
+        self.assertNotEqual(data["code"], 0)
+
+    def test_no_parent(self):
+        path = reverse("labels_v2:child", kwargs={"label_id": 3})
+        response = self.client.post(path, {"id": 2}, **self.headers)
+        data = response.json()
+        self.assertNotEqual(data["code"], 0)
+
+    def test_no_child(self):
+        response = self.client.post(self.path, {"id": 3}, **self.headers)
+        data = response.json()
+        self.assertNotEqual(data["code"], 0)
+
+    def test_ok(self):
+        response = self.client.post(self.path, {"id": 2}, **self.headers)
+        data = response.json()
+        self.assertEqual(data["code"], 0)
