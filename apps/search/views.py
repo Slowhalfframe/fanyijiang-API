@@ -48,7 +48,7 @@ class RootView(ViewSetMixin, HaystackGenericAPIView, CustomAPIView):
             "total": len(queryset),
 
         }
-        return Response(data)
+        return self.success(data)
 
 
 class FindUserView(ViewSetMixin, HaystackGenericAPIView, CustomAPIView):
@@ -59,4 +59,4 @@ class FindUserView(ViewSetMixin, HaystackGenericAPIView, CustomAPIView):
         me = self.get_user_profile(request)
         queryset = self.filter_queryset(self.get_queryset())
         data = self.paginate_data(request, queryset, self.get_serializer_class())
-        return Response(data)
+        return self.success(data)
