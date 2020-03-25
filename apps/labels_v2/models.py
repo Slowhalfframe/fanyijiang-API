@@ -1,15 +1,15 @@
 from django.db import models
 
-from apps.utils.models import BaseModel
 from apps.userpage.models import UserProfile
+from apps.utils.models import BaseModel
 
 
 class Label(BaseModel):
     """标签，或者称作话题，名称不可重复"""
 
     name = models.CharField(max_length=20, unique=True, null=False, blank=False, verbose_name="标签名称")
-    intro = models.TextField(null=False, blank=True, default="", verbose_name="标签介绍")
-    avatar = models.CharField(max_length=100, blank=True, null=False, default="", verbose_name="标签头像")
+    intro = models.TextField(null=True, blank=True, verbose_name="标签介绍")
+    avatar = models.CharField(max_length=100, blank=True, null=True, verbose_name="标签头像")
     children = models.ManyToManyField(to="self", symmetrical=False, verbose_name="子标签", related_name="parents")
 
     class Meta:

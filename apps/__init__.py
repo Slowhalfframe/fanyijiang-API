@@ -1,4 +1,5 @@
-import re, os
+import os
+import re
 
 
 def xss_safe(value):
@@ -13,10 +14,7 @@ def xss_safe(value):
 def legal_image_path(path):
     """检查字符串是否是合法的图片路径"""
 
-    try:
-        file, ext = os.path.splitext(path)
-    except:
-        return False
+    file, ext = os.path.splitext(path)
     if not file:
         return False
     if ext.lower() not in (".png", ".jpg", ".jpeg", ".gif", ".bmp"):

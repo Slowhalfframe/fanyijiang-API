@@ -3,7 +3,7 @@ import html
 from rest_framework import serializers
 
 from apps import xss_safe, legal_image_path
-from .models import Label, LabelFollow
+from .models import Label
 
 
 class LabelChecker(serializers.ModelSerializer):
@@ -14,6 +14,10 @@ class LabelChecker(serializers.ModelSerializer):
         fields = ("name", "intro", "avatar",)
 
     def validate_name(self, value):
+        if not value:
+            raise serializers.ValidationError("标签名称不能为空")
+        if value.capitalize() == str(None):
+            return None
         if not xss_safe(value):
             raise serializers.ValidationError("标签名称含有特殊字符")
         return value
@@ -21,13 +25,17 @@ class LabelChecker(serializers.ModelSerializer):
     def validate_intro(self, value):
         if not value:
             return None
+        if value.capitalize() == str(None):
+            return None
         return html.escape(value)
 
     def validate_avatar(self, value):
         if not value:
             return None
+        if value.capitalize() == str(None):
+            return None
         if not legal_image_path(value):
-            return serializers.ValidationError("图片路径或类型无效")
+            raise serializers.ValidationError("图片路径或类型无效")
         return value
 
 
