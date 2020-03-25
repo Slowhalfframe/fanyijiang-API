@@ -10,6 +10,7 @@ class Notification(models.Model):
     NOTIFICATION_TYPE = (
         ('LAN', '赞了你的回答'),  # like answer
         ('LAR', '赞了你的文章'),  # like article
+        ('LI', '赞了你的文章'),  # like article
         ('LQAC', '赞了你的评论'),  # like comment回答的评论
         ('LAC', '赞了你的评论'),  # like comment文章的评论
         ('LIC', '赞了你的评论'),  # like comment想法的评论

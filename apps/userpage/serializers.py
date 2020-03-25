@@ -119,10 +119,10 @@ class FavoritesContentSerializer(serializers.ModelSerializer):
         #     content_data = UserInfoSerializer(content_object).data
 
         if isinstance(content_object, Answer):
-            content_data = AnswerCreateSerializer(instance=content_object).data
+            content_data = UserPageAnswerSerializer(instance=content_object).data
 
         if isinstance(content_object, Article):
-            pass
+            content_data = UserPageArticleSerializer(instance=content_object).data
         # TODO 查询其他对象：文章、回答等
         return content_data
 
