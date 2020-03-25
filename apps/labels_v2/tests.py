@@ -194,27 +194,53 @@ class OneLabelViewPutTest(TestCase):
 class ChildLabelViewPostTest(TestCase):
     def setUp(self):
         common_prepare(self)
-        Label.objects.create(name="标签1")
-        Label.objects.create(name="标签2")
-        self.path = reverse("labels_v2:child", kwargs={"label_id": 1})
+        self.label1 = Label.objects.create(name="标签1")
+        self.label2 = Label.objects.create(name="标签2")
+        self.path = reverse("labels_v2:child", kwargs={"label_id": self.label1.pk})
 
     def test_no_login(self):
-        response = self.client.post(self.path, {"id": 2})
+        response = self.client.post(self.path, {"id": self.label2.pk})
         data = response.json()
         self.assertNotEqual(data["code"], 0)
 
     def test_no_parent(self):
-        path = reverse("labels_v2:child", kwargs={"label_id": 3})
-        response = self.client.post(path, {"id": 2}, **self.headers)
+        path = reverse("labels_v2:child", kwargs={"label_id": self.label1.pk + self.label2.pk})
+        response = self.client.post(path, {"id": self.label2.pk}, **self.headers)
         data = response.json()
         self.assertNotEqual(data["code"], 0)
 
     def test_no_child(self):
-        response = self.client.post(self.path, {"id": 3}, **self.headers)
+        response = self.client.post(self.path, {"id": self.label2.pk + self.label1.pk}, **self.headers)
         data = response.json()
         self.assertNotEqual(data["code"], 0)
 
     def test_ok(self):
-        response = self.client.post(self.path, {"id": 2}, **self.headers)
+        response = self.client.post(self.path, {"id": self.label2.pk}, **self.headers)
+        data = response.json()
+        self.assertEqual(data["code"], 0)
+
+
+class ChildLabelViewDeleteTest(TestCase):
+    def setUp(self):
+        common_prepare(self)
+        self.parent = Label.objects.create(name="标签1")
+        self.child = Label.objects.create(name="标签2")
+        self.path = reverse("labels_v2:child", kwargs={"label_id": self.parent.pk})
+
+    def test_no_login(self):
+        response = self.client.delete(self.path + "?id=" + str(self.child.pk))
+        data = response.json()
+        self.assertNotEqual(data["code"], 0)
+
+    def test_no_parent(self):
+        path = reverse("labels_v2:child", kwargs={"label_id": self.parent.pk + self.child.pk})
+        path = path + "?id=" + str(self.child.pk)
+        response = self.client.delete(path, **self.headers)
+        data = response.json()
+        self.assertEqual(data["code"], 0)
+
+    def test_no_child(self):
+        path = self.path + "?id=" + str(self.child.pk + self.parent.pk)
+        response = self.client.delete(path, **self.headers)
         data = response.json()
         self.assertEqual(data["code"], 0)

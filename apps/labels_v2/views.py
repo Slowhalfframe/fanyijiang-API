@@ -130,3 +130,19 @@ class ChildLabelView(CustomAPIView):
         except:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         return self.success()
+
+    @validate_identity
+    def delete(self, request, label_id):
+        """删除子标签"""
+
+        # TODO 检查用户权限
+        label = Label.objects.filter(pk=label_id, is_deleted=False).first()
+        if label is None:
+            return self.success()
+        pk = request.query_params.get("id") or request.data.get("id") or None
+        child = Label.objects.filter(pk=pk, is_deleted=False).first()
+        try:
+            label.children.remove(child)
+        except:
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
+        return self.success()
