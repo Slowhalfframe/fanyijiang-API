@@ -3,7 +3,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 
 from apps.creator.models import ReadNums
-
+from apps.userpage.models import FavoriteCollection
 
 class Idea(models.Model):
     user_id = models.CharField(max_length=40, null=False, verbose_name="提出者ID")
@@ -13,6 +13,7 @@ class Idea(models.Model):
     read_nums = GenericRelation(to=ReadNums)
     # 图片的默认值是空列表经JSON编码得到的字符串，因为空字符串在JSON解码时会出错
     avatars = models.CharField(max_length=800, null=False, blank=True, default="[]")  # 图片的路径列表，最多有9张图
+    collect = GenericRelation(to=FavoriteCollection)
 
     class Meta:
         db_table = "db_thinks"
