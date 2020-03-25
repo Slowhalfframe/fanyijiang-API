@@ -11,6 +11,8 @@ class Label(BaseModel):
     intro = models.TextField(null=True, blank=True, verbose_name="标签介绍")
     avatar = models.CharField(max_length=100, blank=True, null=True, verbose_name="标签头像")
     children = models.ManyToManyField(to="self", symmetrical=False, verbose_name="子标签", related_name="parents")
+    followers = models.ManyToManyField(to=UserProfile, related_name="followed_labels", through="LabelFollow",
+                                       through_fields=("label", "user"), verbose_name="关注者")
 
     class Meta:
         db_table = "label"

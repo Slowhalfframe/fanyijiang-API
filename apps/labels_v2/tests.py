@@ -4,22 +4,29 @@ from django.test import TestCase, Client
 from django.urls import reverse
 
 from apps.userpage.models import UserProfile
+from .models import Label
+
+
+def common_prepare(obj):
+    """准备测试用户、登录和客户端"""
+
+    UserProfile.objects.create(uid="e4da3b7fbbce2345d7772b0674a318d5", nickname="haoran·zhang", slug="zhanghaoran")
+    UserProfile.objects.create(uid="a87ff679a2f3e71d9181a67b7542122c", nickname="赵军臣", slug="zhao-jun-chen")
+    data = {
+        "username": "18569938068",
+        "password": "1234567",
+        "login_type": "normal"
+    }
+    response = requests.post(settings.USER_CENTER_GATEWAY + "/api/login", data=data)
+    obj.headers = {"HTTP_AUTHORIZATION": response.json()["data"]["token"]}
+    obj.client = Client()
 
 
 class LabelViewPostTest(TestCase):
     def setUp(self):
-        UserProfile.objects.create(uid="e4da3b7fbbce2345d7772b0674a318d5", nickname="haoran·zhang", slug="zhanghaoran")
-        UserProfile.objects.create(uid="a87ff679a2f3e71d9181a67b7542122c", nickname="赵军臣", slug="zhao-jun-chen")
+        common_prepare(self)
         self.path = reverse("labels_v2:root")
-        data = {
-            "username": "18569938068",
-            "password": "1234567",
-            "login_type": "normal"
-        }
-        response = requests.post(settings.USER_CENTER_GATEWAY + "/api/login", data=data)
-        self.headers = {"HTTP_AUTHORIZATION": response.json()["data"]["token"]}
         self.data = {"name": "标签", "intro": "好", "avatar": "/pub/3.png"}
-        self.client = Client()
 
     def tearDown(self):
         pass
@@ -123,3 +130,21 @@ class LabelViewPostTest(TestCase):
         response = self.client.post(self.path, data, **self.headers)
         data = response.json()
         self.assertNotEqual(data["code"], 0)
+
+
+class OneLabelViewDeleteTest(TestCase):
+    def setUp(self):
+        common_prepare(self)
+        self.label = Label.objects.create(**{"name": "标签", "intro": "好", "avatar": "/pub/3.png"})
+
+    def test_label_not_exist(self):
+        path = reverse("labels_v2:one_label", kwargs={"label_id": 12306})
+        response = self.client.delete(path, **self.headers)
+        data = response.json()
+        self.assertEqual(data["code"], 0)
+
+    def test_label_exist(self):
+        path = reverse("labels_v2:one_label", kwargs={"label_id": self.label.pk})
+        response = self.client.delete(path, **self.headers)
+        data = response.json()
+        self.assertEqual(data["code"], 0)
