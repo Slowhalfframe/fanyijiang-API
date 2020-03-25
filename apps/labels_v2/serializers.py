@@ -40,6 +40,17 @@ class LabelChecker(serializers.ModelSerializer):
 
 
 class LabelSerializer(serializers.ModelSerializer):
+    """用于标签的序列化，需要传入当前登录用户"""
+
+    followed = serializers.SerializerMethodField()
+    follower_count = serializers.IntegerField(source="labelfollow_set.count")
+
     class Meta:
         model = Label
-        fields = ("id", "name", "intro", "avatar",)
+        fields = ("id", "name", "intro", "avatar", "followed", "follower_count",)
+
+    def get_followed(self, obj):
+        me = self.context["me"]
+        if not me:
+            return False
+        return obj.labelfollow_set.filter(user=me).exists()

@@ -1,6 +1,7 @@
 from apps.utils import errorcode
 from apps.utils.api import CustomAPIView
 from apps.utils.decorators import validate_identity
+from apps.userpage.models import UserProfile
 from .models import Label
 from .serializers import LabelChecker, LabelSerializer
 
@@ -24,7 +25,8 @@ class LabelView(CustomAPIView):
             label = checker.create(checker.validated_data)
         except:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
-        formatter = LabelSerializer(instance=label)
+        me = UserProfile.objects.get(uid=request._request.uid)
+        formatter = LabelSerializer(instance=label, context={"me": me})
         return self.success(formatter.data)
 
     def get(self, request):
@@ -32,7 +34,7 @@ class LabelView(CustomAPIView):
 
         labels = Label.objects.filter(is_deleted=False, parents__isnull=True)
         me = self.get_user_profile(request)
-        data = self.paginate_data(request, labels, LabelSerializer)
+        data = self.paginate_data(request, labels, LabelSerializer, {"me": me})
         return self.success(data)
 
 
