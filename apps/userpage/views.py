@@ -13,7 +13,8 @@ from apps.userpage.models import (UserProfile, UserFavorites, FollowedUser, Foll
                                   FavoriteCollection)
 from apps.userpage.serializers import (UserInfoSerializer, FavoritesSerializer, FollowsUserSerializer,
                                        FavoritesContentSerializer, UserPageQuestionSerializer, UserPageAnswerSerializer,
-                                       UserPageArticleSerializer, UserPageThinksSerializer, UserPageLabelSerializer)
+                                       UserPageArticleSerializer, UserPageThinksSerializer, UserPageLabelSerializer,
+                                       ContentFavoritesSerializer)
 from apps.userpage.validators import FavoritesValidator
 
 from apps.questions.models import Question, Answer, QuestionFollow
@@ -297,7 +298,7 @@ class FollowingFavoritesAPIView(CustomAPIView):
         try:
             user = UserProfile.objects.get(uid=uid)
             fa = UserFavorites.objects.get(pk=pk)
-            if fa.user_id == uid:
+            if fa.user == user:
                 return self.error('不能关注自己的收藏夹', 400)
             FollowedFavorites.objects.create(user=user, fa_id=pk)
 
@@ -335,13 +336,15 @@ class FavoritesListAPIView(CustomAPIView):
         '''用户列表页收藏夹列表'''
         user = UserProfile.objects.filter(slug=user_slug).first()
         if not user:
-            return self.error('该用户不存在', 404)
+            user = self.get_user_profile(request)
+            if not user:
+                return self.error('该用户不存在', 404)
         if user.uid == uid:
             # 获取该用户下所有收藏夹
             favorites = user.favorites.all()
         else:
             favorites = user.favorites.filter(status='public')
-        data = self.paginate_data(request, favorites, FavoritesSerializer)
+        data = self.paginate_data(request, favorites, FavoritesSerializer, {'uid': user.uid})
         return self.success(data)
 
 
@@ -386,7 +389,7 @@ class ThinkListAPIView(CustomAPIView):
 
         # TODO 查询相关数据库
         ideas = Idea.objects.filter(user_id=user.uid)
-        data = self.paginate_data(request, ideas, UserPageThinksSerializer)
+        data = self.paginate_data(request, ideas, UserPageThinksSerializer, {'me': user})
         return self.success(data)
 
 
@@ -402,13 +405,25 @@ class ArticleListAPIView(CustomAPIView):
         # TODO 查询相关数据库
         articles = Article.objects.filter(user_id=user.uid, status='published', is_deleted=False)
 
-        data = self.paginate_data(request, articles, UserPageArticleSerializer)
+        data = self.paginate_data(request, articles, UserPageArticleSerializer, {'me': user})
         # data = {'results': [], 'total': 0}
         return self.success(data)
 
 
 class SelfFavoritesAPIView(CustomAPIView):
     '''用户创建或者修改收藏夹操作'''
+
+    @validate_identity
+    def get(self, request, user_slug):
+        user = UserProfile.objects.filter(slug=user_slug).first()
+        if not user:
+            return self.error('该用户不存在', 404)
+        fa_id = request.GET.get('fa_id')
+        fa = UserFavorites.objects.filter(pk=fa_id, user=user).first()
+        if not fa:
+            return self.error('该收藏夹不存在！', 10089)
+        data = ContentFavoritesSerializer(fa, context={'uid': user.uid}).data
+        return self.success(data)
 
     @validate_serializer(FavoritesValidator)
     def post(self, request, user_slug):
@@ -421,35 +436,41 @@ class SelfFavoritesAPIView(CustomAPIView):
 
         if UserFavorites.objects.filter(title=data['title']).exists():
             return self.error('该收藏夹已经创建过了', 400)
-        UserFavorites.objects.create(user=user, title=data['title'], content=data['content'], status=data['status'])
+        UserFavorites.objects.create(user=user, title=data['title'], intro=data['content'], status=data['status'])
 
         return self.success()
 
     @validate_serializer(FavoritesValidator)
+    @validate_identity
     def put(self, request, user_slug):
         '''修改收藏夹'''
         data = request.data
         user = UserProfile.objects.filter(slug=user_slug).first()
         if not user:
             return self.error('该用户不存在', 404)
-
+        if user.uid != request._request.uid:
+            return self.error('只能修改自己的收藏夹', 404)
         fa = UserFavorites.objects.filter(pk=data['fa_id']).first()
         if not fa:
             return self.error('没有该收藏夹', 404)
 
         fa.title = data['title']
-        fa.content = data['content']
+        fa.intro = data['content']
         fa.status = data['status']
         fa.save()
 
         return self.success()
 
+    @validate_identity
     def delete(self, request, user_slug):
         '''删除收藏夹'''
         data = request.query_params.dict()
         user = UserProfile.objects.filter(slug=user_slug).first()
+
         if not user:
             return self.error('该用户不存在', 404)
+        if user.uid != request._request.uid:
+            return self.error('没有权限删除', 404)
 
         fa = UserFavorites.objects.filter(pk=data.get('fa_id')).first()
         if not fa:
@@ -465,10 +486,12 @@ class FollowedFavoritesAPIView(CustomAPIView):
         user = UserProfile.objects.filter(slug=user_slug).first()
 
         if not user:
-            return self.error('用户不存在', 404)
+            user = self.get_user_profile(request)
+            if not user:
+                return self.error('用户不存在', 404)
 
         followed_fas = UserFavorites.objects.filter(followed_fa__user=user)
-        data = self.paginate_data(request, followed_fas, FavoritesSerializer)
+        data = self.paginate_data(request, followed_fas, FavoritesSerializer, {"uid": user.uid})
         return self.success(data)
 
 
@@ -568,18 +591,35 @@ class FollowedQuestionsAPIView(CustomAPIView):
 
 class FavoritesContentAPIView(CustomAPIView):
     '''收藏夹内的内容'''
-
-    def get(self, request, pk):
+    @validate_identity
+    def get(self, request, user_slug, pk):
         fa = UserFavorites.objects.filter(pk=pk).first()
 
         if not fa:
             return self.error('找不到该收藏夹', 404)
 
         fa_content = fa.favorite_collect.all()
-        data = self.paginate_data(request, fa_content, FavoritesContentSerializer, {'uid': fa.user.uid})
+        data = dict()
+        content_data = self.paginate_data(request, fa_content, FavoritesContentSerializer, {'me': fa.user})
+
+        owner = fa.user
+        owner_info = {'nickname': owner.nickname, 'slug': owner.slug, 'avatar': owner.avatar, 'autograph': owner.autograph}
+        # 查询是否已经关注改用户
+        followed = False
+        if FollowedUser.objects.filter(idol__uid=owner.uid, fans__uid=request._request.uid).exists():
+            followed = True
+        owner_info['followed'] = followed
+        owner_info['is_me'] = False
+        if fa.user.uid == request._request.uid:
+            owner_info['is_me'] = True
+        favorite_info = ContentFavoritesSerializer(fa, context={'uid':request._request.uid}).data
+        data['content_data'] = content_data
+        data['owner_info'] = owner_info
+        data['favorite_info'] = favorite_info
+        fa.save()
         return self.success(data)
 
-    def post(self, request, pk):
+    def post(self, request, user_slug, pk):
         '''添加收藏夹内容'''
         fa = UserFavorites.objects.filter(pk=pk).first()
         if not fa:
@@ -593,9 +633,13 @@ class FavoritesContentAPIView(CustomAPIView):
             article = Article.objects.filter(pk=object_id, status='published', is_deleted=False).first()
             article.mark.update_or_create(favorite=fa)
 
+        if content_type == 'think':
+            think = Idea.objects.filter(pk=object_id).first()
+            think.collect.update_or_create(favorite=fa)
+        fa.save()
         return self.success()
 
-    def delete(self, request, pk):
+    def delete(self, request, user_slug, pk):
         fa = UserFavorites.objects.filter(pk=pk).first()
         if not fa:
             return self.error('请选择正确的收藏夹', 400)
@@ -611,6 +655,10 @@ class FavoritesContentAPIView(CustomAPIView):
             article = Article.objects.filter(pk=object_id, status='published', is_deleted=False).first()
             article.mark.get(favorite=fa).delete()
 
+        if content_type == 'think':
+            think = Idea.objects.filter(pk=object_id).first()
+            think.collect.get(favorite=fa).delete()
+        fa.save()
         return self.success()
 
 
@@ -625,7 +673,8 @@ class CollectedAPIView(CustomAPIView):
             instance = Answer.objects.filter(pk=object_id).first()
         if content_type == 'article':
             instance = Article.objects.filter(pk=object_id, status='published', is_deleted=False).first()
-
+        if content_type == 'think':
+            instance = Idea.objects.filter(pk=object_id).first()
         for data in data_list:
             # 检查是否已收藏
             data['collected'] = False

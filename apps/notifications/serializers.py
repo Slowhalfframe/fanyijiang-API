@@ -2,18 +2,19 @@ from rest_framework import serializers
 from .models import Notification
 
 from apps.questions.models import Answer, Question
-
+from django.conf import settings
 
 class NotificationsSerializer(serializers.ModelSerializer):
     # detail = serializers.SerializerMethodField()
     actor = serializers.SerializerMethodField()
     verb = serializers.SerializerMethodField()
     target = serializers.SerializerMethodField()
+    create_time = serializers.DateTimeField(format="%Y%m%d %H:%M:%S", read_only=True, source='created_at')
     format_time = serializers.DateTimeField(format="%Y-%m-%d", read_only=True, source='created_at')
 
     class Meta:
         model = Notification
-        fields = ('actor', 'verb', 'target', 'created_at', 'format_time')
+        fields = ('actor', 'verb', 'target', 'format_time', 'create_time')
 
     def get_actor(self, obj):
         actor = obj.actor
@@ -42,7 +43,7 @@ class NotificationsSerializer(serializers.ModelSerializer):
             # 的提问等你来答
             data['title'] = action_object.title
             data['id'] = action_object.id
-            data['link'] = ''  # 问题详情
+            data['link'] = settings.FRONT_HOST + '/question/' + str(action_object.id) # 问题详情
 
         if verb == 'R':
             # 回复了你
@@ -54,25 +55,25 @@ class NotificationsSerializer(serializers.ModelSerializer):
             # 回答了你的问题
             data['title'] = action_object.question.title
             data['id'] = action_object.id
-            data['link'] = ''  # 回答详情页
+            data['link'] = settings.FRONT_HOST + '/question/' + str(action_object.question.id) + '/answer/' + str(action_object.id)  # 回答详情页
 
         if verb == 'AF':
             # 某人回答了你关注的问题，回答对象
             data['title'] = action_object.question.title
             data['id'] = action_object.id
-            data['link'] = ''  # 回答详情页
+            data['link'] = settings.FRONT_HOST + '/question/' + str(action_object.question.id) + '/answer/' + str(action_object.id)# 回答详情页
 
         if verb == 'LAN':
             # 赞了你的问答
             data['title'] = action_object.question.title
             data['id'] = action_object.id
-            data['link'] = ''  # 回答详情页
+            data['link'] = settings.FRONT_HOST + '/question/' + str(action_object.question.id) + '/answer/' + str(action_object.id)  # 回答详情页
 
         if verb == 'LAR':
             # 赞了你的文章
             data['title'] = action_object.title
             data['id'] = action_object.id
-            data['link'] = ''  # 文章详情
+            data['link'] = settings.FRONT_HOST + '/article/p/' + str(action_object.id)  # 文章详情
 
         if verb == 'LQAC':
             # 赞了你的评论

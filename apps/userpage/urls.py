@@ -43,7 +43,7 @@ urlpatterns = [
     url(r'collected/(?P<user_slug>[-\w]+)/(?P<content_type>\w+)/(?P<object_id>\d+)$', views.CollectedAPIView.as_view()),
 
     # 查看某一个收藏夹的内容
-    url(r'favorites_content/(?P<pk>\d+)$', views.FavoritesContentAPIView.as_view(), name='favorites_content'),
+    url(r'favorites_content/(?P<user_slug>[-\w]+)/(?P<pk>\d+)$', views.FavoritesContentAPIView.as_view(), name='favorites_content'),
     # 接受统一用户中心发送过来的更新请求
     url(r"^uc_update$", views.UcUpdateAPIView.as_view(), name="uc_update"),
 

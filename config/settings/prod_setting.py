@@ -23,6 +23,8 @@ USER_CENTER_GATEWAY = 'http://47.92.28.66:9233'
 
 PICTURE_HOST = "http://47.92.28.66:9234/public"
 
+FRONT_HOST = 'http://192.168.0.100:9000'
+
 HAYSTACK_CONNECTIONS = {
     'default': {
         'ENGINE': 'haystack.backends.elasticsearch_backend.ElasticsearchSearchEngine',

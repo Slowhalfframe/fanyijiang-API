@@ -568,6 +568,7 @@ class TotalNums(object):
         answer = AnswerReadNums(self.user).get_queryset_total_num() or 0
         article = ArticleReadNums(self.user).get_queryset_total_num() or 0
         think = ThinkReadNums(self.user).get_queryset_total_num() or 0
+        print(answer, article, think)
         return answer + article + think
 
     def get_date_total_nums(self, date):
@@ -607,6 +608,7 @@ class CreatorHomeAPIView(CustomAPIView):
         # 阅读量
         total_instance = TotalNums(user)
         total_read_nums = total_instance.get_total_nums()
+        print(total_read_nums)
 
         # 昨日总阅读量
         yesterday = datetime.date.today() - datetime.timedelta(days=1)

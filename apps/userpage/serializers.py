@@ -64,13 +64,14 @@ class UserLocationSerializer(serializers.ModelSerializer):
 class FavoritesSerializer(serializers.ModelSerializer):
     content_count = serializers.SerializerMethodField()
     follow_count = serializers.SerializerMethodField()
-    owner_info = serializers.SerializerMethodField()
     is_followed = serializers.SerializerMethodField()
+    owner_info = serializers.SerializerMethodField()
+
     # update_time = serializers.DateTimeField(format="%Y%m%d %H:%M:%S", source="update_time", read_only=True)
 
     class Meta:
         model = UserFavorites
-        fields = ('id', 'title', 'status', 'content_count', 'follow_count', 'update_time', 'owner_info')
+        fields = ('id', 'title', 'status', 'content_count', 'follow_count', 'update_time', 'is_followed', 'owner_info')
 
     def get_content_count(self, obj):
         return obj.favorite_collect.all().count()
@@ -91,6 +92,43 @@ class FavoritesSerializer(serializers.ModelSerializer):
         return data
 
 
+class ContentFavoritesSerializer(serializers.ModelSerializer):
+    content_count = serializers.SerializerMethodField()
+    follow_count = serializers.SerializerMethodField()
+    is_followed = serializers.SerializerMethodField()
+    is_owner = serializers.SerializerMethodField()
+
+    # update_time = serializers.DateTimeField(format="%Y%m%d %H:%M:%S", source="update_time", read_only=True)
+
+    class Meta:
+        model = UserFavorites
+        fields = (
+        'id', 'title', 'status', 'intro', 'content_count', 'follow_count', 'update_time', 'is_followed', 'is_owner')
+
+    def get_content_count(self, obj):
+        return obj.favorite_collect.all().count()
+
+    def get_follow_count(self, obj):
+        return FollowedFavorites.objects.filter(fa=obj).count()
+
+    def get_is_owner(self, obj):
+        uid = self.context.get('uid')
+        if obj.user.uid == uid:
+            return True
+        return False
+
+    # def get_owner_info(self, obj):
+    #     owner = obj.user
+    #     data = {'nickname': owner.nickname, 'slug': owner.slug}
+    #     return data
+    #
+    def get_is_followed(self, obj):
+        uid = self.context['uid']
+        data = False
+        if FollowedFavorites.objects.filter(user_id=uid, fa=obj).exists():
+            data = True
+        return data
+
 
 # class FavoritesAnswerSerializer(serializers.ModelSerializer):
 #     class Meta:
@@ -110,18 +148,15 @@ class FollowsUserSerializer(serializers.ModelSerializer):
 
     def get_articles_count(self, obj):
         # TODO 数据库查询
-        return 0
+        return Article.objects.filter(user_id=obj.uid, status='published', is_deleted=False).count()
 
     def get_answers_count(self, obj):
         # TODO 数据库查询
-        return 0
+        return Answer.objects.filter(user_id=obj.uid).count()
 
 
 class FavoritesContentSerializer(serializers.ModelSerializer):
     details = serializers.SerializerMethodField()
-    owner_info = serializers.SerializerMethodField()
-    favorite_info = serializers.SerializerMethodField()
-
 
     class Meta:
         model = FavoriteCollection
@@ -130,35 +165,17 @@ class FavoritesContentSerializer(serializers.ModelSerializer):
     def get_details(self, obj):
         content_object = obj.content_object
         content_data = None
-        # if isinstance(content_object, Label):
-        #     content_data = LabelCreateSerializer(content_object).data
-
-        # if isinstance(content_object, UserProfile):
-        #     content_data = UserInfoSerializer(content_object).data
-
+        me = self.context["me"]
         if isinstance(content_object, Answer):
-            content_data = UserPageAnswerSerializer(instance=content_object).data
-
+            content_data = UserPageAnswerSerializer(instance=content_object, context=self.context).data
+            content_data['data_type'] = 'answer'
         if isinstance(content_object, Article):
-            content_data = UserPageArticleSerializer(instance=content_object).data
-        # TODO 查询其他对象：文章、回答等
+            content_data = UserPageArticleSerializer(instance=content_object, context=self.context).data
+            content_data['data_type'] = 'article'
+        if isinstance(content_object, Idea):
+            content_data = UserPageThinksSerializer(instance=content_object, context=self.context).data
+            content_data['data_type'] = 'think'
         return content_data
-
-    def get_owner_info(self, obj):
-        owner = obj.favorite.user
-        data = {'nickname': owner.nickname, 'slug': owner.slug, 'avatar': owner.avatar}
-        # 查询是否已经关注改用户
-        followed = False
-        if FollowedUser.objects.filter(idol__uid=owner.uid, fans__uid=self.context['uid']).exists():
-            followed = True
-        data['followed'] = followed
-        return data
-
-    def get_favorite_info(self, obj):
-        favorite = obj.favorite
-        data = FavoritesSerializer(favorite, context=self.context).data
-
-        return data
 
 
 class UserPageQuestionSerializer(serializers.ModelSerializer):
@@ -180,9 +197,11 @@ class UserPageQuestionSerializer(serializers.ModelSerializer):
 class UserPageAnswerSerializer(serializers.ModelSerializer):
     question_title = serializers.SerializerMethodField()
     top_answer = serializers.SerializerMethodField()
+    currentUserVote = serializers.SerializerMethodField()
+
     class Meta:
         model = Answer
-        fields = ('question_id', 'question_title', 'top_answer')
+        fields = ('question_id', 'question_title', 'top_answer', 'currentUserVote')
 
     def get_top_answer(self, obj):
         data = AnswerInLabelDiscussSerializer(obj, context=self.context).data
@@ -191,17 +210,29 @@ class UserPageAnswerSerializer(serializers.ModelSerializer):
     def get_question_title(self, obj):
         return obj.question.title
 
+    def get_currentUserVote(self, obj):
+        """返回None表示未投票，True表示赞成，False表示反对"""
+        me = self.context["me"]  # None或者当前登录的UserProfile对象
+        if not me:
+            # <<<<<<< master
+            return None
+        my_vote = obj.vote.filter(user_id=me.uid).first()
+        if not my_vote:
+            return None
+        return my_vote.value
+
 
 class UserPageArticleSerializer(serializers.ModelSerializer):
-
     update_time = serializers.DateTimeField(format="%Y%m%d %H:%M:%S", source="update_at", read_only=True)
     comment_count = serializers.SerializerMethodField()
     upvote_count = serializers.SerializerMethodField()
     author_info = serializers.SerializerMethodField()
+    currentUserVote = serializers.SerializerMethodField()
 
     class Meta:
         model = Article
-        fields = ('id', 'title', 'content', 'image', 'update_time', 'comment_count', 'upvote_count', 'author_info')
+        fields = ('id', 'title', 'content', 'image', 'update_time', 'comment_count', 'upvote_count', 'author_info',
+                  'currentUserVote')
 
     def get_comment_count(self, obj):
         return obj.articlecomment_set.all().count()
@@ -219,18 +250,30 @@ class UserPageArticleSerializer(serializers.ModelSerializer):
         }
         return data
 
+    def get_currentUserVote(self, obj):
+        """返回None表示未投票，True表示赞成，False表示反对"""
+        me = self.context["me"]  # None或者当前登录的UserProfile对象
+        if not me:
+            # <<<<<<< master
+            return None
+        my_vote = obj.vote.filter(user_id=me.uid).first()
+        if not my_vote:
+            return None
+        return my_vote.value
+
 
 class UserPageThinksSerializer(serializers.ModelSerializer):
-
     create_time = serializers.DateTimeField(format="%Y%m%d %H:%M:%S", source="create_at", read_only=True)
     comment_count = serializers.SerializerMethodField()
     upvote_count = serializers.SerializerMethodField()
     author_info = serializers.SerializerMethodField()
     avatars = serializers.SerializerMethodField()
+    currentUserVote = serializers.SerializerMethodField()
 
     class Meta:
         model = Idea
-        fields = ('id', 'content', 'create_time', 'comment_count', 'upvote_count', 'author_info', 'avatars',)
+        fields = (
+        'id', 'content', 'create_time', 'comment_count', 'upvote_count', 'author_info', 'avatars', 'currentUserVote')
 
     def get_comment_count(self, obj):
         return obj.ideacomment_set.all().count()
@@ -251,11 +294,22 @@ class UserPageThinksSerializer(serializers.ModelSerializer):
     def get_avatars(self, obj):
         picture = obj.avatars
         if len(picture):
-        # data = picture.replace('[', '').replace(']','').replace('\"', '').split(',')
+            # data = picture.replace('[', '').replace(']','').replace('\"', '').split(',')
             data = json.loads(picture)
             data = [settings.PICTURE_HOST + p for p in data]
             return data
         return None
+
+    def get_currentUserVote(self, obj):
+        """返回None表示未投票，True表示赞成，False表示反对"""
+        me = self.context["me"]  # None或者当前登录的UserProfile对象
+        if not me:
+            # <<<<<<< master
+            return None
+        my_vote = obj.agree.filter(user_id=me.uid).first()
+        if not my_vote:
+            return None
+        return my_vote.value
 
 
 class UserPageLabelSerializer(serializers.ModelSerializer):
