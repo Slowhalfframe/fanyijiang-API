@@ -49,4 +49,10 @@ class FindUserView(ViewSetMixin, HaystackGenericAPIView, CustomAPIView):
         queryset = self.filter_queryset(self.get_queryset())
         queryset = [i.object for i in queryset]
         data = self.paginate_data(request, queryset, self.get_serializer_class())
+        if not me:
+            for r in data["results"]:
+                r["is_idol"] = False
+        else:
+            for r in data["results"]:
+                r["is_idol"] = UserProfile.objects.filter(as_idol__fans__uid=me.uid, slug=r['slug']).exists()
         return self.success(data)
