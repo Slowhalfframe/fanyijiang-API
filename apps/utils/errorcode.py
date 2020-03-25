@@ -4,7 +4,7 @@
 
 # HTTP请求的数据不合格
 INVALID_DATA = 20000
-MSG_INVALID_DATA = "无效的请求数据"
+MSG_INVALID_DATA = "请求数据无效或已经被占用"
 
 NO_DATA = 404
 MSG_NO_DATA = "指定的资源本应存在"

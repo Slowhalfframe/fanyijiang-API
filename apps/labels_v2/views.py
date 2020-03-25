@@ -39,8 +39,20 @@ class LabelView(CustomAPIView):
 
 
 class OneLabelView(CustomAPIView):
+    @validate_identity
     def delete(self, request, label_id):
         """删除标签"""
+
+        # TODO 检查用户权限
+        label = Label.objects.filter(pk=label_id).first()
+        if not label:
+            return self.success()
+        # TODO 如果文章或问题使用了该标签，则不应该删除，以防它们失去标签
+        try:
+            label.delete()
+        except:
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
+        return self.success()
 
     def put(self, request, label_id):
         """修改标签"""
