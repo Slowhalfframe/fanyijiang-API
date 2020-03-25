@@ -576,7 +576,7 @@ class FavoritesContentAPIView(CustomAPIView):
             return self.error('找不到该收藏夹', 404)
 
         fa_content = fa.favorite_collect.all()
-        data = self.paginate_data(request, fa_content, FavoritesContentSerializer)
+        data = self.paginate_data(request, fa_content, FavoritesContentSerializer, {'uid': fa.user.uid})
         return self.success(data)
 
     def post(self, request, pk):
