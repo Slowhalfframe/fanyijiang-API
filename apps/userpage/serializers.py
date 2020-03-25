@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.conf import settings
 import json
 
-from apps.userpage.models import (UserProfile, UserEmploymentHistory, UserEducationHistory,
+from apps.userpage.models import (UserProfile, UserEmploymentHistory, UserEducationHistory, FollowedUser,
                                   UserLocations, UserFavorites, FollowedFavorites, FavoriteCollection)
 
 from apps.labels.models import Label
@@ -64,17 +64,32 @@ class UserLocationSerializer(serializers.ModelSerializer):
 class FavoritesSerializer(serializers.ModelSerializer):
     content_count = serializers.SerializerMethodField()
     follow_count = serializers.SerializerMethodField()
+    owner_info = serializers.SerializerMethodField()
+    is_followed = serializers.SerializerMethodField()
     # update_time = serializers.DateTimeField(format="%Y%m%d %H:%M:%S", source="update_time", read_only=True)
 
     class Meta:
         model = UserFavorites
-        fields = ('id', 'title', 'status', 'content_count', 'follow_count', 'update_time')
+        fields = ('id', 'title', 'status', 'content_count', 'follow_count', 'update_time', 'owner_info')
 
     def get_content_count(self, obj):
         return obj.favorite_collect.all().count()
 
     def get_follow_count(self, obj):
         return FollowedFavorites.objects.filter(fa=obj).count()
+
+    def get_owner_info(self, obj):
+        owner = obj.user
+        data = {'nickname': owner.nickname, 'slug': owner.slug}
+        return data
+
+    def get_is_followed(self, obj):
+        uid = self.context['uid']
+        data = False
+        if FollowedFavorites.objects.filter(user_id=uid, fa=obj).exists():
+            data = True
+        return data
+
 
 
 # class FavoritesAnswerSerializer(serializers.ModelSerializer):
@@ -104,6 +119,9 @@ class FollowsUserSerializer(serializers.ModelSerializer):
 
 class FavoritesContentSerializer(serializers.ModelSerializer):
     details = serializers.SerializerMethodField()
+    owner_info = serializers.SerializerMethodField()
+    favorite_info = serializers.SerializerMethodField()
+
 
     class Meta:
         model = FavoriteCollection
@@ -119,12 +137,28 @@ class FavoritesContentSerializer(serializers.ModelSerializer):
         #     content_data = UserInfoSerializer(content_object).data
 
         if isinstance(content_object, Answer):
-            content_data = AnswerCreateSerializer(instance=content_object).data
+            content_data = UserPageAnswerSerializer(instance=content_object).data
 
         if isinstance(content_object, Article):
-            pass
+            content_data = UserPageArticleSerializer(instance=content_object).data
         # TODO 查询其他对象：文章、回答等
         return content_data
+
+    def get_owner_info(self, obj):
+        owner = obj.favorite.user
+        data = {'nickname': owner.nickname, 'slug': owner.slug, 'avatar': owner.avatar}
+        # 查询是否已经关注改用户
+        followed = False
+        if FollowedUser.objects.filter(idol__uid=owner.uid, fans__uid=self.context['uid']).exists():
+            followed = True
+        data['followed'] = followed
+        return data
+
+    def get_favorite_info(self, obj):
+        favorite = obj.favorite
+        data = FavoritesSerializer(favorite, context=self.context).data
+
+        return data
 
 
 class UserPageQuestionSerializer(serializers.ModelSerializer):
