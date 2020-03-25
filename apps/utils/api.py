@@ -57,10 +57,10 @@ class CustomAPIView(APIView):
             offset = 0
         results = query_set[offset:offset + limit]
         if object_serializer:
-            count = query_set.count()
+            count = len(query_set)
             results = object_serializer(results, many=True, context=serializer_context).data
         else:
-            count = query_set.count()
+            count = len(query_set)
         data = {"results": results,
                 "total": count}
         return data
