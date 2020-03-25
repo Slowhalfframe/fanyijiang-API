@@ -94,7 +94,23 @@ class ParentLabelView(CustomAPIView):
     def get(self, request, label_id):
         """获取父标签，可分页"""
 
+        label = Label.objects.filter(pk=label_id, is_deleted=False).first()
+        if not label:
+            return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
+        me = self.get_user_profile(request)
+        qs = label.parents.filter(is_deleted=False)
+        data = self.paginate_data(request, qs, SimpleLabelSerializer, {"me": me})
+        return self.success(data)
+
 
 class ChildLabelView(CustomAPIView):
     def get(self, request, label_id):
         """获取子标签，可分页"""
+
+        label = Label.objects.filter(pk=label_id, is_deleted=False).first()
+        if not label:
+            return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
+        me = self.get_user_profile(request)
+        qs = label.children.filter(is_deleted=False)
+        data = self.paginate_data(request, qs, SimpleLabelSerializer, {"me": me})
+        return self.success(data)
