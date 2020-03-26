@@ -326,3 +326,24 @@ class TwoAnswersSerializer(serializers.Serializer):
             "followed": followed,
         }
         return data
+
+class SearchAnswersSerializer(serializers.Serializer):
+    question = serializers.SerializerMethodField()
+    answer = AnswerWithAuthorInfoSerializer()
+
+    def get_question(self, obj: dict):
+        answer = obj["answer"]
+        question = answer.question
+        me = self.context["me"]
+        if not me:
+            followed = False
+        else:
+            followed = question.questionfollow_set.filter(user_id=me.uid).exists()
+        data = {
+            "id": question.id,
+            "title": question.title,
+            "answer_count": question.answer_set.count(),
+            "comment_count": question.comment.count(),
+            "followed": followed,
+        }
+        return data
