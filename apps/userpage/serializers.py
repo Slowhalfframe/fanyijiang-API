@@ -138,10 +138,11 @@ class FollowsUserSerializer(serializers.ModelSerializer):
     fans_count = serializers.SerializerMethodField()  # 关注者
     articles_count = serializers.SerializerMethodField()  # 文章数
     answers_count = serializers.SerializerMethodField()  # 回答数
+    text = serializers.CharField(source="nickname")
 
     class Meta:
         model = UserProfile
-        fields = ('avatar', 'nickname', 'autograph', 'slug', 'uid', 'fans_count', 'articles_count', 'answers_count')
+        fields = ('avatar', 'nickname', 'autograph', 'slug', 'uid', 'fans_count', 'articles_count', 'answers_count',"text")
 
     def get_fans_count(self, obj):
         return UserProfile.objects.filter(as_fans__idol__uid=obj.uid).count()
