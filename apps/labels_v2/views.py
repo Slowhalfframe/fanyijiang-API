@@ -1,8 +1,8 @@
+from apps.userpage.models import UserProfile
 from apps.utils import errorcode
 from apps.utils.api import CustomAPIView
 from apps.utils.decorators import validate_identity
-from apps.userpage.models import UserProfile
-from .models import Label
+from .models import Label, LabelFollow
 from .serializers import LabelChecker, SimpleLabelSerializer, DetailedLabelSerializer
 
 
@@ -143,6 +143,34 @@ class ChildLabelView(CustomAPIView):
         child = Label.objects.filter(pk=pk, is_deleted=False).first()
         try:
             label.children.remove(child)
+        except:
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
+        return self.success()
+
+
+class LabelFollowView(CustomAPIView):
+    @validate_identity
+    def post(self, request, label_id):
+        """关注标签，不会重复关注"""
+
+        label = Label.objects.filter(pk=label_id, is_deleted=False).first()
+        if label is None:
+            return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
+        me = UserProfile.objects.get(uid=request._request.uid)
+        try:
+            LabelFollow.objects.get_or_create(user=me, label=label)  # 防止重复关注
+        except:
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
+        return self.success()
+
+    @validate_identity
+    def delete(self, request, label_id):
+        """取消关注标签"""
+
+        uid = request._request.uid
+        qs = LabelFollow.objects.filter(user__uid=uid, label_id=label_id, is_deleted=False)
+        try:
+            qs.delete()
         except:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         return self.success()

@@ -5,7 +5,7 @@ from django.urls import reverse
 from rest_framework.test import APIClient
 
 from apps.userpage.models import UserProfile
-from .models import Label
+from .models import Label, LabelFollow
 
 
 def common_prepare(obj):
@@ -244,3 +244,59 @@ class ChildLabelViewDeleteTest(TestCase):
         response = self.client.delete(path, **self.headers)
         data = response.json()
         self.assertEqual(data["code"], 0)
+
+
+class LabelFollowViewPostTest(TestCase):
+    def setUp(self):
+        common_prepare(self)
+        self.label = Label.objects.create(name="标签1")
+        self.path = reverse("labels_v2:follow", kwargs={"label_id": self.label.pk})
+
+    def test_no_login(self):
+        response = self.client.post(self.path)
+        data = response.json()
+        self.assertNotEqual(data["code"], 0)
+
+    def test_label_not_exist(self):
+        path = reverse("labels_v2:follow", kwargs={"label_id": self.label.pk + 1})
+        response = self.client.post(path, **self.headers)
+        data = response.json()
+        self.assertNotEqual(data["code"], 0)
+
+    def test_follow_only_once(self):
+        response = self.client.post(self.path, **self.headers)
+        data = response.json()
+        self.assertEqual(data["code"], 0)
+        response = self.client.post(self.path, **self.headers)
+        data = response.json()
+        self.assertEqual(data["code"], 0)
+        self.assertEqual(self.label.followers.count(), 1)
+
+
+class LabelFollowViewDeleteTest(TestCase):
+    def setUp(self):
+        common_prepare(self)
+        self.label = Label.objects.create(name="标签1")
+        self.path = reverse("labels_v2:follow", kwargs={"label_id": self.label.pk})
+        user = UserProfile.objects.get(uid="e4da3b7fbbce2345d7772b0674a318d5")
+        LabelFollow.objects.create(user=user, label=self.label)
+
+    def test_no_login(self):
+        response = self.client.delete(self.path)
+        data = response.json()
+        self.assertNotEqual(data["code"], 0)
+
+    def test_label_followed(self):
+        self.assertEqual(LabelFollow.objects.count(), 1)
+        response = self.client.delete(self.path, **self.headers)
+        data = response.json()
+        self.assertEqual(data["code"], 0)
+        self.assertEqual(LabelFollow.objects.count(), 0)
+
+    def test_label_not_followed(self):
+        self.assertEqual(LabelFollow.objects.count(), 1)
+        path = reverse("labels_v2:follow", kwargs={"label_id": self.label.pk + 1})
+        response = self.client.delete(path, **self.headers)
+        data = response.json()
+        self.assertEqual(data["code"], 0)
+        self.assertEqual(LabelFollow.objects.count(), 1)
