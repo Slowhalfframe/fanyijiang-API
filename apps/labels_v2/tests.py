@@ -1,26 +1,9 @@
-import requests
-from django.conf import settings
 from django.test import TestCase
 from django.urls import reverse
-from rest_framework.test import APIClient
 
+from apps import common_prepare
 from apps.userpage.models import UserProfile
 from .models import Label, LabelFollow
-
-
-def common_prepare(obj):
-    """准备测试用户、登录和客户端"""
-
-    UserProfile.objects.create(uid="e4da3b7fbbce2345d7772b0674a318d5", nickname="haoran·zhang", slug="zhanghaoran")
-    UserProfile.objects.create(uid="a87ff679a2f3e71d9181a67b7542122c", nickname="赵军臣", slug="zhao-jun-chen")
-    data = {
-        "username": "18569938068",
-        "password": "1234567",
-        "login_type": "normal"
-    }
-    response = requests.post(settings.USER_CENTER_GATEWAY + "/api/login", data=data)
-    obj.headers = {"HTTP_AUTHORIZATION": response.json()["data"]["token"]}
-    obj.client = APIClient()
 
 
 class LabelViewPostTest(TestCase):

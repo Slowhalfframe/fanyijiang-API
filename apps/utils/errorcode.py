@@ -6,7 +6,6 @@
 INVALID_DATA = 20000
 MSG_INVALID_DATA = "请求数据无效或已经被占用"
 MSG_NO_KW = "必须有关键字"
-MSG_INVALID_SLUG = "无效的用户别名"
 
 NO_DATA = 404
 MSG_NO_DATA = "指定的资源本应存在"
@@ -21,7 +20,10 @@ INVITATION_DONE = 20003
 MSG_INVITATION_DONE = "只能处理未回答的邀请"
 
 NO_LABELS = 20004
-MSG_NO_LABELS = "发表的文章必须有标签"
+MSG_NO_LABELS = "为文章或问题指定的标签不存在"
+
+INVALID_SLUG = 20005
+MSG_INVALID_SLUG = "无效的用户别名"
 
 LOGIN_REQUIRED = 401
 MSG_LOGIN_REQUIRED = "请登录"

@@ -181,7 +181,7 @@ class LabelFollowView(CustomAPIView):
         slug = request.query_params.get("slug")
         he = UserProfile.objects.filter(slug=slug).first()
         if he is None:
-            return self.error(errorcode.MSG_INVALID_SLUG, errorcode.INVALID_DATA)
+            return self.error(errorcode.MSG_INVALID_SLUG, errorcode.INVALID_SLUG)
         qs = he.followed_labels.filter(is_deleted=False)
         me = self.get_user_profile(request)
         data = self.paginate_data(request, qs, MeLabelSerializer, {"me": me})

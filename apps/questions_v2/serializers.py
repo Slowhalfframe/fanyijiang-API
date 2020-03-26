@@ -48,6 +48,7 @@ class BasicQuestionSerializer(serializers.ModelSerializer):
 
     author = SimpleUserSerializer()
     labels = BasicLabelSerializer(many=True)
+    type = serializers.CharField(source="kind")
 
     class Meta:
         model = Question
