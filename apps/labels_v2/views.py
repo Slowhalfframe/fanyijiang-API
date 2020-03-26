@@ -186,3 +186,10 @@ class LabelFollowView(CustomAPIView):
         me = self.get_user_profile(request)
         data = self.paginate_data(request, qs, DetailedLabelSerializer, {"me": me})
         return self.success(data)
+
+
+class LabelDiscussionView(CustomAPIView):
+    def get(self, request, label_id):
+        """获取本标签的讨论内容，或者说热点"""
+
+        # TODO 未实现，需要先实现文章、问答等的模型

@@ -3,6 +3,7 @@ import html
 from rest_framework import serializers
 
 from apps import xss_safe, legal_image_path
+from apps.userpage.models import UserProfile
 from .models import Label
 
 
@@ -68,3 +69,18 @@ class DetailedLabelSerializer(SimpleLabelSerializer):
 
     def get_question_count(self, obj):
         return 0  # TODO 改成真实数据
+
+
+class SimpleUserSerializer(serializers.ModelSerializer):
+    """用于用户的序列化"""
+
+    id = serializers.CharField(source="uid")
+    type = serializers.CharField(source="kind")
+    homepage = serializers.SerializerMethodField()
+
+    class Meta:
+        model = UserProfile
+        fields = ("id", "type", "slug", "nickname", "gender", "avatar", "autograph", "homepage")
+
+    def get_homepage(self, obj):
+        return ""  # TODO 用户主页的地址
