@@ -28,7 +28,7 @@ class Label(BaseModel):
 
 
 class LabelFollow(BaseModel):
-    """用户与标签的多对多关注关系"""
+    """用户与标签的多对多关注关系，插入行时注意防止重复"""
 
     user = models.ForeignKey(to=UserProfile, null=False, verbose_name="关注者ID")
     label = models.ForeignKey(to=Label, null=False, verbose_name="关注的标签")

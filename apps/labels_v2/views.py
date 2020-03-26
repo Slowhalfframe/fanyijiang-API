@@ -3,7 +3,7 @@ from apps.utils import errorcode
 from apps.utils.api import CustomAPIView
 from apps.utils.decorators import validate_identity
 from .models import Label, LabelFollow
-from .serializers import LabelChecker, SimpleLabelSerializer, DetailedLabelSerializer
+from .serializers import LabelChecker, StatLabelSerializer, MeLabelSerializer
 
 
 class LabelView(CustomAPIView):
@@ -26,7 +26,7 @@ class LabelView(CustomAPIView):
         except:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         me = UserProfile.objects.get(uid=request._request.uid)
-        formatter = SimpleLabelSerializer(instance=label, context={"me": me})
+        formatter = MeLabelSerializer(instance=label, context={"me": me})
         return self.success(formatter.data)
 
     def get(self, request):
@@ -34,7 +34,7 @@ class LabelView(CustomAPIView):
 
         qs = Label.objects.filter(is_deleted=False, parents__isnull=True)
         me = self.get_user_profile(request)
-        data = self.paginate_data(request, qs, SimpleLabelSerializer, {"me": me})
+        data = self.paginate_data(request, qs, MeLabelSerializer, {"me": me})
         return self.success(data)
 
 
@@ -76,7 +76,7 @@ class OneLabelView(CustomAPIView):
         except:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         me = UserProfile.objects.get(uid=request._request.uid)
-        formatter = SimpleLabelSerializer(instance=qs.get(), context={"me": me})
+        formatter = MeLabelSerializer(instance=qs.get(), context={"me": me})
         return self.success(formatter.data)
 
     def get(self, request, label_id):
@@ -86,7 +86,7 @@ class OneLabelView(CustomAPIView):
         if label is None:
             return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
         me = self.get_user_profile(request)
-        formatter = DetailedLabelSerializer(instance=label, context={"me": me})
+        formatter = MeLabelSerializer(instance=label, context={"me": me})
         return self.success(formatter.data)
 
 
@@ -99,7 +99,7 @@ class ParentLabelView(CustomAPIView):
             return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
         me = self.get_user_profile(request)
         qs = label.parents.filter(is_deleted=False)
-        data = self.paginate_data(request, qs, SimpleLabelSerializer, {"me": me})
+        data = self.paginate_data(request, qs, StatLabelSerializer, {"me": me})
         return self.success(data)
 
 
@@ -112,7 +112,7 @@ class ChildLabelView(CustomAPIView):
             return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
         me = self.get_user_profile(request)
         qs = label.children.filter(is_deleted=False)
-        data = self.paginate_data(request, qs, SimpleLabelSerializer, {"me": me})
+        data = self.paginate_data(request, qs, StatLabelSerializer, {"me": me})
         return self.success(data)
 
     @validate_identity
@@ -184,7 +184,7 @@ class LabelFollowView(CustomAPIView):
             return self.error(errorcode.MSG_INVALID_SLUG, errorcode.INVALID_DATA)
         qs = he.followed_labels.filter(is_deleted=False)
         me = self.get_user_profile(request)
-        data = self.paginate_data(request, qs, DetailedLabelSerializer, {"me": me})
+        data = self.paginate_data(request, qs, MeLabelSerializer, {"me": me})
         return self.success(data)
 
 
