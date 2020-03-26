@@ -244,3 +244,30 @@ class ChildLabelViewDeleteTest(TestCase):
         response = self.client.delete(path, **self.headers)
         data = response.json()
         self.assertEqual(data["code"], 0)
+
+
+class LabelFollowViewPostTest(TestCase):
+    def setUp(self):
+        common_prepare(self)
+        self.label = Label.objects.create(name="标签1")
+        self.path = reverse("labels_v2:follow", kwargs={"label_id": self.label.pk})
+
+    def test_no_login(self):
+        response = self.client.post(self.path)
+        data = response.json()
+        self.assertNotEqual(data["code"], 0)
+
+    def test_label_not_exist(self):
+        path = reverse("labels_v2:follow", kwargs={"label_id": self.label.pk + 1})
+        response = self.client.post(path, **self.headers)
+        data = response.json()
+        self.assertNotEqual(data["code"], 0)
+
+    def test_follow_only_once(self):
+        response = self.client.post(self.path, **self.headers)
+        data = response.json()
+        self.assertEqual(data["code"], 0)
+        response = self.client.post(self.path, **self.headers)
+        data = response.json()
+        self.assertEqual(data["code"], 0)
+        self.assertEqual(self.label.followers.count(), 1)
