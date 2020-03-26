@@ -56,8 +56,9 @@ class IdeaIndex(indexes.SearchIndex, indexes.Indexable):
 
 class UserIndex(indexes.SearchIndex, indexes.Indexable):
     text = indexes.CharField(document=True, use_template=True)
-    id = indexes.CharField(model_attr="uid")
-    kind = indexes.CharField(default="user")
+
+    # uid = indexes.CharField(model_attr="uid")
+    # kind = indexes.CharField(default="user")
 
     def get_model(self):
         return UserProfile
