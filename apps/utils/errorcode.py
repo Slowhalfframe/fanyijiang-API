@@ -6,6 +6,7 @@
 INVALID_DATA = 20000
 MSG_INVALID_DATA = "请求数据无效或已经被占用"
 MSG_NO_KW = "必须有关键字"
+MSG_INVALID_SLUG = "无效的用户别名"
 
 NO_DATA = 404
 MSG_NO_DATA = "指定的资源本应存在"

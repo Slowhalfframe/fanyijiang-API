@@ -174,3 +174,15 @@ class LabelFollowView(CustomAPIView):
         except:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         return self.success()
+
+    def get(self, request):
+        """查看某个用户关注的标签，可分页"""
+
+        slug = request.query_params.get("slug")
+        he = UserProfile.objects.filter(slug=slug).first()
+        if he is None:
+            return self.error(errorcode.MSG_INVALID_SLUG, errorcode.INVALID_DATA)
+        qs = he.followed_labels.filter(is_deleted=False)
+        me = self.get_user_profile(request)
+        data = self.paginate_data(request, qs, DetailedLabelSerializer, {"me": me})
+        return self.success(data)

@@ -8,4 +8,5 @@ urlpatterns = [
     url(r"^(?P<label_id>\d+)/parents/$", views.ParentLabelView.as_view(), name="parent"),
     url(r"^(?P<label_id>\d+)/children/$", views.ChildLabelView.as_view(), name="child"),
     url(r"^(?P<label_id>\d+)/follow/$", views.LabelFollowView.as_view(), name="follow"),
+    url(r"^follow/$", views.LabelFollowView.as_view(), name="his_follow"),
 ]
