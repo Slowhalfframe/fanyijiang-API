@@ -162,3 +162,15 @@ class LabelFollowView(CustomAPIView):
         except:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         return self.success()
+
+    @validate_identity
+    def delete(self, request, label_id):
+        """取消关注标签"""
+
+        uid = request._request.uid
+        qs = LabelFollow.objects.filter(user__uid=uid, label_id=label_id, is_deleted=False)
+        try:
+            qs.delete()
+        except:
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
+        return self.success()
