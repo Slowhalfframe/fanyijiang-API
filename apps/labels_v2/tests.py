@@ -188,6 +188,11 @@ class ChildLabelViewPostTest(TestCase):
         data = response.json()
         self.assertNotEqual(data["code"], 0)
 
+    def test_child_is_self(self):
+        response = self.client.post(self.path, {"id": self.label1.pk}, **self.headers)
+        data = response.json()
+        self.assertNotEqual(data["code"], 0)
+
     def test_ok(self):
         response = self.client.post(self.path, {"id": self.label2.pk}, **self.headers)
         data = response.json()

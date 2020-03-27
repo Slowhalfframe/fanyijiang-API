@@ -129,8 +129,10 @@ class ChildLabelView(CustomAPIView):
         child = Label.objects.filter(pk=pk, is_deleted=False).first()
         if label is None or child is None:
             return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
+        if label.pk == child.pk:  # 不能以自己为子标签
+            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
         try:
-            label.children.add(child)
+            label.children.add(child)  # 自动避免重复
         except:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         return self.success()
