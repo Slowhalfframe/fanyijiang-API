@@ -30,9 +30,10 @@ class Question(BaseModel):
 
 
 class Answer(BaseModel):
-    """问题的回答，每个问题每个用户只能回答一次，但可以修改"""
+    """问题的回答，每个问题每个用户只能正式回答一次，但可以修改或有多个草稿"""
 
     content = models.TextField(null=False, blank=False, verbose_name="回答内容")
+    is_draft = models.BooleanField(null=False, blank=False, verbose_name="是否是草稿")
     question = models.ForeignKey(to=Question, null=False, verbose_name="问题")
     author = models.ForeignKey(to=UserProfile, null=False, verbose_name="回答者")
 

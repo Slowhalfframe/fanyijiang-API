@@ -62,12 +62,12 @@ class OneLabelView(CustomAPIView):
         label = Label.objects.filter(pk=label_id, is_deleted=False).first()
         if label is None:
             return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
+        name = request.data.get("name") or ""
         data = {
             "intro": request.data.get("intro") or "",
             "avatar": request.data.get("avatar") or "",
+            "name": "a" if label.name == name else name  # 标签名称不变时，绕过唯一性验证
         }
-        name = request.data.get("name") or ""
-        data["name"] = "a" if label.name == name else name  # 标签名称不变时，绕过唯一性验证
         checker = LabelChecker(data=data)
         checker.is_valid()
         if checker.errors:

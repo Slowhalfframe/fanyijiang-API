@@ -1,5 +1,3 @@
-import html
-
 from rest_framework import serializers
 
 from apps import xss_safe
@@ -17,7 +15,7 @@ class SimpleUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = UserProfile
-        fields = ("id", "type", "slug", "nickname", "gender", "avatar", "autograph", "homepage")
+        fields = ("id", "type", "slug", "nickname", "gender", "avatar", "autograph", "homepage",)
 
     def get_homepage(self, obj):
         return ""  # TODO 用户主页的地址
@@ -40,7 +38,7 @@ class QuestionChecker(serializers.ModelSerializer):
     def validate_content(self, value):
         if not value or value.capitalize() == str(None):
             return None
-        return html.escape(value)
+        return value
 
 
 class BasicQuestionSerializer(serializers.ModelSerializer):
@@ -49,10 +47,12 @@ class BasicQuestionSerializer(serializers.ModelSerializer):
     author = SimpleUserSerializer()
     labels = BasicLabelSerializer(many=True)
     type = serializers.CharField(source="kind")
+    create_at = serializers.DateTimeField(format="%Y%m%d %H:%M:%S")
+    update_at = serializers.DateTimeField(format="%Y%m%d %H:%M:%S")
 
     class Meta:
         model = Question
-        fields = ("id", "type", "title", "content", "author", "labels",)
+        fields = ("id", "type", "title", "content", "author", "labels", "create_at", "update_at",)
 
 
 class StatQuestionSerializer(BasicQuestionSerializer):
