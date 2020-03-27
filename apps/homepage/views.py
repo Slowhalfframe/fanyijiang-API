@@ -17,6 +17,7 @@ class BaseCreateContent(object):
         self.limit = int(limit)
 
     def get_labels(self, content):
+        '''获取某一个内容的所有标签'''
         if isinstance(content, Question) or isinstance(content, Article):
             labels = content.labels.all()
         else:
@@ -24,6 +25,7 @@ class BaseCreateContent(object):
         return labels
 
     def get_label_hash(self, content_list):
+        '''根据标签列表生成标签权重'''
         label_hash = dict()
         for content in content_list:
             labels = self.get_labels(content)
@@ -39,21 +41,25 @@ class UserCreateArticle(BaseCreateContent):
     '''创作的内容，文章'''
 
     def get_user_article(self):
+        '''用户创作的文章'''
         articles = [a for a in Article.objects.filter(user_id=self.user.uid).order_by('-create_at')[
                                self.offset:self.offset + self.limit]]
         return articles
 
     def get_article_label_hash(self):
+        '''根据创建的文章生成标签权重字典'''
         articles = self.get_user_article()
         label_hash = self.get_label_hash(articles)
         return label_hash
 
     def get_user_answer_question(self):
+        '''获取用户发表回答的问题'''
         questions = [a.question for a in Answer.objects.filter(user_id=self.user.uid).order_by('-create_at')[
                                self.offset:self.offset + self.limit]]
         return questions
 
     def get_answer_label_hash(self):
+        '''根据问题生成标签权重字典'''
         questions = self.get_user_answer_question()
         label_hash = self.get_label_hash(questions)
         return label_hash
@@ -63,11 +69,13 @@ class UserCreateCollect(BaseCreateContent):
     '''参与度：收藏，点赞'''
 
     def get_user_favorites(self):
+        '''获取用户的收藏夹'''
         favorites = [a for a in UserFavorites.objects.filter(user_id=self.user.uid)[
                                 self.offset:self.offset + self.limit]]
         return favorites
 
     def get_favorites_content(self):
+        '''获取收藏夹内的内容列表'''
         favorites = self.get_user_favorites()
         content_list = list()
         for favorite in favorites:
@@ -77,11 +85,13 @@ class UserCreateCollect(BaseCreateContent):
         return content_list
 
     def get_collect_label_hash(self):
+        '''根据收藏夹的内容生成标签字典'''
         contents = self.get_favorites_content()
         label_hash = self.get_label_hash(contents)
         return label_hash
 
     def get_recent_vote_content(self):
+        '''获取最近点赞的内容'''
         ac_votes = ACVote.objects.filter(user_id=self.user.uid)[self.offset:self.offset + self.limit]
         contents = [v.content_object for v in ac_votes]
         article_vote = ArticleVote.objects.filter(user_id=self.user.uid)[self.offset:self.offset + self.limit]
@@ -90,6 +100,7 @@ class UserCreateCollect(BaseCreateContent):
         return contents
 
     def get_vote_label_hash(self):
+        '''根据点赞的内容生成标签字典'''
         contents = self.get_recent_vote_content()
         label_hash = self.get_label_hash(contents)
         return label_hash
@@ -97,13 +108,13 @@ class UserCreateCollect(BaseCreateContent):
 
 class GetFinalLabel(UserCreateArticle, UserCreateCollect):
     def get_labels_dict(self):
-        # 获取用的关注的话题
+        '''根据获取所有标签权重列表生成新的字典'''
         label_dict_list = self.get_labels_dict_list()
         followed_labels_dict = self.merge_dict(label_dict_list)
-        print(followed_labels_dict)
         return followed_labels_dict
 
     def get_labels_dict_list(self):
+        '''获取所有标签权重列表'''
         label_dict_list = list()
         label_dict_list.append(self.get_user_followed_label_dict())
         label_dict_list.append(self.get_article_label_hash())
@@ -113,6 +124,7 @@ class GetFinalLabel(UserCreateArticle, UserCreateCollect):
         return label_dict_list
 
     def get_user_followed_label_dict(self):
+        '''获取用户关注的标签字典'''
         followed_labels_dict = dict()
         followed_labels = Label.objects.filter(labelfollow__user_id=self.user.uid)[self.offset:self.offset+self.limit]
         for f in followed_labels:
@@ -120,6 +132,7 @@ class GetFinalLabel(UserCreateArticle, UserCreateCollect):
         return followed_labels_dict
 
     def get_user_no_followed_label(self):
+        '''获取用户未关注的标签列表'''
         labels = Label.objects.exclude(labelfollow__user_id=self.user.uid)[self.offset:self.offset+self.limit]
         ls = [l for l in labels]
         return ls
@@ -146,21 +159,25 @@ class GetFinalLabel(UserCreateArticle, UserCreateCollect):
 class InLabelContent(BaseCreateContent):
     '''根据生成权重最高的标签，获取相应的推荐内容'''
     def get_label_question(self, label):
+        '''问题'''
         questions = [q for q in
                      label.question_set.all().order_by('-create_at')[self.offset:self.offset + self.limit]]
         return questions
 
     def get_lable_article(self, label):
+        '''文章'''
         articles = [a for a in label.article_set.filter(status='published', is_deleted=False).exclude(
             user_id=self.user.uid).order_by('-create_at')[self.offset:self.offset + self.limit]]
         return articles
 
     def get_question_answer(self, question):
+        '''回答'''
         answer = [a for a in question.answer_set.exclude(user_id=self.user.uid).order_by('-create_at')[
                              self.offset:self.offset + self.limit]]
         return answer
 
     def get_content_list(self, label):
+        '''整合内容：文章30%，回答50%'''
         # content_list = self.get_lable_article(label)
         random_length = math.ceil(self.limit * 0.3)
         data_list = self.get_lable_article(label)
@@ -173,6 +190,9 @@ class InLabelContent(BaseCreateContent):
         return content_list
 
     def get_finally_data(self):
+        '''生成最终返回数据
+            由用户行为产生的数据占比80%，其他内容为20%
+        '''
         finally_label = GetFinalLabel(self.user, self.offset, self.limit)
         finally_label_dict = finally_label.get_labels_dict()
         max_label_id = max(finally_label_dict, key=finally_label_dict.get)
@@ -180,7 +200,6 @@ class InLabelContent(BaseCreateContent):
         data_list = self.get_content_list(label)
         no_labels = finally_label.get_user_no_followed_label()
         while len(data_list) <= self.limit:
-            print(len(finally_label_dict))
             if len(finally_label_dict) > 1 and len(data_list) < self.limit:
                 finally_label_dict.pop(max_label_id)
                 max_label_id = max(finally_label_dict, key=finally_label_dict.get)
@@ -192,7 +211,6 @@ class InLabelContent(BaseCreateContent):
                     break
                 no_label = random.choice(no_labels)
                 no_labels.remove(no_label)
-                print(no_label, '随机')
                 data_list.extend(self.get_content_list(no_label))
             data_list = list(set(data_list))
         return data_list

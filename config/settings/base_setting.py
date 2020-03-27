@@ -16,10 +16,10 @@ import os
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # 读取.env文件, 在windows不适用，开发时可直接导入开发环境配置文件
-# from dotenv import load_dotenv
-#
-# env_path = os.path.join(BASE_DIR, '.env')
-# load_dotenv(dotenv_path=env_path)
+from dotenv import load_dotenv
+
+env_path = os.path.join(BASE_DIR, '.env')
+load_dotenv(dotenv_path=env_path)
 
 # 判断环境
 QiDuEnv = os.getenv('QIDUENV') == 'prod'
