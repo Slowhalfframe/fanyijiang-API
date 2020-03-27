@@ -260,5 +260,3 @@ class HomePageFollowContentAPIView(CustomAPIView):
         data = sorted(data_list, key=lambda x:x['update_time'], reverse=True)
         return self.success(data)
 
-        # 获取用户发表的回答
-
