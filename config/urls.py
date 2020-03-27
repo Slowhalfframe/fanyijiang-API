@@ -30,6 +30,7 @@ urlpatterns = [
     url(r"^api/creator/", include("apps.creator.urls", namespace="creator")),
     url(r"^api/notifications/", include("apps.notifications.urls", namespace="notifications")),
     url(r"^api/search/", include("apps.search.urls", namespace="search")),
+    url(r"^api/homepage/", include("apps.homepage.urls", namespace="homepage")),
     url(r'^api/', include('apps.utils.urls', namespace='utils')),
 
     url(r'public/(?P<path>.*)$', serve, {'document_root': settings.DATA_DIR}),

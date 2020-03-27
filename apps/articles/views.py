@@ -152,8 +152,9 @@ class DraftView(CustomAPIView):
         """查看草稿箱"""
 
         drafts = Article.objects.filter(user_id=request._request.uid, status="draft", is_deleted=False)
+        user = UserProfile.objects.get(pk=request._request.uid)
         # TODO 返回哪部分数据？
-        data = self.paginate_data(request, query_set=drafts, object_serializer=ArticleDetailSerializer)
+        data = self.paginate_data(request, query_set=drafts, object_serializer=ArticleDetailSerializer, serializer_context={'me':user})
         return self.success(data)
 
 

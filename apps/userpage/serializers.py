@@ -199,10 +199,12 @@ class UserPageAnswerSerializer(serializers.ModelSerializer):
     question_title = serializers.SerializerMethodField()
     top_answer = serializers.SerializerMethodField()
     currentUserVote = serializers.SerializerMethodField()
+    update_time = serializers.DateTimeField(format="%Y%m%d %H:%M:%S", source="create_at", read_only=True)
+    data_type = serializers.SerializerMethodField()
 
     class Meta:
         model = Answer
-        fields = ('question_id', 'question_title', 'top_answer', 'currentUserVote')
+        fields = ('question_id', 'question_title', 'top_answer', 'currentUserVote', 'update_time', 'data_type')
 
     def get_top_answer(self, obj):
         data = AnswerInLabelDiscussSerializer(obj, context=self.context).data
@@ -222,6 +224,9 @@ class UserPageAnswerSerializer(serializers.ModelSerializer):
             return None
         return my_vote.value
 
+    def get_data_type(self, obj):
+        return 'answer'
+
 
 class UserPageArticleSerializer(serializers.ModelSerializer):
     update_time = serializers.DateTimeField(format="%Y%m%d %H:%M:%S", source="update_at", read_only=True)
@@ -229,11 +234,13 @@ class UserPageArticleSerializer(serializers.ModelSerializer):
     upvote_count = serializers.SerializerMethodField()
     author_info = serializers.SerializerMethodField()
     currentUserVote = serializers.SerializerMethodField()
+    data_type = serializers.SerializerMethodField()
+
 
     class Meta:
         model = Article
         fields = ('id', 'title', 'content', 'image', 'update_time', 'comment_count', 'upvote_count', 'author_info',
-                  'currentUserVote')
+                  'currentUserVote', 'data_type')
 
     def get_comment_count(self, obj):
         return obj.articlecomment_set.all().count()
@@ -261,6 +268,9 @@ class UserPageArticleSerializer(serializers.ModelSerializer):
         if not my_vote:
             return None
         return my_vote.value
+
+    def get_data_type(self, obj):
+        return 'article'
 
 
 class UserPageThinksSerializer(serializers.ModelSerializer):
