@@ -78,14 +78,6 @@ class LabelViewPostTest(TestCase):
         self.assertEqual(data["code"], 0)
         self.assertIsNone(data["data"]["intro"])
 
-    def test_intro_with_html(self):
-        data = self.data.copy()
-        data["intro"] = "<p>OK</p>"
-        response = self.client.post(self.path, data, **self.headers)
-        data = response.json()
-        self.assertEqual(data["code"], 0)
-        self.assertEqual(data["data"]["intro"], "&lt;p&gt;OK&lt;/p&gt;")
-
     def test_no_avatar(self):
         data = self.data.copy()
         data.pop("avatar")
@@ -164,13 +156,13 @@ class OneLabelViewPutTest(TestCase):
         self.assertEqual(data["data"]["intro"], self.data["intro"])
         self.assertEqual(data["data"]["avatar"], self.data["avatar"])
 
-    def test_label_name_exist(self):
+    def test_label_name_unchanged(self):
         path = reverse("labels_v2:one_label", kwargs={"label_id": self.label.pk})
         data = self.data.copy()
         data["name"] = self.old_data["name"]
         response = self.client.put(path, data, **self.headers)
         data = response.json()
-        self.assertNotEqual(data["code"], 0)
+        self.assertEqual(data["code"], 0)
 
 
 class ChildLabelViewPostTest(TestCase):

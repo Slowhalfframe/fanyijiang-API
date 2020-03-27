@@ -77,3 +77,6 @@ class CustomAPIView(APIView):
         except:
             me = None
         return me
+
+    def get_user_by_slug(self, slug):
+        return UserProfile.objects.filter(slug=slug).first()
