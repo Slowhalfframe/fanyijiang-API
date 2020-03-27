@@ -1,5 +1,3 @@
-import html
-
 from rest_framework import serializers
 
 from apps import xss_safe, legal_image_path
@@ -23,7 +21,7 @@ class LabelChecker(serializers.ModelSerializer):
     def validate_intro(self, value):
         if not value or value.capitalize() == str(None):
             return None
-        return html.escape(value)
+        return value
 
     def validate_avatar(self, value):
         if not value or value.capitalize() == str(None):
@@ -64,7 +62,7 @@ class StatLabelSerializer(BasicLabelSerializer):
 class MeLabelSerializer(StatLabelSerializer):
     """用于标签的序列化，增加了与登录用户有关的信息，需要传入当前登录用户"""
 
-    is_followed = serializers.SerializerMethodField()
+    is_followed = serializers.SerializerMethodField()  # 是否已经关注
 
     class Meta:
         model = Label

@@ -31,8 +31,12 @@ def common_prepare(obj):
 
     from apps.userpage.models import UserProfile
 
-    UserProfile.objects.create(uid="e4da3b7fbbce2345d7772b0674a318d5", nickname="haoran·zhang", slug="zhanghaoran")
-    UserProfile.objects.create(uid="a87ff679a2f3e71d9181a67b7542122c", nickname="赵军臣", slug="zhao-jun-chen")
+    obj.users = {
+        "zhang": UserProfile.objects.create(uid="e4da3b7fbbce2345d7772b0674a318d5", nickname="haoran·zhang",
+                                            slug="zhanghaoran"),
+        "zhao": UserProfile.objects.create(uid="a87ff679a2f3e71d9181a67b7542122c", nickname="赵军臣",
+                                           slug="zhao-jun-chen")
+    }
     data = {
         "username": "18569938068",
         "password": "1234567",
