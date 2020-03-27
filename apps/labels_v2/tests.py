@@ -2,7 +2,6 @@ from django.test import TestCase
 from django.urls import reverse
 
 from apps import common_prepare
-from apps.userpage.models import UserProfile
 from .models import Label, LabelFollow
 
 
@@ -261,7 +260,7 @@ class LabelFollowViewDeleteTest(TestCase):
         common_prepare(self)
         self.label = Label.objects.create(name="标签1")
         self.path = reverse("labels_v2:follow", kwargs={"label_id": self.label.pk})
-        user = UserProfile.objects.get(uid="e4da3b7fbbce2345d7772b0674a318d5")
+        user = self.users["zhang"]
         LabelFollow.objects.create(user=user, label=self.label)
 
     def test_no_login(self):

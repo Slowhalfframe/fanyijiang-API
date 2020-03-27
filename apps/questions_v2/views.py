@@ -45,5 +45,39 @@ class OneQuestionView(CustomAPIView):
     def put(self, request, question_id):
         """修改自己的问题"""
 
+        question = Question.objects.filter(pk=question_id, is_deleted=False).first()
+        if question is None:
+            return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
+        me = UserProfile.objects.get(uid=request._request.uid)
+        if question.author != me:
+            return self.error(errorcode.MSG_NOT_OWNER, errorcode.NOT_OWNER)
+        title = request.data.get("title") or ""
+        content = request.data.get("content") or ""
+        labels = request.data.getlist("labels") or []
+        qs = Label.objects.filter(id__in=labels, is_deleted=False)
+        if not qs.exists():
+            return self.error(errorcode.MSG_NO_LABELS, errorcode.NO_LABELS)
+        # TODO 问题的标题不能随意修改，免得造成答非所问
+        if question.title == title:
+            data = {"title": "a", "content": content}  # 使用无意义但有效的标题，绕过唯一性验证
+        else:
+            data = {"title": title, "content": content}
+        checker = QuestionChecker(data=data)
+        checker.is_valid()
+        if checker.errors:
+            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
+        try:
+            if not question.title == title:
+                question.title = checker.validated_data["title"]
+            question.content = checker.validated_data["content"]
+            with atomic():
+                question.save()
+                question.labels.clear()
+                question.labels.add(*(i for i in qs))
+        except:
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
+        formatter = MeQuestionSerializer(instance=question, context={"me": me})
+        return self.success(formatter.data)
+
     def get(self, request, question_id):
         """查看问题的详情"""
