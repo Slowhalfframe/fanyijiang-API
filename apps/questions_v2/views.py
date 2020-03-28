@@ -143,8 +143,39 @@ class OneAnswerView(CustomAPIView):
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         return self.success()
 
+    @logged_in
     def put(self, request, question_id, answer_id):
         """修改本人的回答，不能把正式回答变为草稿，发表正式回答会真实删除草稿"""
+
+        me = request.me
+        question = Question.objects.filter(pk=question_id, is_deleted=False).first()
+        answer = Answer.objects.filter(pk=answer_id, question=question_id, is_deleted=False).first()
+        if question is None or answer is None:
+            return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
+        if answer.author != me:
+            return self.error(errorcode.MSG_NOT_OWNER, errorcode.NOT_OWNER)
+        data = {
+            "content": request.data.get("content") or "",
+            "is_draft": request.data.get("is_draft"),
+        }
+        checker = AnswerChecker(data=data)
+        checker.is_valid()
+        if checker.errors:
+            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
+        try:
+            answer.content = checker.validated_data["content"]
+            if answer.is_draft:  # 原来是草稿时修改状态
+                answer.is_draft = checker.validated_data["is_draft"]
+            elif checker.validated_data["is_draft"]:
+                return self.error(errorcode.MSG_REFORM, errorcode.REFORM)
+            with atomic():
+                answer.save()
+                if not answer.is_draft:  # 正式发表，删除草稿
+                    question.answer_set.filter(author=me, is_draft=True).delete()
+        except:
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
+        formatter = MeAnswerSerializer(instance=answer, context={"me": me})
+        return self.success(formatter.data)
 
     def get(self, request, question_id, answer_id):
         """查看回答，草稿只有本人可以查看"""

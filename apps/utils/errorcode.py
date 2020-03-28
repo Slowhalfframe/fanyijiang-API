@@ -28,6 +28,9 @@ MSG_INVALID_SLUG = "无效的用户别名"
 ANSWERED = 20006
 MSG_ANSWERED = "已经回答过了"
 
+REFORM = 20007
+MSG_REFORM = "不能把发表的回答或文章变成草稿"
+
 LOGIN_REQUIRED = 401
 MSG_LOGIN_REQUIRED = "请登录"
 
