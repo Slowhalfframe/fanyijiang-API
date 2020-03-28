@@ -128,7 +128,7 @@ class AnswerViewPostTest(TestCase):
         response = self.client.post(self.path, data, **self.headers)
         data = response.json()
         self.assertEqual(data["code"], 0)
-        self.assertEqual(self.question.answer_set.filter(is_draft=True).count(),0)
+        self.assertEqual(self.question.answer_set.filter(is_draft=True).count(), 0)
         self.assertEqual(self.question.answer_set.filter(is_draft=False).count(), 1)
 
     def test_have_published_answer(self):
@@ -140,3 +140,59 @@ class AnswerViewPostTest(TestCase):
         self.assertNotEqual(data["code"], 0)
         self.assertEqual(self.question.answer_set.filter(is_draft=True).count(), 0)
         self.assertEqual(self.question.answer_set.filter(is_draft=False).count(), 1)
+
+
+class OneAnswerViewDeleteTest(TestCase):
+    def setUp(self):
+        common_prepare(self)
+        self.label = Label.objects.create(name="标签1")
+        self.question = Question.objects.create(title="问题1", author=self.users["zhao"])
+        self.question.labels.add(self.label)
+        self.answer = Answer.objects.create(content="回答1", question=self.question, author=self.users["zhang"],
+                                            is_draft=True)
+        self.path = reverse("questions_v2:one_answer",
+                            kwargs={"question_id": self.question.pk, "answer_id": self.answer.pk})
+
+    def test_no_login(self):
+        response = self.client.delete(self.path)
+        data = response.json()
+        self.assertNotEqual(data["code"], 0)
+
+    def test_question_or_answer_not_exist(self):
+        path = reverse("questions_v2:one_answer",
+                       kwargs={"question_id": self.question.pk + 1, "answer_id": self.answer.pk})
+        response = self.client.delete(path, **self.headers)
+        data = response.json()
+        self.assertEqual(data["code"], 0)
+        path = reverse("questions_v2:one_answer",
+                       kwargs={"question_id": self.question.pk, "answer_id": self.answer.pk + 1})
+        response = self.client.delete(path, **self.headers)
+        data = response.json()
+        self.assertEqual(data["code"], 0)
+
+    def test_not_author(self):
+        answer = Answer.objects.create(content="回答2", question=self.question, author=self.users["zhao"], is_draft=False)
+        path = reverse("questions_v2:one_answer",
+                       kwargs={"question_id": self.question.pk, "answer_id": answer.pk})
+        response = self.client.delete(path, **self.headers)
+        data = response.json()
+        self.assertNotEqual(data["code"], 0)
+
+    def test_delete_draft(self):
+        self.assertEqual(self.question.answer_set.count(), 1)
+        self.assertEqual(self.question.answer_set.filter(is_draft=True).count(), 1)
+        response = self.client.delete(self.path, **self.headers)
+        data = response.json()
+        self.assertEqual(data["code"], 0)
+        self.assertEqual(self.question.answer_set.count(), 0)
+
+    def test_delete_published(self):
+        self.answer.is_draft = False
+        self.answer.save()
+        self.assertEqual(self.question.answer_set.count(), 1)
+        self.assertEqual(self.question.answer_set.filter(is_draft=False).count(), 1)
+        response = self.client.delete(self.path, **self.headers)
+        data = response.json()
+        self.assertEqual(data["code"], 0)
+        self.assertEqual(self.question.answer_set.count(), 1)
+        self.assertEqual(self.question.answer_set.filter(is_draft=False, is_deleted=True).count(), 1)

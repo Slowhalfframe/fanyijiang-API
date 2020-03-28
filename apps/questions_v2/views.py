@@ -119,3 +119,32 @@ class AnswerView(CustomAPIView):
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         formatter = MeAnswerSerializer(instance=answer, context={"me": me})
         return self.success(formatter.data)
+
+
+class OneAnswerView(CustomAPIView):
+    @logged_in
+    def delete(self, request, question_id, answer_id):
+        """撤销本人的回答，草稿会真实删除，正式回答不能随意删除"""
+
+        me = request.me
+        question = Question.objects.filter(pk=question_id, is_deleted=False).first()
+        answer = Answer.objects.filter(pk=answer_id, question=question_id, is_deleted=False).first()
+        if question is None or answer is None:
+            return self.success()
+        if answer.author != me:
+            return self.error(errorcode.MSG_NOT_OWNER, errorcode.NOT_OWNER)
+        try:
+            if answer.is_draft:
+                answer.delete()
+            else:  # TODO 哪些正式回答不能删除？
+                answer.is_deleted = True
+                answer.save()
+        except:
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
+        return self.success()
+
+    def put(self, request, question_id, answer_id):
+        """修改本人的回答，不能把正式回答变为草稿，发表正式回答会真实删除草稿"""
+
+    def get(self, request, question_id, answer_id):
+        """查看回答，草稿只有本人可以查看"""
