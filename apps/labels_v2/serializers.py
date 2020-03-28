@@ -45,7 +45,7 @@ class StatLabelSerializer(BasicLabelSerializer):
     """用于标签的序列化，增加了与登录用户无关的统计信息"""
 
     follower_count = serializers.IntegerField(source="followers.count")
-    question_count = serializers.SerializerMethodField()  # TODO 问题个数
+    question_count = serializers.SerializerMethodField()
     article_count = serializers.SerializerMethodField()  # TODO 文章个数
 
     class Meta:
@@ -53,7 +53,7 @@ class StatLabelSerializer(BasicLabelSerializer):
         fields = BasicLabelSerializer.Meta.fields + ("follower_count", "question_count", "article_count",)
 
     def get_question_count(self, obj):
-        return 123  # TODO 改成真实数据
+        return obj.question_set.filter(is_deleted=False).count()
 
     def get_article_count(self, obj):
         return 145  # TODO 改成真实数据

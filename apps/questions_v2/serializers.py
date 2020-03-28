@@ -1,24 +1,9 @@
 from rest_framework import serializers
 
 from apps import xss_safe
+from apps.comment.serializers import BasicUserSerializer
 from apps.labels_v2.serializers import BasicLabelSerializer
-from apps.userpage.models import UserProfile
 from .models import Question, Answer
-
-
-class SimpleUserSerializer(serializers.ModelSerializer):
-    """用于用户的序列化"""
-
-    id = serializers.CharField(source="uid")
-    type = serializers.CharField(source="kind")
-    homepage = serializers.SerializerMethodField()
-
-    class Meta:
-        model = UserProfile
-        fields = ("id", "type", "slug", "nickname", "gender", "avatar", "autograph", "homepage",)
-
-    def get_homepage(self, obj):
-        return ""  # TODO 用户主页的地址
 
 
 class QuestionChecker(serializers.ModelSerializer):
@@ -44,7 +29,7 @@ class QuestionChecker(serializers.ModelSerializer):
 class BasicQuestionSerializer(serializers.ModelSerializer):
     """用于问题的序列化，返回最基础的信息"""
 
-    author = SimpleUserSerializer()
+    author = BasicUserSerializer()
     labels = BasicLabelSerializer(many=True)
     type = serializers.CharField(source="kind")
     create_at = serializers.DateTimeField(format="%Y%m%d %H:%M:%S")
@@ -58,8 +43,8 @@ class BasicQuestionSerializer(serializers.ModelSerializer):
 class StatQuestionSerializer(BasicQuestionSerializer):
     """用于问题的序列化，增加了与登录用户无关的统计信息"""
 
-    answer_count = serializers.SerializerMethodField()  # TODO 回答数
-    comment_count = serializers.SerializerMethodField()  # TODO 评论数
+    answer_count = serializers.SerializerMethodField()
+    comment_count = serializers.SerializerMethodField()
     follower_count = serializers.SerializerMethodField()  # TODO 关注者个数
     view_count = serializers.SerializerMethodField()  # TODO 阅读次数
 
@@ -72,7 +57,7 @@ class StatQuestionSerializer(BasicQuestionSerializer):
         return obj.answer_set.filter(is_draft=False, is_deleted=False).count()
 
     def get_comment_count(self, obj):
-        return 10  # TODO 返回真实数据
+        return obj.comments.filter(is_deleted=False).count()
 
     def get_follower_count(self, obj):
         return 100  # TODO 返回真实数据
@@ -85,7 +70,9 @@ class MeQuestionSerializer(StatQuestionSerializer):
     """用于问题的序列化，增加了与登录用户有关的信息，需要传入当前登录用户"""
 
     is_followed = serializers.SerializerMethodField()  # TODO 是否已关注
-    is_answered = serializers.SerializerMethodField()  # TODO 是否已经回答
+    is_answered = serializers.SerializerMethodField()
+
+    # TODO 是否增加is_me，表示登录者即作者？需要重写author属性
 
     class Meta:
         model = Question
@@ -95,7 +82,10 @@ class MeQuestionSerializer(StatQuestionSerializer):
         return False  # TODO 返回真实数据
 
     def get_is_answered(self, obj):
-        return False  # TODO 返回真实数据
+        me = self.context.get("me")
+        if me is None:
+            return False
+        return obj.answer_set.filter(author=me, is_draft=False, is_deleted=False).exists()
 
 
 class AnswerChecker(serializers.ModelSerializer):
@@ -123,7 +113,7 @@ class BasicAnswerSerializer(serializers.ModelSerializer):
     create_at = serializers.DateTimeField(format="%Y%m%d %H:%M:%S")
     update_at = serializers.DateTimeField(format="%Y%m%d %H:%M:%S")
     question = BasicQuestionSerializer()
-    author = SimpleUserSerializer()
+    author = BasicUserSerializer()
 
     class Meta:
         model = Answer
@@ -133,32 +123,43 @@ class BasicAnswerSerializer(serializers.ModelSerializer):
 class StatAnswerSerializer(BasicAnswerSerializer):
     """用于回答的序列化，增加了与登录用户无关的统计信息"""
 
-    comment_count = serializers.SerializerMethodField()  # TODO 评论数
-    vote_count = serializers.SerializerMethodField()  # TODO 赞成票数
+    comment_count = serializers.SerializerMethodField()
+    vote_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Answer
         fields = BasicAnswerSerializer.Meta.fields + ("comment_count", "vote_count",)
 
     def get_comment_count(self, obj):
-        return 100  # TODO 返回真实数据
+        return obj.comments.filter(is_deleted=False).count()
 
     def get_vote_count(self, obj):
-        return 100  # TODO 返回真实数据
+        return obj.votes.filter(value=True).count()
 
 
 class MeAnswerSerializer(StatAnswerSerializer):
     """用于回答的序列化，增加了与登录用户有关的信息，需要传入当前登录用户"""
 
-    is_voted = serializers.SerializerMethodField()  # TODO 是否已经投票，或票值
-    is_commented = serializers.SerializerMethodField()  # TODO 是否已经评论
+    is_voted = serializers.SerializerMethodField()  # 未投票，或票值
+    is_commented = serializers.SerializerMethodField()
+
+    # TODO 是否增加is_me，表示登录者即作者？需要重写author属性
 
     class Meta:
         model = Answer
         fields = StatAnswerSerializer.Meta.fields + ("is_voted", "is_commented",)
 
     def get_is_voted(self, obj):
-        return None  # TODO 返回真实数据
+        me = self.context.get("me")
+        if not me:
+            return None
+        my_vote = obj.votes.filter(author=me).get()
+        if my_vote is None:
+            return None
+        return my_vote.value
 
     def get_is_commented(self, obj):
-        return False  # TODO 返回真实数据
+        me = self.context.get("me")
+        if me is None:
+            return False
+        return obj.comments.filter(author=me, is_deleted=False).exists()

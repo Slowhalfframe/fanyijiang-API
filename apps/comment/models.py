@@ -35,6 +35,15 @@ class Comment(BaseModel):
 
         return self.content_object.author
 
+    @property
+    def root_object(self):
+        """被评论的根对象，即问答、文章、想法等"""
+
+        root = self.content_object
+        while isinstance(root, Comment):
+            root = root.content_object
+        return root
+
 
 class Vote(BaseModel):
     """投票，泛指各种取True或False但不存在时应看作None的事物，操作时注意不能重复投票"""
