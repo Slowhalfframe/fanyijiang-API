@@ -77,7 +77,7 @@ class OneQuestionView(CustomAPIView):
         return self.success(formatter.data)
 
     def get(self, request, question_id):
-        """查看问题的详情"""
+        """查看问题的详情，以及一批回答，可分页"""
 
         me = self.get_user_profile(request)
         question = Question.objects.filter(pk=question_id, is_deleted=False).first()
