@@ -179,3 +179,14 @@ class OneAnswerView(CustomAPIView):
 
     def get(self, request, question_id, answer_id):
         """查看回答，草稿只有本人可以查看"""
+
+        me = self.get_user_profile(request)
+        question = Question.objects.filter(pk=question_id, is_deleted=False).first()
+        answer = Answer.objects.filter(pk=answer_id, question=question_id, is_deleted=False).first()
+        if question is None or answer is None:
+            return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
+        if answer.is_draft:
+            if me is None or answer.author != me:
+                return self.error(errorcode.MSG_NOT_OWNER, errorcode.NOT_OWNER)
+        formatter = MeAnswerSerializer(instance=answer, context={"me": me})
+        return self.success(formatter.data)
