@@ -1,11 +1,11 @@
 from django.db.transaction import atomic
 
 from apps.labels_v2.models import Label
-from apps.questions_v2.models import Question
-from apps.questions_v2.serializers import QuestionChecker, MeQuestionSerializer
 from apps.utils import errorcode
 from apps.utils.api import CustomAPIView
 from apps.utils.decorators import logged_in
+from .models import Question, Answer
+from .serializers import QuestionChecker, MeQuestionSerializer, AnswerChecker, MeAnswerSerializer
 
 
 class QuestionView(CustomAPIView):
@@ -85,4 +85,37 @@ class OneQuestionView(CustomAPIView):
             return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
         formatter = MeQuestionSerializer(instance=question, context={"me": me})
         # TODO 返回一批回答
+        return self.success(formatter.data)
+
+
+class AnswerView(CustomAPIView):
+    @logged_in
+    def post(self, request, question_id):
+        """写回答，可以是草稿，正式回答会真实删除草稿"""
+
+        me = request.me
+        question = Question.objects.filter(pk=question_id, is_deleted=False).first()
+        if question is None:
+            return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
+        # TODO 现在允许自问自答，并且有相关的单元测试，是否修改？
+        if question.answer_set.filter(author=me, is_draft=False, is_deleted=False).exists():
+            return self.error(errorcode.MSG_ANSWERED, errorcode.ANSWERED)
+        data = {
+            "content": request.data.get("content") or "",
+            "is_draft": request.data.get("is_draft"),
+        }
+        checker = AnswerChecker(data=data)
+        checker.is_valid()
+        if checker.errors:
+            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
+        try:
+            with atomic():
+                answer = Answer.objects.create(author=me, question=question, **checker.validated_data)
+                if answer.is_draft is False:
+                    # TODO 可以异步或定时进行
+                    question.answer_set.filter(author=me, is_draft=True).delete()
+                    # TODO 把本人收到的此问题的尚未回答的回答邀请全部设为已回答
+        except:
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
+        formatter = MeAnswerSerializer(instance=answer, context={"me": me})
         return self.success(formatter.data)

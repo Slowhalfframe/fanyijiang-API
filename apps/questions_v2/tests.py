@@ -3,7 +3,7 @@ from django.urls import reverse
 
 from apps import common_prepare
 from apps.labels_v2.models import Label
-from apps.questions_v2.models import Question
+from .models import Question, Answer
 
 
 class QuestionViewPostTest(TestCase):
@@ -84,3 +84,59 @@ class OneQuestionViewPutTest(TestCase):
         response = self.client.put(self.path, data, **self.headers)
         data = response.json()
         self.assertEqual(data["code"], 0)
+
+
+class AnswerViewPostTest(TestCase):
+    def setUp(self):
+        common_prepare(self)
+        self.label = Label.objects.create(name="标签1")
+        self.question = Question.objects.create(title="标题1", content="内容1", author=self.users["zhao"])
+        self.question.labels.add(self.label)
+        self.data = {"content": "回答1", "is_draft": True}
+        self.path = reverse("questions_v2:answer_root", kwargs={"question_id": self.question.pk})
+
+    def test_no_login(self):
+        response = self.client.post(self.path, self.data)
+        data = response.json()
+        self.assertNotEqual(data["code"], 0)
+
+    def test_question_not_exist(self):
+        path = reverse("questions_v2:answer_root", kwargs={"question_id": self.question.pk + 1})
+        self.assertIs(Question.objects.filter(pk=self.question.pk + 1).exists(), False)
+        response = self.client.post(path, self.data, **self.headers)
+        data = response.json()
+        self.assertNotEqual(data["code"], 0)
+
+    def test_is_question_author(self):
+        question = Question.objects.create(title="标题2", content="内容2", author=self.users["zhang"])
+        path = reverse("questions_v2:answer_root", kwargs={"question_id": question.pk})
+        response = self.client.post(path, self.data, **self.headers)
+        data = response.json()
+        self.assertEqual(data["code"], 0)
+
+    def test_only_draft_answer(self):
+        Answer.objects.create(author=self.users["zhang"], question=self.question, **self.data)
+        self.assertEqual(self.question.answer_set.filter(is_draft=True).count(), 1)
+        self.assertEqual(self.question.answer_set.filter(is_draft=False).count(), 0)
+        response = self.client.post(self.path, self.data, **self.headers)
+        data = response.json()
+        self.assertEqual(data["code"], 0)
+        self.assertEqual(self.question.answer_set.filter(is_draft=True).count(), 2)
+        self.assertEqual(self.question.answer_set.filter(is_draft=False).count(), 0)
+        data = self.data.copy()
+        data["is_draft"] = False
+        response = self.client.post(self.path, data, **self.headers)
+        data = response.json()
+        self.assertEqual(data["code"], 0)
+        self.assertEqual(self.question.answer_set.filter(is_draft=True).count(),0)
+        self.assertEqual(self.question.answer_set.filter(is_draft=False).count(), 1)
+
+    def test_have_published_answer(self):
+        Answer.objects.create(author=self.users["zhang"], question=self.question, content="回答1", is_draft=False)
+        self.assertEqual(self.question.answer_set.filter(is_draft=True).count(), 0)
+        self.assertEqual(self.question.answer_set.filter(is_draft=False).count(), 1)
+        response = self.client.post(self.path, self.data, **self.headers)
+        data = response.json()
+        self.assertNotEqual(data["code"], 0)
+        self.assertEqual(self.question.answer_set.filter(is_draft=True).count(), 0)
+        self.assertEqual(self.question.answer_set.filter(is_draft=False).count(), 1)

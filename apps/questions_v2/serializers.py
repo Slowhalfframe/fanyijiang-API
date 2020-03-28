@@ -2,8 +2,8 @@ from rest_framework import serializers
 
 from apps import xss_safe
 from apps.labels_v2.serializers import BasicLabelSerializer
-from apps.questions_v2.models import Question, Answer
 from apps.userpage.models import UserProfile
+from .models import Question, Answer
 
 
 class SimpleUserSerializer(serializers.ModelSerializer):
@@ -69,7 +69,7 @@ class StatQuestionSerializer(BasicQuestionSerializer):
             "answer_count", "comment_count", "follower_count", "view_count",)
 
     def get_answer_count(self, obj):
-        return 100  # TODO 返回真实数据
+        return obj.answer_set.filter(is_draft=False, is_deleted=False).count()
 
     def get_comment_count(self, obj):
         return 10  # TODO 返回真实数据
@@ -154,8 +154,8 @@ class MeAnswerSerializer(StatAnswerSerializer):
     is_commented = serializers.SerializerMethodField()  # TODO 是否已经评论
 
     class Meta:
-        model = Question
-        fields = StatQuestionSerializer.Meta.fields + ("is_voted", "is_commented",)
+        model = Answer
+        fields = StatAnswerSerializer.Meta.fields + ("is_voted", "is_commented",)
 
     def get_is_voted(self, obj):
         return None  # TODO 返回真实数据
