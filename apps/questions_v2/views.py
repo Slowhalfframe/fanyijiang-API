@@ -94,6 +94,7 @@ class AnswerView(CustomAPIView):
         """写回答，可以是草稿，正式回答会真实删除草稿"""
 
         me = request.me
+        # TODO 检查用户权限
         question = Question.objects.filter(pk=question_id, is_deleted=False).first()
         if question is None:
             return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)

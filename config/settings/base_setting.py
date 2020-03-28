@@ -66,7 +66,7 @@ LOCAL_APPS = [
     'apps.search',
     'apps.labels_v2',
     'apps.questions_v2',
-    'apps.comment',
+    'apps.comments',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_APPS + LOCAL_APPS

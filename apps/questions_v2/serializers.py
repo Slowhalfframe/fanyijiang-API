@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from apps import xss_safe
-from apps.comment.serializers import BasicUserSerializer
+from apps.comments.serializers import BasicUserSerializer
 from apps.labels_v2.serializers import BasicLabelSerializer
 from .models import Question, Answer
 
@@ -153,7 +153,7 @@ class MeAnswerSerializer(StatAnswerSerializer):
         me = self.context.get("me")
         if not me:
             return None
-        my_vote = obj.votes.filter(author=me).get()
+        my_vote = obj.votes.filter(author=me).first()
         if my_vote is None:
             return None
         return my_vote.value
