@@ -239,34 +239,28 @@ class QuestionFollowView(CustomAPIView):
 class InviteView(CustomAPIView):
     @logged_in
     def post(self, request, question_id, slug):
-        """邀请回答，不能邀请自己、已经邀请过的用户、已经回答过的用户"""
+        """邀请回答，不能邀请自己、已经邀请过的用户、已经回答过的用户、主动拒绝的用户"""
 
         me = request.me
         question = Question.objects.filter(pk=question_id, is_deleted=False).first()
         if question is None:
             return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
+        # 不能邀请自己
         if me.slug == slug:
             return self.error(errorcode.MSG_BAD_INVITE, errorcode.BAD_INVITE)
         he = self.get_user_by_slug(slug)
         if he is None:
             return self.error(errorcode.MSG_INVALID_SLUG, errorcode.INVALID_SLUG)
+        # 不能重复邀请同一用户回答同一问题
         if QuestionInvite.objects.filter(inviting=me, invited=he, question=question, is_deleted=False).exists():
             return self.error(errorcode.MSG_BAD_INVITE, errorcode.BAD_INVITE)
+        # 不能邀请已回答用户
         if Answer.objects.filter(question=question, author=he, is_deleted=False).exists():
             return self.error(errorcode.MSG_BAD_INVITE, errorcode.BAD_INVITE)
+        # TODO 自动拒绝邀请
         # TODO 如果不允许自问自答，则也不能邀请提问者
         try:
-            QuestionInvite.objects.create(inviting=me, invited=he, question=question, status=0)
+            QuestionInvite.objects.create(inviting=me, invited=he, question=question)
         except:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         return self.success()
-
-    @logged_in
-    def delete(self, request, question_id, slug):
-        """撤销邀请，不能撤销被拒绝或已回答的邀请"""
-        pass
-
-    @logged_in
-    def put(self, request, question_id, slug):
-        """拒绝邀请，只能拒绝未回答的邀请"""
-        pass

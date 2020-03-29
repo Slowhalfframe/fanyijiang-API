@@ -336,8 +336,7 @@ class InviteViewPostTest(TestCase):
         self.assertNotEqual(data["code"], 0)
 
     def test_slug_already_invited(self):
-        QuestionInvite.objects.create(status=0, inviting=self.users["zhang"], invited=self.users["euler"],
-                                      question=self.question)
+        QuestionInvite.objects.create(inviting=self.users["zhang"], invited=self.users["euler"], question=self.question)
         response = self.client.post(self.path, **self.headers)
         data = response.json()
         self.assertNotEqual(data["code"], 0)

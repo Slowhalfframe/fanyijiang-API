@@ -77,17 +77,20 @@ class QuestionFollow(BaseModel):
 
 
 class QuestionInvite(BaseModel):
-    """邀请回答，注意不能重复邀请"""
+    """邀请回答
 
-    STATUS = (
-        (0, "未回答"),
-        (1, "已拒绝"),
-        (2, "已回答"),
-    )
+    邀请被转化成了通知，所以用户不必查看或拒绝邀请，甚至邀请也不必保存。记录下来，一是防止重复邀请，二是查询被邀请者是否回答。
 
-    status = models.SmallIntegerField(choices=STATUS, null=False, verbose_name="状态")
-    inviting = models.ForeignKey(to=UserProfile, null=False, related_name="as_inviting", verbose_name="邀请者")
-    invited = models.ForeignKey(to=UserProfile, null=False, related_name="as_invited", verbose_name="被邀请者")
+    用户可以发出邀请，但不能撤销邀请，因为可能发生如下情况：
+    用户A邀请了用户B，邀请被记录，并异步生成通知
+    1分钟后A撤销了邀请，此时通知还没有生成
+    2分钟后生成了通知，它不应该存在
+    3分钟后B登录，收到了通知
+    """
+
+    status = models.BooleanField(null=False, default=False, verbose_name="是否已回答")
+    inviting = models.ForeignKey(to=UserProfile, null=False, related_name="sent_invitations", verbose_name="邀请者")
+    invited = models.ForeignKey(to=UserProfile, null=False, related_name="received_invitations", verbose_name="被邀请者")
     question = models.ForeignKey(to=Question, null=False, verbose_name="问题")
 
     class Meta:
