@@ -65,6 +65,13 @@ class OneCommentView(CustomAPIView):
     def delete(self, request, comment_id):
         """删除评论"""
 
+        me = request.me
+        comment = Comment.objects.filter(pk=comment_id, is_deleted=False).first()
+        if comment is None:
+            return self.success()
+        # TODO 哪些评论可以删除？除了作者，还有谁可以删除？真实删除还是逻辑删除？
+        return self.success()
+
     @logged_in
     def put(self, request, comment_id):
         """修改评论"""
