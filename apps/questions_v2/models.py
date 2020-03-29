@@ -16,6 +16,8 @@ class Question(BaseModel):
     author = models.ForeignKey(to=UserProfile, null=False, verbose_name="提问者")
     labels = models.ManyToManyField(to=Label, verbose_name="问题的标签")
     comments = GenericRelation(to=Comment)
+    followers = models.ManyToManyField(to=UserProfile, related_name="followed_questions", through="QuestionFollow",
+                                       through_fields=("question", "user"), verbose_name="关注者")
 
     # read_nums = GenericRelation(to=ReadNums)
 
@@ -59,20 +61,22 @@ class Answer(BaseModel):
         return "answer"
 
 
-'''
-class QuestionFollow(models.Model):
-    """关注的问题"""
-    user_id = models.CharField(max_length=40, null=False, verbose_name="关注者ID")
+class QuestionFollow(BaseModel):
+    """用户与问题的多对多关注关系，插入行时注意防止重复"""
+
+    user = models.ForeignKey(to=UserProfile, null=False, verbose_name="关注者")
     question = models.ForeignKey(to=Question, null=False, verbose_name="关注的问题")
-    create_at = models.DateTimeField(auto_now_add=True, verbose_name="关注时间")
 
     class Meta:
-        db_table = "db_q_follows"
+        db_table = "question_follow"
         verbose_name = "问题关注"
         verbose_name_plural = verbose_name
-        unique_together = (("user_id", "question"),)  # 不能重复关注
+
+    def __str__(self):
+        return " ".join((self.user.nickname, "关注了", self.question.title))
 
 
+'''
 class QuestionInvite(models.Model):
     """邀请回答"""
     STATUS = (

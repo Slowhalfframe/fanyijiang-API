@@ -4,7 +4,7 @@ from apps.labels_v2.models import Label
 from apps.utils import errorcode
 from apps.utils.api import CustomAPIView
 from apps.utils.decorators import logged_in
-from .models import Question, Answer
+from .models import Question, Answer, QuestionFollow
 from .serializers import QuestionChecker, MeQuestionSerializer, AnswerChecker, MeAnswerSerializer
 
 
@@ -191,3 +191,46 @@ class OneAnswerView(CustomAPIView):
                 return self.error(errorcode.MSG_NOT_OWNER, errorcode.NOT_OWNER)
         formatter = MeAnswerSerializer(instance=answer, context={"me": me})
         return self.success(formatter.data)
+
+
+class QuestionFollowView(CustomAPIView):
+    @logged_in
+    def post(self, request, question_id):
+        """关注问题，不会重复关注"""
+
+        me = request.me
+        question = Question.objects.filter(pk=question_id, is_deleted=False).first()
+        if question is None:
+            return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
+        try:
+            QuestionFollow.objects.get_or_create(user=me, question=question)  # 防止重复关注
+        except:
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
+        return self.success()
+
+    @logged_in
+    def delete(self, request, question_id):
+        """取消关注问题"""
+
+        me = request.me
+        qs = QuestionFollow.objects.filter(user=me, question=question_id, is_deleted=False)
+        if not qs.exists():
+            return self.success()
+        try:
+            qs.delete()
+        except:
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
+        return self.success()
+
+    def get(self, request):
+        """查看某人关注的问题，可分页"""
+
+        me = self.get_user_profile(request)
+        slug = request.query_params.get("slug")
+        he = self.get_user_by_slug(slug)
+        if he is None:
+            return self.error(errorcode.MSG_INVALID_SLUG, errorcode.INVALID_SLUG)
+        qs = he.followed_questions.filter(is_deleted=False)
+        # TODO 是否返回问题的一个回答？
+        data = self.paginate_data(request, qs, MeQuestionSerializer, {"me": me})
+        return self.success(data)

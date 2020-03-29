@@ -3,7 +3,7 @@ from django.urls import reverse
 
 from apps import common_prepare
 from apps.labels_v2.models import Label
-from .models import Question, Answer
+from .models import Question, Answer, QuestionFollow
 
 
 class QuestionViewPostTest(TestCase):
@@ -251,3 +251,60 @@ class OneAnswerViewPutTest(TestCase):
         self.assertEqual(data["code"], 0)
         self.assertEqual(self.question.answer_set.filter(is_draft=True).count(), 0)
         self.assertEqual(self.question.answer_set.filter(is_draft=False).count(), 1)
+
+
+class QuestionFollowViewPostTest(TestCase):
+    def setUp(self):
+        common_prepare(self)
+        self.label = Label.objects.create(name="标签1")
+        self.question = Question.objects.create(title="问题1", author=self.users["zhao"])
+        self.question.labels.add(self.label)
+        self.path = reverse("questions_v2:follow", kwargs={"question_id": self.question.pk})
+
+    def test_no_login(self):
+        response = self.client.post(self.path)
+        data = response.json()
+        self.assertNotEqual(data["code"], 0)
+
+    def test_question_not_exist(self):
+        path = reverse("questions_v2:follow", kwargs={"question_id": self.question.pk + 1})
+        response = self.client.post(path, **self.headers)
+        data = response.json()
+        self.assertNotEqual(data["code"], 0)
+
+    def test_follow_only_once(self):
+        self.assertEqual(self.question.followers.count(), 0)
+        self.client.post(self.path, **self.headers)
+        self.assertEqual(self.question.followers.count(), 1)
+        self.client.post(self.path, **self.headers)
+        self.assertEqual(self.question.followers.count(), 1)
+
+
+class QuestionFollowViewDeleteTest(TestCase):
+    def setUp(self):
+        common_prepare(self)
+        self.label = Label.objects.create(name="标签1")
+        self.question = Question.objects.create(title="问题1", author=self.users["zhao"])
+        self.question.labels.add(self.label)
+        self.path = reverse("questions_v2:follow", kwargs={"question_id": self.question.pk})
+        QuestionFollow.objects.create(question=self.question, user=self.users["zhang"])
+
+    def test_no_login(self):
+        response = self.client.delete(self.path)
+        data = response.json()
+        self.assertNotEqual(data["code"], 0)
+
+    def test_have_followed(self):
+        self.assertEqual(self.question.followers.count(), 1)
+        response = self.client.delete(self.path, **self.headers)
+        data = response.json()
+        self.assertEqual(data["code"], 0)
+        self.assertEqual(self.question.followers.count(), 0)
+
+    def test_have_not_followed(self):
+        QuestionFollow.objects.filter(question=self.question, user=self.users["zhang"]).delete()
+        self.assertEqual(self.question.followers.count(), 0)
+        response = self.client.delete(self.path, **self.headers)
+        data = response.json()
+        self.assertEqual(data["code"], 0)
+        self.assertEqual(self.question.followers.count(), 0)
