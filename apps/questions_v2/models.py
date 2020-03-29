@@ -76,24 +76,21 @@ class QuestionFollow(BaseModel):
         return " ".join((self.user.nickname, "关注了", self.question.title))
 
 
-'''
-class QuestionInvite(models.Model):
-    """邀请回答"""
+class QuestionInvite(BaseModel):
+    """邀请回答，注意不能重复邀请"""
+
     STATUS = (
         (0, "未回答"),
         (1, "已拒绝"),
         (2, "已回答"),
     )
-    question = models.ForeignKey(to=Question, null=False, verbose_name="问题")
-    create_at = models.DateTimeField(auto_now_add=True, verbose_name="邀请时间")
-    inviting = models.CharField(max_length=40, null=False, verbose_name="邀请者ID")
-    invited = models.CharField(max_length=40, null=False, verbose_name="被邀请者ID")
+
     status = models.SmallIntegerField(choices=STATUS, null=False, verbose_name="状态")
+    inviting = models.ForeignKey(to=UserProfile, null=False, related_name="as_inviting", verbose_name="邀请者")
+    invited = models.ForeignKey(to=UserProfile, null=False, related_name="as_invited", verbose_name="被邀请者")
+    question = models.ForeignKey(to=Question, null=False, verbose_name="问题")
 
     class Meta:
-        db_table = "db_q_invite"
+        db_table = "question_invite"
         verbose_name = "邀请回答"
         verbose_name_plural = verbose_name
-        unique_together = (("question", "inviting", "invited",),)  # 不能重复邀请
-
-'''

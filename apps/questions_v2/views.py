@@ -234,3 +234,22 @@ class QuestionFollowView(CustomAPIView):
         # TODO 是否返回问题的一个回答？
         data = self.paginate_data(request, qs, MeQuestionSerializer, {"me": me})
         return self.success(data)
+
+
+class InviteView(CustomAPIView):
+    @logged_in
+    def post(self, request, question_id, slug):
+        """邀请回答，不能邀请自己、已经邀请过的用户、已经回答过的用户"""
+
+        # TODO 如果不允许自问自答，则也不能邀请提问者
+        pass
+
+    @logged_in
+    def delete(self, request, question_id, slug):
+        """撤销邀请，不能撤销被拒绝或已回答的邀请"""
+        pass
+
+    @logged_in
+    def put(self, request, question_id, slug):
+        """拒绝邀请，只能拒绝未回答的邀请"""
+        pass

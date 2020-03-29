@@ -3,7 +3,16 @@ from django.urls import reverse
 
 from apps import common_prepare
 from apps.labels_v2.models import Label
-from .models import Question, Answer, QuestionFollow
+from .models import Question, Answer, QuestionFollow, QuestionInvite
+
+
+def prepare(obj):
+    """准备用户、客户端、登录令牌、问题"""
+
+    common_prepare(obj)
+    obj.label = Label.objects.create(name="标签1")
+    obj.question = Question.objects.create(title="问题1", author=obj.users["zhao"])
+    obj.question.labels.add(obj.label)
 
 
 class QuestionViewPostTest(TestCase):
@@ -88,10 +97,7 @@ class OneQuestionViewPutTest(TestCase):
 
 class AnswerViewPostTest(TestCase):
     def setUp(self):
-        common_prepare(self)
-        self.label = Label.objects.create(name="标签1")
-        self.question = Question.objects.create(title="标题1", content="内容1", author=self.users["zhao"])
-        self.question.labels.add(self.label)
+        prepare(self)
         self.data = {"content": "回答1", "is_draft": True}
         self.path = reverse("questions_v2:answer_root", kwargs={"question_id": self.question.pk})
 
@@ -144,10 +150,7 @@ class AnswerViewPostTest(TestCase):
 
 class OneAnswerViewDeleteTest(TestCase):
     def setUp(self):
-        common_prepare(self)
-        self.label = Label.objects.create(name="标签1")
-        self.question = Question.objects.create(title="问题1", author=self.users["zhao"])
-        self.question.labels.add(self.label)
+        prepare(self)
         self.answer = Answer.objects.create(content="回答1", question=self.question, author=self.users["zhang"],
                                             is_draft=True)
         self.path = reverse("questions_v2:one_answer",
@@ -200,10 +203,7 @@ class OneAnswerViewDeleteTest(TestCase):
 
 class OneAnswerViewPutTest(TestCase):
     def setUp(self):
-        common_prepare(self)
-        self.label = Label.objects.create(name="标签1")
-        self.question = Question.objects.create(title="问题1", author=self.users["zhao"])
-        self.question.labels.add(self.label)
+        prepare(self)
         self.answer = Answer.objects.create(content="回答1", question=self.question, author=self.users["zhang"],
                                             is_draft=True)
         self.path = reverse("questions_v2:one_answer",
@@ -255,10 +255,7 @@ class OneAnswerViewPutTest(TestCase):
 
 class QuestionFollowViewPostTest(TestCase):
     def setUp(self):
-        common_prepare(self)
-        self.label = Label.objects.create(name="标签1")
-        self.question = Question.objects.create(title="问题1", author=self.users["zhao"])
-        self.question.labels.add(self.label)
+        prepare(self)
         self.path = reverse("questions_v2:follow", kwargs={"question_id": self.question.pk})
 
     def test_no_login(self):
@@ -282,10 +279,7 @@ class QuestionFollowViewPostTest(TestCase):
 
 class QuestionFollowViewDeleteTest(TestCase):
     def setUp(self):
-        common_prepare(self)
-        self.label = Label.objects.create(name="标签1")
-        self.question = Question.objects.create(title="问题1", author=self.users["zhao"])
-        self.question.labels.add(self.label)
+        prepare(self)
         self.path = reverse("questions_v2:follow", kwargs={"question_id": self.question.pk})
         QuestionFollow.objects.create(question=self.question, user=self.users["zhang"])
 
@@ -308,3 +302,55 @@ class QuestionFollowViewDeleteTest(TestCase):
         data = response.json()
         self.assertEqual(data["code"], 0)
         self.assertEqual(self.question.followers.count(), 0)
+
+
+class InviteViewPostTest(TestCase):
+    def setUp(self):
+        prepare(self)
+        self.path = reverse("questions_v2:invite",
+                            kwargs={"question_id": self.question.pk, "slug": self.users["euler"]})
+
+    def test_no_login(self):
+        response = self.client.post(self.path)
+        data = response.json()
+        self.assertNotEqual(data["code"], 0)
+
+    def test_question_not_exist(self):
+        path = reverse("questions_v2:invite",
+                       kwargs={"question_id": self.question.pk + 1, "slug": self.users["euler"].slug})
+        response = self.client.post(path, **self.headers)
+        data = response.json()
+        self.assertNotEqual(data["code"], 0)
+
+    def test_slug_invalid(self):
+        path = reverse("questions_v2:invite", kwargs={"question_id": self.question.pk, "slug": "no-such-user"})
+        response = self.client.post(path, **self.headers)
+        data = response.json()
+        self.assertNotEqual(data["code"], 0)
+
+    def test_invite_oneself(self):
+        path = reverse("questions_v2:invite",
+                       kwargs={"question_id": self.question.pk, "slug": self.users["zhang"].slug})
+        response = self.client.post(path, **self.headers)
+        data = response.json()
+        self.assertNotEqual(data["code"], 0)
+
+    def test_slug_already_invited(self):
+        QuestionInvite.objects.create(status=0, inviting=self.users["zhang"], invited=self.users["euler"],
+                                      question=self.question)
+        response = self.client.post(self.path, **self.headers)
+        data = response.json()
+        self.assertNotEqual(data["code"], 0)
+
+    def test_slug_already_answered(self):
+        Answer.objects.create(author=self.users["euler"], question=self.question, content="回答1", is_draft=False)
+        response = self.client.post(self.path, **self.headers)
+        data = response.json()
+        self.assertNotEqual(data["code"], 0)
+
+    def test_invite_question_author(self):
+        path = reverse("questions_v2:invite",
+                       kwargs={"question_id": self.question.pk, "slug": self.question.author.slug})
+        response = self.client.post(path, **self.headers)
+        data = response.json()
+        self.assertEqual(data["code"], 0)

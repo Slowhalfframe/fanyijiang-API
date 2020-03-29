@@ -9,4 +9,5 @@ urlpatterns = [
     url(r"^(?P<question_id>\d+)/answers/(?P<answer_id>\d+)/$", views.OneAnswerView.as_view(), name="one_answer"),
     url(r"^(?P<question_id>\d+)/follow/$", views.QuestionFollowView.as_view(), name="follow"),
     url(r"^follow/$", views.QuestionFollowView.as_view(), name="his_follow"),
+    url(r"^(?P<question_id>\d+)/invite/(?P<slug>[-_0-9a-z]+)$", views.InviteView.as_view(), name="invite"),
 ]
