@@ -25,6 +25,7 @@ urlpatterns = [
     url(r"^api/questions/", include("apps.questions.urls", namespace="questions")),
     url(r"^api/v2/questions/", include("apps.questions_v2.urls", namespace="questions_v2")),
     url(r"^api/v2/comments/", include("apps.comments.urls", namespace="comments")),
+    url(r"^api/v2/votes/", include("apps.votes.urls", namespace="votes")),
     url(r"^api/userpage/", include("apps.userpage.urls", namespace="userpage")),
     url(r"^api/articles/", include("apps.articles.urls", namespace="articles")),
     url(r"^api/ideas/", include("apps.ideas.urls", namespace="ideas")),

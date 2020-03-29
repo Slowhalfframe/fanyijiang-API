@@ -1,10 +1,11 @@
 from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 
-from apps.comments.models import Comment, Vote
+from apps.comments.models import Comment
 from apps.labels_v2.models import Label
 from apps.userpage.models import UserProfile
 from apps.utils.models import BaseModel
+from apps.votes.models import Vote
 
 
 class Question(BaseModel):
