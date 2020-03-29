@@ -45,7 +45,19 @@ class CommentView(CustomAPIView):
 
     def get(self, request, kind, id):
         """展示评论，可分页"""
-        pass
+
+        me = self.get_user_profile(request)
+        model = MAPPINGS.get(kind)
+        if model is None:
+            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
+        instance = model.objects.filter(pk=id, is_deleted=False).first()
+        if instance is None:
+            return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
+        if hasattr(model, "is_draft") and instance.is_draft:
+            return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
+        qs = instance.comments.filter(is_deleted=False)
+        data = self.paginate_data(request, qs, MeCommentSerializer, {"me": me})
+        return self.success(data)
 
 
 class OneCommentView(CustomAPIView):
