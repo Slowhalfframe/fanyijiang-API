@@ -1,7 +1,9 @@
 from apps.comments.models import Comment
 from apps.questions_v2.models import Answer
+from apps.utils import errorcode
 from apps.utils.api import CustomAPIView
 from apps.utils.decorators import logged_in
+from .serializers import VoteChecker
 
 MAPPINGS = {
     "answer": Answer,
@@ -14,6 +16,29 @@ class VoteView(CustomAPIView):
     @logged_in
     def post(self, request, kind, id):
         """投票，如果已经投过票则直接修改，每人对每个对象只能投一票"""
+
+        me = request.me
+        # TODO 检查用户权限
+        model = MAPPINGS.get(kind)
+        if model is None:
+            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
+        instance = model.objects.filter(pk=id, is_deleted=False).first()
+        if instance is None:
+            return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
+        if hasattr(model, "is_draft") and instance.is_draft:
+            return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
+        data = {
+            "value": request.data.get("value"),
+        }
+        checker = VoteChecker(data=data)
+        checker.is_valid()
+        if checker.errors:
+            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
+        try:
+            instance.votes.update_or_create(author=me, defaults=checker.validated_data)
+        except:
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
+        return self.success()
 
     @logged_in
     def delete(self, request, kind, id):

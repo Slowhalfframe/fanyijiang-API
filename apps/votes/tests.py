@@ -24,16 +24,49 @@ class VoteViewPostTest(TestCase):
         prepare(self)
 
     def test_no_login(self):
-        pass
+        response = self.client.post(self.path, self.data)
+        data = response.json()
+        self.assertNotEqual(data["code"], 0)
 
     def test_answer_not_exist(self):
-        pass
+        path = reverse("votes:root", kwargs={"kind": "answer", "id": self.answer.pk + 1})
+        self.assertFalse(Answer.objects.filter(pk=self.answer.pk + 1).exists())
+        response = self.client.post(path, self.data, **self.headers)
+        data = response.json()
+        self.assertNotEqual(data["code"], 0)
 
     def test_answer_is_draft(self):
-        pass
+        self.answer.is_draft = True
+        self.answer.save()
+        response = self.client.post(self.path, self.data, **self.headers)
+        data = response.json()
+        self.assertNotEqual(data["code"], 0)
 
     def test_have_voted(self):
-        pass
+        Vote.objects.create(content_object=self.answer, author=self.users["zhang"], value=True)
+        self.assertEqual(self.answer.votes.count(), 1)
+        self.assertTrue(self.answer.votes.first().value)
+        data = {"value": False}
+        response = self.client.post(self.path, data, **self.headers)
+        data = response.json()
+        self.assertEqual(data["code"], 0)
+        self.assertEqual(self.answer.votes.count(), 1)
+        self.assertFalse(self.answer.votes.first().value)
+
+    def test_vote_to_yourself(self):
+        self.answer.author = self.users["zhang"]
+        self.answer.save()
+        response = self.client.post(self.path, self.data, **self.headers)
+        data = response.json()
+        self.assertEqual(data["code"], 0)
+        self.assertEqual(self.answer.votes.count(), 1)
+        self.assertTrue(self.answer.votes.first().value)
+
+    def test_no_value(self):
+        data = {"value": None}
+        response = self.client.post(self.path, data, **self.headers)
+        data = response.json()
+        self.assertNotEqual(data["code"], 0)
 
 
 class VoteViewDeleteTest(TestCase):
