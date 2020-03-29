@@ -69,7 +69,7 @@ class MeLabelSerializer(StatLabelSerializer):
         fields = StatLabelSerializer.Meta.fields + ("is_followed",)
 
     def get_is_followed(self, obj):
-        me = self.context["me"]
-        if not me:
+        me = self.context.get("me")
+        if me is None:
             return False
         return obj.followers.filter(pk=me.pk).exists()

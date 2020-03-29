@@ -151,7 +151,7 @@ class MeAnswerSerializer(StatAnswerSerializer):
 
     def get_is_voted(self, obj):
         me = self.context.get("me")
-        if not me:
+        if me is None:
             return None
         my_vote = obj.votes.filter(author=me).first()
         if my_vote is None:
