@@ -12,6 +12,11 @@ class QuestionChecker(serializers.ModelSerializer):
     class Meta:
         model = Question
         fields = ("title", "content",)
+        extra_kwargs = {
+            "title": {
+                "required": True,
+            }
+        }
 
     def validate_title(self, value):
         if not value or value.capitalize() == str(None):
@@ -94,15 +99,18 @@ class AnswerChecker(serializers.ModelSerializer):
     class Meta:
         model = Answer
         fields = ("content", "is_draft",)
+        extra_kwargs = {
+            "content": {
+                "required": True,
+            },
+            "is_draft": {
+                "required": True,
+            }
+        }
 
     def validate_content(self, value):
         if not value or value.capitalize() == str(None):
             raise serializers.ValidationError("回答没有内容")
-        return value
-
-    def validate_is_draft(self, value):
-        if value not in (True, False):
-            raise serializers.ValidationError("没有指明回答是否是草稿")
         return value
 
 

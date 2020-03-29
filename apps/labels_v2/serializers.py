@@ -10,6 +10,11 @@ class LabelChecker(serializers.ModelSerializer):
     class Meta:
         model = Label
         fields = ("name", "intro", "avatar",)
+        extra_kwargs = {
+            "name": {
+                "required": True,
+            }
+        }
 
     def validate_name(self, value):
         if not value or value.capitalize() == str(None):

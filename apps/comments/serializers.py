@@ -25,6 +25,11 @@ class CommentChecker(serializers.ModelSerializer):
     class Meta:
         model = Comment
         fields = ("content",)
+        extra_kwargs = {
+            "content": {
+                "required": True,
+            }
+        }
 
     def validate_content(self, value):
         if not value or value.capitalize() == str(None):
@@ -66,7 +71,7 @@ class StatCommentSerializer(BasicCommentSerializer):
 
     children = BasicCommentSerializer(many=True, source="comments")
     comment_count = serializers.SerializerMethodField()  # 子评论数
-    vote_count = serializers.SerializerMethodField()  # TODO 赞成票数
+    vote_count = serializers.SerializerMethodField()  # 赞成票数
 
     class Meta:
         model = Comment
@@ -76,14 +81,14 @@ class StatCommentSerializer(BasicCommentSerializer):
         return obj.comments.filter(is_deleted=False).count()
 
     def get_vote_count(self, obj):
-        return 100  # TODO 返回真实数据
+        return obj.votes.filter(value=True).count()
 
 
 class MeCommentSerializer(StatCommentSerializer):
     """用于评论的序列化，增加了与登录用户有关的信息，需要传入当前登录用户"""
 
-    is_voted = serializers.SerializerMethodField()  # TODO 是否已经投票，或票值
-    is_commented = serializers.SerializerMethodField()  # TODO 是否已经评论
+    is_voted = serializers.SerializerMethodField()  # 未投票，或票值
+    is_commented = serializers.SerializerMethodField()
     # 重写author和respondent，增加is_me表示是否是当前登录者
     author = serializers.SerializerMethodField()
     respondent = serializers.SerializerMethodField()
@@ -93,10 +98,19 @@ class MeCommentSerializer(StatCommentSerializer):
         fields = StatCommentSerializer.Meta.fields + ("is_voted", "is_commented",)
 
     def get_is_voted(self, obj):
-        return None  # TODO 返回真实数据
+        me = self.context.get("me")
+        if me is None:
+            return None
+        my_vote = obj.votes.filter(author=me).first()
+        if my_vote is None:
+            return None
+        return my_vote.value
 
     def get_is_commented(self, obj):
-        return False  # TODO 返回真实数据
+        me = self.context.get("me")
+        if me is None:
+            return False
+        return obj.comments.filter(author=me, is_deleted=False).exists()
 
     def insert_is_me(self, obj, user):
         data = self.insert_is_author(obj, user)
