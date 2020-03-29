@@ -74,7 +74,28 @@ class OneCommentView(CustomAPIView):
 
     @logged_in
     def put(self, request, comment_id):
-        """修改评论"""
+        """修改本人的评论"""
+
+        me = request.me
+        comment = Comment.objects.filter(pk=comment_id, is_deleted=False).first()
+        if comment is None:
+            return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
+        if comment.author != me:
+            return self.error(errorcode.MSG_NOT_OWNER, errorcode.NOT_OWNER)
+        data = {
+            "content": request.data.get("content") or "",
+        }
+        checker = CommentChecker(data=data)
+        checker.is_valid()
+        if checker.errors:
+            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
+        try:
+            comment.content = checker.validated_data["content"]
+            comment.save()
+        except:
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
+        formatter = MeCommentSerializer(instance=comment, context={"me": me})
+        return self.success(formatter.data)
 
     def get(self, request, comment_id):
         """查看单个评论"""
