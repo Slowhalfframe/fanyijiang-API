@@ -72,16 +72,23 @@ class VoteViewPostTest(TestCase):
 class VoteViewDeleteTest(TestCase):
     def setUp(self):
         prepare(self)
-        self.answer.votes.create(author=self.users["zhao"], value=True)
+        self.answer.votes.create(author=self.users["zhang"], value=True)
 
     def test_no_login(self):
-        pass
-
-    def test_not_your_vote(self):
-        pass
+        response = self.client.delete(self.path)
+        data = response.json()
+        self.assertNotEqual(data["code"], 0)
 
     def test_have_voted(self):
-        pass
+        self.assertEqual(self.answer.votes.filter(author=self.users["zhang"]).count(), 1)
+        response = self.client.delete(self.path, **self.headers)
+        data = response.json()
+        self.assertEqual(data["code"], 0)
+        self.assertEqual(self.answer.votes.filter(author=self.users["zhang"]).count(), 0)
 
     def test_have_not_voted(self):
-        pass
+        self.answer.votes.all().delete()
+        self.assertEqual(self.answer.votes.filter(author=self.users["zhang"]).count(), 0)
+        response = self.client.delete(self.path, **self.headers)
+        data = response.json()
+        self.assertEqual(data["code"], 0)

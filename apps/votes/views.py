@@ -27,6 +27,7 @@ class VoteView(CustomAPIView):
             return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
         if hasattr(model, "is_draft") and instance.is_draft:
             return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
+        # TODO 能给自己投票吗？
         data = {
             "value": request.data.get("value"),
         }
@@ -43,3 +44,19 @@ class VoteView(CustomAPIView):
     @logged_in
     def delete(self, request, kind, id):
         """删除本人的投票"""
+
+        me = request.me
+        model = MAPPINGS.get(kind)
+        if model is None:
+            return self.success()
+        instance = model.objects.filter(pk=id, is_deleted=False).first()
+        if instance is None:
+            return self.success()
+        qs = instance.votes.filter(author=me)
+        if not qs.exists():
+            return self.success()
+        try:
+            qs.delete()
+        except:
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
+        return self.success()
