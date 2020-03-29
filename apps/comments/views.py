@@ -71,3 +71,10 @@ class OneCommentView(CustomAPIView):
 
     def get(self, request, comment_id):
         """查看单个评论"""
+
+        me = self.get_user_profile(request)
+        comment = Comment.objects.filter(pk=comment_id, is_deleted=False).first()
+        if comment is None:
+            return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
+        formatter = MeCommentSerializer(instance=comment, context={"me": me})
+        return self.success(formatter.data)
