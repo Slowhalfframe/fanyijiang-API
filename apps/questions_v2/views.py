@@ -4,7 +4,7 @@ from apps.labels_v2.models import Label
 from apps.utils import errorcode
 from apps.utils.api import CustomAPIView
 from apps.utils.decorators import logged_in
-from .models import Question, Answer, QuestionFollow
+from .models import Question, Answer, QuestionFollow, QuestionInvite
 from .serializers import QuestionChecker, MeQuestionSerializer, AnswerChecker, MeAnswerSerializer
 
 
@@ -241,8 +241,25 @@ class InviteView(CustomAPIView):
     def post(self, request, question_id, slug):
         """邀请回答，不能邀请自己、已经邀请过的用户、已经回答过的用户"""
 
+        me = request.me
+        question = Question.objects.filter(pk=question_id, is_deleted=False).first()
+        if question is None:
+            return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
+        if me.slug == slug:
+            return self.error(errorcode.MSG_BAD_INVITE, errorcode.BAD_INVITE)
+        he = self.get_user_by_slug(slug)
+        if he is None:
+            return self.error(errorcode.MSG_INVALID_SLUG, errorcode.INVALID_SLUG)
+        if QuestionInvite.objects.filter(inviting=me, invited=he, question=question, is_deleted=False).exists():
+            return self.error(errorcode.MSG_BAD_INVITE, errorcode.BAD_INVITE)
+        if Answer.objects.filter(question=question, author=he, is_deleted=False).exists():
+            return self.error(errorcode.MSG_BAD_INVITE, errorcode.BAD_INVITE)
         # TODO 如果不允许自问自答，则也不能邀请提问者
-        pass
+        try:
+            QuestionInvite.objects.create(inviting=me, invited=he, question=question, status=0)
+        except:
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
+        return self.success()
 
     @logged_in
     def delete(self, request, question_id, slug):

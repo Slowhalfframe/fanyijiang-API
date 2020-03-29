@@ -308,7 +308,7 @@ class InviteViewPostTest(TestCase):
     def setUp(self):
         prepare(self)
         self.path = reverse("questions_v2:invite",
-                            kwargs={"question_id": self.question.pk, "slug": self.users["euler"]})
+                            kwargs={"question_id": self.question.pk, "slug": self.users["euler"].slug})
 
     def test_no_login(self):
         response = self.client.post(self.path)

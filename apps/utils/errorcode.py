@@ -31,6 +31,9 @@ MSG_ANSWERED = "已经回答过了"
 REFORM = 20007
 MSG_REFORM = "不能把发表的回答或文章变成草稿"
 
+BAD_INVITE = 20008
+MSG_BAD_INVITE = "不能邀请自己、已回答用户、已邀请用户"
+
 LOGIN_REQUIRED = 401
 MSG_LOGIN_REQUIRED = "请登录"
 
