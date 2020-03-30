@@ -1,6 +1,10 @@
+import random
+
 from django.db.transaction import atomic
 
+from apps.comments.serializers import BasicUserSerializer
 from apps.labels_v2.models import Label
+from apps.userpage.models import UserProfile
 from apps.utils import errorcode
 from apps.utils.api import CustomAPIView
 from apps.utils.decorators import logged_in
@@ -238,13 +242,14 @@ class QuestionFollowView(CustomAPIView):
 
 class InviteView(CustomAPIView):
     @logged_in
-    def post(self, request, question_id, slug):
+    def post(self, request, question_id):
         """邀请回答，不能邀请自己、已经邀请过的用户、已经回答过的用户、主动拒绝的用户"""
 
         me = request.me
         question = Question.objects.filter(pk=question_id, is_deleted=False).first()
         if question is None:
             return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
+        slug = request.data.get("slug") or ""
         # 不能邀请自己
         if me.slug == slug:
             return self.error(errorcode.MSG_BAD_INVITE, errorcode.BAD_INVITE)
@@ -264,3 +269,29 @@ class InviteView(CustomAPIView):
         except:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         return self.success()
+
+
+class HelperView(CustomAPIView):
+    @logged_in
+    def get(self, request, question_id):
+        """获取可邀请的用户"""
+
+        me = request.me
+        question = Question.objects.filter(pk=question_id, is_deleted=False).first()
+        if question is None:
+            return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
+        # 已经回答的用户
+        answered_users = question.answer_set.filter(is_deleted=False).values_list('author')
+        # 邀请过的用户
+        invited_users = QuestionInvite.objects.filter(question=question, inviting=me, is_deleted=False).values_list(
+            "invited")
+        # TODO 主动拒绝邀请的用户
+        # TODO 问题的作者
+        qs = UserProfile.objects.exclude(uid=me.uid).exclude(uid__in=answered_users).exclude(uid__in=invited_users)
+        total, max_count = qs.count(), 15
+        if total > max_count:  # 用户过多，随机抽取15个
+            qs = random.sample(list(qs), max_count)
+        data = BasicUserSerializer(instance=qs, many=True).data
+        for user in data:
+            user["is_invited"] = False
+        return self.success(data)

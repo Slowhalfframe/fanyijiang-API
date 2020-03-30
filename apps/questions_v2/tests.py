@@ -307,49 +307,46 @@ class QuestionFollowViewDeleteTest(TestCase):
 class InviteViewPostTest(TestCase):
     def setUp(self):
         prepare(self)
-        self.path = reverse("questions_v2:invite",
-                            kwargs={"question_id": self.question.pk, "slug": self.users["euler"].slug})
+        self.path = reverse("questions_v2:invite", kwargs={"question_id": self.question.pk})
+        self.data = {"slug": self.users["euler"].slug}
 
     def test_no_login(self):
-        response = self.client.post(self.path)
+        response = self.client.post(self.path, self.data)
         data = response.json()
         self.assertNotEqual(data["code"], 0)
 
     def test_question_not_exist(self):
-        path = reverse("questions_v2:invite",
-                       kwargs={"question_id": self.question.pk + 1, "slug": self.users["euler"].slug})
-        response = self.client.post(path, **self.headers)
+        path = reverse("questions_v2:invite", kwargs={"question_id": self.question.pk + 1})
+        response = self.client.post(path, self.data, **self.headers)
         data = response.json()
         self.assertNotEqual(data["code"], 0)
 
     def test_slug_invalid(self):
-        path = reverse("questions_v2:invite", kwargs={"question_id": self.question.pk, "slug": "no-such-user"})
-        response = self.client.post(path, **self.headers)
+        data = {"slug": "no-such-user"}
+        response = self.client.post(self.path, data, **self.headers)
         data = response.json()
         self.assertNotEqual(data["code"], 0)
 
     def test_invite_oneself(self):
-        path = reverse("questions_v2:invite",
-                       kwargs={"question_id": self.question.pk, "slug": self.users["zhang"].slug})
-        response = self.client.post(path, **self.headers)
+        data = {"slug": self.users["zhang"].slug}
+        response = self.client.post(self.path, data, **self.headers)
         data = response.json()
         self.assertNotEqual(data["code"], 0)
 
     def test_slug_already_invited(self):
         QuestionInvite.objects.create(inviting=self.users["zhang"], invited=self.users["euler"], question=self.question)
-        response = self.client.post(self.path, **self.headers)
+        response = self.client.post(self.path, self.data, **self.headers)
         data = response.json()
         self.assertNotEqual(data["code"], 0)
 
     def test_slug_already_answered(self):
         Answer.objects.create(author=self.users["euler"], question=self.question, content="回答1", is_draft=False)
-        response = self.client.post(self.path, **self.headers)
+        response = self.client.post(self.path, self.data, **self.headers)
         data = response.json()
         self.assertNotEqual(data["code"], 0)
 
     def test_invite_question_author(self):
-        path = reverse("questions_v2:invite",
-                       kwargs={"question_id": self.question.pk, "slug": self.question.author.slug})
-        response = self.client.post(path, **self.headers)
+        data = {"slug": self.question.author.slug}
+        response = self.client.post(self.path, data, **self.headers)
         data = response.json()
         self.assertEqual(data["code"], 0)
