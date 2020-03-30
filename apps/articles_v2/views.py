@@ -4,7 +4,7 @@ from apps.labels_v2.models import Label
 from apps.utils import errorcode
 from apps.utils.api import CustomAPIView
 from apps.utils.decorators import logged_in
-from .models import Article
+from .models import Article, ArticleFollow
 from .serializers import ArticleChecker, MeArticleSerializer
 
 
@@ -168,5 +168,45 @@ class DraftView(CustomAPIView):
 
         me = request.me
         qs = Article.objects.filter(author=me, is_deleted=False, is_draft=True)
+        data = self.paginate_data(request, qs, MeArticleSerializer, {"me": me})
+        return self.success(data)
+
+
+class ArticleFollowView(CustomAPIView):
+    @logged_in
+    def post(self, request, article_id):
+        """关注文章，不会重复关注"""
+
+        me = request.me
+        article = Article.objects.filter(pk=article_id, is_deleted=False, is_draft=False).first()
+        if article is None:
+            return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
+        try:
+            ArticleFollow.objects.get_or_create(user=me, article=article)  # 防止重复关注
+        except:
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
+        return self.success()
+
+    @logged_in
+    def delete(self, request, article_id):
+        """取消关注文章"""
+
+        me = request.me
+        qs = ArticleFollow.objects.filter(user=me, article_id=article_id, is_deleted=False)
+        try:
+            qs.delete()
+        except:
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
+        return self.success()
+
+    def get(self, request):
+        """查看某人关注的文章，可分页"""
+
+        me = self.get_user_profile(request)
+        slug = request.query_params.get("slug")
+        he = self.get_user_by_slug(slug)
+        if he is None:
+            return self.error(errorcode.MSG_INVALID_SLUG, errorcode.INVALID_SLUG)
+        qs = he.followed_articles.filter(is_deleted=False, is_draft=False)
         data = self.paginate_data(request, qs, MeArticleSerializer, {"me": me})
         return self.success(data)

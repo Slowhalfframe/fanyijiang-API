@@ -168,3 +168,42 @@ class DraftViewPostTest(TestCase):
         response = self.client.post(self.path, self.data, **self.headers)
         data = response.json()
         self.assertEqual(data["code"], 0)
+
+
+class ArticleFollowViewPostTest(TestCase):
+    def setUp(self):
+        prepare(self)
+        self.article.is_draft = False
+        self.article.save()
+        self.path = reverse("articles_v2:follow", kwargs={"article_id": self.article.pk})
+
+    def test_no_login(self):
+        response = self.client.post(self.path)
+        data = response.json()
+        self.assertNotEqual(data["code"], 0)
+
+    def test_article_not_exist(self):
+        path = reverse("articles_v2:follow", kwargs={"article_id": self.article.pk + 1})
+        response = self.client.post(path, **self.headers)
+        data = response.json()
+        self.assertNotEqual(data["code"], 0)
+
+    def test_article_is_draft(self):
+        self.article.is_draft = True
+        self.article.save()
+        response = self.client.post(self.path, **self.headers)
+        data = response.json()
+        self.assertNotEqual(data["code"], 0)
+
+
+class ArticleFollowViewDeleteTest(TestCase):
+    def setUp(self):
+        prepare(self)
+        self.article.is_draft = False
+        self.article.save()
+        self.path = reverse("articles_v2:follow", kwargs={"article_id": self.article.pk})
+
+    def test_no_login(self):
+        response = self.client.delete(self.path)
+        data = response.json()
+        self.assertNotEqual(data["code"], 0)

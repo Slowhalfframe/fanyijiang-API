@@ -18,6 +18,8 @@ class Article(BaseModel):
     is_draft = models.BooleanField(null=False, blank=False, verbose_name="是不是草稿")
     author = models.ForeignKey(to=UserProfile, null=False, blank=False, verbose_name="作者")
     labels = models.ManyToManyField(to=Label, verbose_name="文章的标签")
+    followers = models.ManyToManyField(to=UserProfile, related_name="followed_articles", through="ArticleFollow",
+                                       through_fields=("article", "user"), verbose_name="关注者")
     comments = GenericRelation(to=Comment)
     votes = GenericRelation(to=Vote)
 
@@ -35,3 +37,18 @@ class Article(BaseModel):
     @property
     def kind(self):
         return "answer"
+
+
+class ArticleFollow(BaseModel):
+    """文章与用户的多对多关注关系，插入行时注意防止重复"""
+
+    user = models.ForeignKey(to=UserProfile, null=False, verbose_name="关注者")
+    article = models.ForeignKey(to=Article, null=False, verbose_name="关注的文章")
+
+    class Meta:
+        db_table = "article_follow"
+        verbose_name = "文章关注"
+        verbose_name_plural = verbose_name
+
+    def __str__(self):
+        return " ".join((self.user.nickname, "关注了", self.article.title))
