@@ -136,3 +136,35 @@ class OneArticleViewPutTest(TestCase):
         response = self.client.put(self.path, self.data, **self.headers)
         data = response.json()
         self.assertNotEqual(data["code"], 0)
+
+
+class DraftViewPostTest(TestCase):
+    def setUp(self):
+        prepare(self)
+        self.path = reverse("articles_v2:draft_root")
+        self.data = {"id": self.article.pk}
+
+    def test_no_login(self):
+        response = self.client.post(self.path, self.data)
+        data = response.json()
+        self.assertNotEqual(data["code"], 0)
+
+    def test_article_not_exist(self):
+        data = {"id": self.article.pk + 1}
+        response = self.client.post(self.path, data, **self.headers)
+        data = response.json()
+        self.assertNotEqual(data["code"], 0)
+
+    def test_not_your_article(self):
+        self.article.author = self.users["gauss"]
+        self.article.save()
+        response = self.client.post(self.path, self.data, **self.headers)
+        data = response.json()
+        self.assertNotEqual(data["code"], 0)
+
+    def test_article_not_draft(self):
+        self.article.is_draft = False
+        self.article.save()
+        response = self.client.post(self.path, self.data, **self.headers)
+        data = response.json()
+        self.assertEqual(data["code"], 0)

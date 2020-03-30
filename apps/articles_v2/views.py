@@ -1,10 +1,11 @@
-from apps.utils.api import CustomAPIView
-from apps.utils.decorators import logged_in
+from django.db.transaction import atomic
+
 from apps.labels_v2.models import Label
 from apps.utils import errorcode
-from .serializers import ArticleChecker, MeArticleSerializer
-from django.db.transaction import atomic
+from apps.utils.api import CustomAPIView
+from apps.utils.decorators import logged_in
 from .models import Article
+from .serializers import ArticleChecker, MeArticleSerializer
 
 
 class ArticleView(CustomAPIView):
@@ -125,3 +126,38 @@ class OneArticleView(CustomAPIView):
                 return self.error(errorcode.MSG_NOT_OWNER, errorcode.NOT_OWNER)
         formatter = MeArticleSerializer(instance=article, context={"me": me})
         return self.success(formatter.data)
+
+
+class DraftView(CustomAPIView):
+    @logged_in
+    def post(self, request):
+        """发表草稿，不需要内容数据，节省资源"""
+
+        me = request.me
+        pk = request.data.get("id")
+        try:
+            pk = int(pk)
+        except:
+            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
+        article = Article.objects.filter(pk=pk, is_deleted=False).first()
+        if article is None:
+            return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
+        if article.author != me:
+            return self.error(errorcode.MSG_NOT_OWNER, errorcode.NOT_OWNER)
+        if not article.is_draft:  # 正常情况下不会发生，很可能是测试或攻击
+            return self.success()
+        try:
+            article.is_draft = False
+            article.save()
+        except:
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
+        return self.success()
+
+    @logged_in
+    def get(self, request):
+        """查看本人的所有草稿，可分页"""
+
+        me = request.me
+        qs = Article.objects.filter(author=me, is_deleted=False, is_draft=True)
+        data = self.paginate_data(request, qs, MeArticleSerializer, {"me": me})
+        return self.success(data)
