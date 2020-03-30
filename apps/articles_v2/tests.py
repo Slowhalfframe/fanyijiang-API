@@ -3,6 +3,14 @@ from django.urls import reverse
 
 from apps import common_prepare
 from apps.labels_v2.models import Label
+from .models import Article
+
+
+def prepare(obj):
+    common_prepare(obj)
+    obj.label = Label.objects.create(name="标签1")
+    obj.article = Article.objects.create(title="标题1", content="内容1", status="draft", author=obj.users["zhang"])
+    obj.article.labels.add(obj.label)
 
 
 class ArticleViewPostTest(TestCase):
@@ -45,3 +53,49 @@ class ArticleViewPostTest(TestCase):
         response = self.client.post(self.path, self.data, **self.headers)
         data = response.json()
         self.assertNotEqual(data["code"], 0)
+
+
+class OneArticleViewDeleteTest(TestCase):
+    def setUp(self):
+        prepare(self)
+        self.path = reverse("articles_v2:one_article", kwargs={"article_id": self.article.pk})
+
+    def test_no_login(self):
+        response = self.client.delete(self.path)
+        data = response.json()
+        self.assertNotEqual(data["code"], 0)
+
+    def test_article_not_exist(self):
+        path = reverse("articles_v2:one_article", kwargs={"article_id": self.article.pk + 1})
+        response = self.client.delete(path, **self.headers)
+        data = response.json()
+        self.assertEqual(data["code"], 0)
+
+    def test_not_your_article(self):
+        self.article.author = self.users["euler"]
+        self.article.save()
+        response = self.client.delete(self.path, **self.headers)
+        data = response.json()
+        self.assertNotEqual(data["code"], 0)
+
+    def test_article_draft(self):
+        me = self.users["zhang"]
+        self.assertEqual(Article.objects.filter(author=me).count(), 1)
+        self.assertEqual(Article.objects.filter(author=me, status="draft").count(), 1)
+        response = self.client.delete(self.path, **self.headers)
+        data = response.json()
+        self.assertEqual(data["code"], 0)
+        self.assertEqual(Article.objects.filter(author=me).count(), 0)
+
+    def test_article_published(self):
+        self.article.status = "published"
+        self.article.save()
+        me = self.users["zhang"]
+        self.assertEqual(Article.objects.filter(author=me).count(), 1)
+        self.assertEqual(Article.objects.filter(author=me, status="published").count(), 1)
+        response = self.client.delete(self.path, **self.headers)
+        data = response.json()
+        self.assertEqual(data["code"], 0)
+        self.assertEqual(Article.objects.filter(author=me).count(), 1)
+        self.assertEqual(Article.objects.filter(author=me, status="published").count(), 1)
+        self.assertTrue(Article.objects.filter(author=me).first().is_deleted)

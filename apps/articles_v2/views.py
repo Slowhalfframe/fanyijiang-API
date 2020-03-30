@@ -42,3 +42,34 @@ class ArticleView(CustomAPIView):
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         formatter = MeArticleSerializer(instance=article, context={"me": me})
         return self.success(formatter.data)
+
+
+class OneArticleView(CustomAPIView):
+    @logged_in
+    def delete(self, request, article_id):
+        """删除本人的文章，草稿会真实删除，正式文章不能随意删除"""
+
+        me = request.me
+        article = Article.objects.filter(pk=article_id, is_deleted=False).first()
+        if article is None:
+            return self.success()
+        if article.author != me:
+            return self.error(errorcode.MSG_NOT_OWNER, errorcode.NOT_OWNER)
+        # TODO 什么文章不能删除？
+        try:
+            if article.status == "draft":
+                article.delete()
+            else:
+                article.is_deleted = True
+                article.save()
+        except:
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
+        return self.success()
+
+    def put(self, request, article_id):
+        """修改本人的文章，也可以同时正式发表，不会删除其他草稿"""
+        pass
+
+    def get(self, request, article_id):
+        """查看文章详情"""
+        pass
