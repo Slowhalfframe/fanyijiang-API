@@ -44,6 +44,15 @@ class ArticleView(CustomAPIView):
         formatter = MeArticleSerializer(instance=article, context={"me": me})
         return self.success(formatter.data)
 
+    def get(self, request):
+        """查看一批文章，可分页"""
+
+        me = self.get_user_profile(request)
+        qs = Article.objects.filter(is_deleted=False, is_draft=False)
+        # TODO 进一步过滤或筛选
+        data = self.paginate_data(request, qs, MeArticleSerializer, {"me": me})
+        return self.success(data)
+
 
 class OneArticleView(CustomAPIView):
     @logged_in
@@ -86,7 +95,7 @@ class OneArticleView(CustomAPIView):
         # 请求体为空时,request.data为普通的空字典，没有getlist方法
         if "labels" not in request.data:
             return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
-        labels = self.better_getlist(request,"labels")
+        labels = self.better_getlist(request, "labels")
         try:  # labels里有非数字时会导致查询出错
             qs = Label.objects.filter(pk__in=labels)
         except:
