@@ -9,7 +9,7 @@ from apps.utils import errorcode
 from apps.utils.api import CustomAPIView
 from apps.utils.decorators import logged_in
 from .models import Question, Answer, QuestionFollow, QuestionInvite
-from .serializers import QuestionChecker, MeQuestionSerializer, AnswerChecker, MeAnswerSerializer
+from .serializers import QuestionChecker, MeQuestionSerializer, AnswerChecker, BasicAnswerSerializer, MeAnswerSerializer
 
 
 class QuestionView(CustomAPIView):
@@ -195,6 +195,44 @@ class OneAnswerView(CustomAPIView):
                 return self.error(errorcode.MSG_NOT_OWNER, errorcode.NOT_OWNER)
         formatter = MeAnswerSerializer(instance=answer, context={"me": me})
         return self.success(formatter.data)
+
+
+class DraftView(CustomAPIView):
+    @logged_in
+    def get(self, request):
+        """查看本人写的所有回答的草稿，可分页"""
+
+        me = request.me
+        qs = Answer.objects.filter(author=me, is_deleted=False, is_draft=True)
+        data = self.paginate_data(request, qs, BasicAnswerSerializer)
+        return self.success(data)
+
+    @logged_in
+    def post(self, request):
+        """发表草稿并真实删除其他有关的草稿，无须发送草稿的内容以节省资源"""
+
+        me = request.me
+        pk = request.data.get("id")
+        try:
+            pk = int(pk)
+        except:
+            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
+        answer = Answer.objects.filter(pk=pk, is_deleted=False).first()
+        if answer is None:
+            return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
+        if answer.author != me:
+            return self.error(errorcode.MSG_NOT_OWNER, errorcode.NOT_OWNER)
+        if not answer.is_draft:  # 正常情况下不会发生，很可能是测试或攻击
+            return self.success()
+        try:
+            answer.is_draft = False
+            with atomic():
+                answer.save()
+                Answer.objects.filter(author=me, question=answer.question, is_draft=True).delete()
+            # TODO 发出相关通知
+        except:
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
+        return self.success()
 
 
 class QuestionFollowView(CustomAPIView):

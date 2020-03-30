@@ -7,6 +7,7 @@ urlpatterns = [
     url(r"^(?P<question_id>\d+)/$", views.OneQuestionView.as_view(), name="one_question"),
     url(r"^(?P<question_id>\d+)/answers/$", views.AnswerView.as_view(), name="answer_root"),
     url(r"^(?P<question_id>\d+)/answers/(?P<answer_id>\d+)/$", views.OneAnswerView.as_view(), name="one_answer"),
+    url(r"^drafts/$", views.DraftView.as_view(), name="draft_root"),
     url(r"^(?P<question_id>\d+)/follow/$", views.QuestionFollowView.as_view(), name="follow"),
     url(r"^follow/$", views.QuestionFollowView.as_view(), name="his_follow"),
     url(r"^(?P<question_id>\d+)/invite/$", views.InviteView.as_view(), name="invite"),

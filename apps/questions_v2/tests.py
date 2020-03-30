@@ -253,6 +253,50 @@ class OneAnswerViewPutTest(TestCase):
         self.assertEqual(self.question.answer_set.filter(is_draft=False).count(), 1)
 
 
+class DraftViewPostTest(TestCase):
+    def setUp(self):
+        prepare(self)
+        self.path = reverse("questions_v2:draft_root")
+        self.answer = Answer.objects.create(content="回答1", author=self.users["zhang"], is_draft=True,
+                                            question=self.question)
+        self.data = {"id": self.answer.pk}
+
+    def test_no_login(self):
+        response = self.client.post(self.path, self.data)
+        data = response.json()
+        self.assertNotEqual(data["code"], 0)
+
+    def test_answer_not_exist(self):
+        data = {"id": None}
+        response = self.client.post(self.path, data, **self.headers)
+        data = response.json()
+        self.assertNotEqual(data["code"], 0)
+
+    def test_not_your_answer(self):
+        self.answer.author = self.users["zhao"]
+        self.answer.save()
+        response = self.client.post(self.path, self.data, **self.headers)
+        data = response.json()
+        self.assertNotEqual(data["code"], 0)
+
+    def test_answer_not_draft(self):
+        self.answer.is_draft = False
+        self.answer.save()
+        response = self.client.post(self.path, self.data, **self.headers)
+        data = response.json()
+        self.assertEqual(data["code"], 0)
+
+    def test_delete_other_drafts(self):
+        Answer.objects.create(content="回答2", author=self.users["zhang"], is_draft=True, question=self.question)
+        self.assertEqual(self.question.answer_set.filter(is_draft=True).count(), 2)
+        self.assertEqual(self.question.answer_set.filter(is_draft=False).count(), 0)
+        response = self.client.post(self.path, self.data, **self.headers)
+        data = response.json()
+        self.assertEqual(data["code"], 0)
+        self.assertEqual(self.question.answer_set.filter(is_draft=True).count(), 0)
+        self.assertEqual(self.question.answer_set.filter(is_draft=False).count(), 1)
+
+
 class QuestionFollowViewPostTest(TestCase):
     def setUp(self):
         prepare(self)
