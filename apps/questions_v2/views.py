@@ -9,7 +9,7 @@ from apps.utils import errorcode
 from apps.utils.api import CustomAPIView
 from apps.utils.decorators import logged_in
 from .models import Question, Answer, QuestionFollow, QuestionInvite
-from .serializers import QuestionChecker, MeQuestionSerializer, AnswerChecker, BasicAnswerSerializer, MeAnswerSerializer
+from .serializers import QuestionChecker, MeQuestionSerializer, AnswerChecker, MeAnswerSerializer
 
 
 class QuestionView(CustomAPIView):
@@ -204,7 +204,7 @@ class DraftView(CustomAPIView):
 
         me = request.me
         qs = Answer.objects.filter(author=me, is_deleted=False, is_draft=True)
-        data = self.paginate_data(request, qs, BasicAnswerSerializer)
+        data = self.paginate_data(request, qs, MeAnswerSerializer, {"me": me})
         return self.success(data)
 
     @logged_in

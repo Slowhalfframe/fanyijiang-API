@@ -28,6 +28,7 @@ urlpatterns = [
     url(r"^api/v2/votes/", include("apps.votes.urls", namespace="votes")),
     url(r"^api/userpage/", include("apps.userpage.urls", namespace="userpage")),
     url(r"^api/articles/", include("apps.articles.urls", namespace="articles")),
+    url(r"^api/v2/articles/", include("apps.articles_v2.urls", namespace="articles_v2")),
     url(r"^api/ideas/", include("apps.ideas.urls", namespace="ideas")),
     url(r"^api/creator/", include("apps.creator.urls", namespace="creator")),
     url(r"^api/notifications/", include("apps.notifications.urls", namespace="notifications")),
