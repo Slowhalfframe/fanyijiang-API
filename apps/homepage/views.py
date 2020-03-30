@@ -195,18 +195,19 @@ class InLabelContent(BaseCreateContent):
         '''
         finally_label = GetFinalLabel(self.user, self.offset, self.limit)
         finally_label_dict = finally_label.get_labels_dict()
-        max_label_id = max(finally_label_dict, key=finally_label_dict.get)
-        label = Label.objects.get(pk=max_label_id)
-        data_list = self.get_content_list(label)
         no_labels = finally_label.get_user_no_followed_label()
+
+        data_list = list()
         while len(data_list) <= self.limit:
             if len(finally_label_dict) > 1 and len(data_list) < self.limit:
-                finally_label_dict.pop(max_label_id)
                 max_label_id = max(finally_label_dict, key=finally_label_dict.get)
                 label = Label.objects.get(pk=max_label_id)
                 data_list.extend(self.get_content_list(label))
+                finally_label_dict.pop(max_label_id)
+
             if len(finally_label_dict) <= 1 and len(data_list) < self.limit or len(data_list) > self.limit * 0.8:
                 # 从其他标签下获取一个内容
+                print(no_labels)
                 if not len(no_labels):
                     break
                 no_label = random.choice(no_labels)
@@ -259,6 +260,4 @@ class HomePageFollowContentAPIView(CustomAPIView):
 
         data = sorted(data_list, key=lambda x:x['update_time'], reverse=True)
         return self.success(data)
-
-        # 获取用户发表的回答
 
