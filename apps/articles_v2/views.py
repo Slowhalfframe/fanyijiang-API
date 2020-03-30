@@ -114,5 +114,14 @@ class OneArticleView(CustomAPIView):
         return self.success(formatter.data)
 
     def get(self, request, article_id):
-        """查看文章详情"""
-        pass
+        """查看文章详情，只有作者能查看草稿"""
+
+        me = self.get_user_profile(request)
+        article = Article.objects.filter(pk=article_id, is_deleted=False).first()
+        if article is None:
+            return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
+        if article.is_draft:
+            if me is None or article.author != me:
+                return self.error(errorcode.MSG_NOT_OWNER, errorcode.NOT_OWNER)
+        formatter = MeArticleSerializer(instance=article, context={"me": me})
+        return self.success(formatter.data)
