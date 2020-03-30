@@ -23,8 +23,14 @@ class QuestionView(CustomAPIView):
             "title": request.data.get("title") or "",
             "content": request.data.get("content") or "",
         }
+        # 请求体为空时,request.data为普通的空字典，没有getlist方法
+        if "labels" not in request.data:
+            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
         labels = request.data.getlist("labels") or []
-        qs = Label.objects.filter(id__in=labels, is_deleted=False)
+        try:  # labels里有非数字时会导致查询出错
+            qs = Label.objects.filter(id__in=labels, is_deleted=False)
+        except:
+            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
         if not qs.exists():
             return self.error(errorcode.MSG_NO_LABELS, errorcode.NO_LABELS)
         checker = QuestionChecker(data=data)
