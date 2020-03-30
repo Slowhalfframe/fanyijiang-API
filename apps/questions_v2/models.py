@@ -16,6 +16,8 @@ class Question(BaseModel):
     author = models.ForeignKey(to=UserProfile, null=False, verbose_name="提问者")
     labels = models.ManyToManyField(to=Label, verbose_name="问题的标签")
     comments = GenericRelation(to=Comment)
+    followers = models.ManyToManyField(to=UserProfile, related_name="followed_questions", through="QuestionFollow",
+                                       through_fields=("question", "user"), verbose_name="关注者")
 
     # read_nums = GenericRelation(to=ReadNums)
 
@@ -59,37 +61,39 @@ class Answer(BaseModel):
         return "answer"
 
 
-'''
-class QuestionFollow(models.Model):
-    """关注的问题"""
-    user_id = models.CharField(max_length=40, null=False, verbose_name="关注者ID")
+class QuestionFollow(BaseModel):
+    """用户与问题的多对多关注关系，插入行时注意防止重复"""
+
+    user = models.ForeignKey(to=UserProfile, null=False, verbose_name="关注者")
     question = models.ForeignKey(to=Question, null=False, verbose_name="关注的问题")
-    create_at = models.DateTimeField(auto_now_add=True, verbose_name="关注时间")
 
     class Meta:
-        db_table = "db_q_follows"
+        db_table = "question_follow"
         verbose_name = "问题关注"
         verbose_name_plural = verbose_name
-        unique_together = (("user_id", "question"),)  # 不能重复关注
+
+    def __str__(self):
+        return " ".join((self.user.nickname, "关注了", self.question.title))
 
 
-class QuestionInvite(models.Model):
-    """邀请回答"""
-    STATUS = (
-        (0, "未回答"),
-        (1, "已拒绝"),
-        (2, "已回答"),
-    )
+class QuestionInvite(BaseModel):
+    """邀请回答
+
+    邀请被转化成了通知，所以用户不必查看或拒绝邀请，甚至邀请也不必保存。记录下来，一是防止重复邀请，二是查询被邀请者是否回答。
+
+    用户可以发出邀请，但不能撤销邀请，因为可能发生如下情况：
+    用户A邀请了用户B，邀请被记录，并异步生成通知
+    1分钟后A撤销了邀请，此时通知还没有生成
+    2分钟后生成了通知，它不应该存在
+    3分钟后B登录，收到了通知
+    """
+
+    status = models.BooleanField(null=False, default=False, verbose_name="是否已回答")
+    inviting = models.ForeignKey(to=UserProfile, null=False, related_name="sent_invitations", verbose_name="邀请者")
+    invited = models.ForeignKey(to=UserProfile, null=False, related_name="received_invitations", verbose_name="被邀请者")
     question = models.ForeignKey(to=Question, null=False, verbose_name="问题")
-    create_at = models.DateTimeField(auto_now_add=True, verbose_name="邀请时间")
-    inviting = models.CharField(max_length=40, null=False, verbose_name="邀请者ID")
-    invited = models.CharField(max_length=40, null=False, verbose_name="被邀请者ID")
-    status = models.SmallIntegerField(choices=STATUS, null=False, verbose_name="状态")
 
     class Meta:
-        db_table = "db_q_invite"
+        db_table = "question_invite"
         verbose_name = "邀请回答"
         verbose_name_plural = verbose_name
-        unique_together = (("question", "inviting", "invited",),)  # 不能重复邀请
-
-'''
