@@ -9,7 +9,7 @@ from .models import Article
 def prepare(obj):
     common_prepare(obj)
     obj.label = Label.objects.create(name="标签1")
-    obj.article = Article.objects.create(title="标题1", content="内容1", status="draft", author=obj.users["zhang"])
+    obj.article = Article.objects.create(title="标题1", content="内容1", is_draft=True, author=obj.users["zhang"])
     obj.article.labels.add(obj.label)
 
 
@@ -21,7 +21,7 @@ class ArticleViewPostTest(TestCase):
         self.data = {
             "title": "标题1",
             "content": "内容1",
-            "status": "draft",
+            "is_draft": True,
             "labels": self.label.pk
         }
 
@@ -43,7 +43,7 @@ class ArticleViewPostTest(TestCase):
         self.assertNotEqual(data["code"], 0)
 
     def test_bad_status(self):
-        self.data["status"] = "Draft"
+        self.data["is_draft"] = "None"
         response = self.client.post(self.path, self.data, **self.headers)
         data = response.json()
         self.assertNotEqual(data["code"], 0)
@@ -81,21 +81,21 @@ class OneArticleViewDeleteTest(TestCase):
     def test_article_draft(self):
         me = self.users["zhang"]
         self.assertEqual(Article.objects.filter(author=me).count(), 1)
-        self.assertEqual(Article.objects.filter(author=me, status="draft").count(), 1)
+        self.assertEqual(Article.objects.filter(author=me, is_draft=True).count(), 1)
         response = self.client.delete(self.path, **self.headers)
         data = response.json()
         self.assertEqual(data["code"], 0)
         self.assertEqual(Article.objects.filter(author=me).count(), 0)
 
     def test_article_published(self):
-        self.article.status = "published"
+        self.article.is_draft = False
         self.article.save()
         me = self.users["zhang"]
         self.assertEqual(Article.objects.filter(author=me).count(), 1)
-        self.assertEqual(Article.objects.filter(author=me, status="published").count(), 1)
+        self.assertEqual(Article.objects.filter(author=me, is_draft=False).count(), 1)
         response = self.client.delete(self.path, **self.headers)
         data = response.json()
         self.assertEqual(data["code"], 0)
         self.assertEqual(Article.objects.filter(author=me).count(), 1)
-        self.assertEqual(Article.objects.filter(author=me, status="published").count(), 1)
+        self.assertEqual(Article.objects.filter(author=me, is_draft=False).count(), 1)
         self.assertTrue(Article.objects.filter(author=me).first().is_deleted)

@@ -11,12 +11,11 @@ from apps.votes.models import Vote
 class Article(BaseModel):
     """文章，同一作者可以发表多篇同一标题的文章，尽管这几乎不会发生"""
 
-    STATUS = (("draft", "draft"), ("published", "published"))
-
     title = models.CharField(max_length=100, null=False, blank=False, verbose_name="文章标题")
     content = models.TextField(null=False, blank=False, verbose_name="文章主体")
     thumbnail = models.CharField(max_length=100, null=True, verbose_name="缩略图路径")
-    status = models.CharField(max_length=10, choices=STATUS, null=False, blank=False, verbose_name="状态")
+    # 发表评论时用到了该字段名，不能随意改名
+    is_draft = models.BooleanField(null=False, blank=False, verbose_name="是不是草稿")
     author = models.ForeignKey(to=UserProfile, null=False, blank=False, verbose_name="作者")
     labels = models.ManyToManyField(to=Label, verbose_name="文章的标签")
     comments = GenericRelation(to=Comment)

@@ -18,7 +18,7 @@ class ArticleView(CustomAPIView):
             "title": request.data.get("title") or "",
             "content": request.data.get("content") or "",
             "thumbnail": request.data.get("thumbnail") or None,
-            "status": request.data.get("status") or None,
+            "is_draft": request.data.get("is_draft") or None,
         }
         # 请求体为空时,request.data为普通的空字典，没有getlist方法
         if "labels" not in request.data:
@@ -57,7 +57,7 @@ class OneArticleView(CustomAPIView):
             return self.error(errorcode.MSG_NOT_OWNER, errorcode.NOT_OWNER)
         # TODO 什么文章不能删除？
         try:
-            if article.status == "draft":
+            if article.is_draft:
                 article.delete()
             else:
                 article.is_deleted = True

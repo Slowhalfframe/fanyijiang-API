@@ -11,7 +11,7 @@ class ArticleChecker(serializers.ModelSerializer):
 
     class Meta:
         model = Article
-        fields = ("title", "content", "thumbnail", "status",)
+        fields = ("title", "content", "thumbnail", "is_draft",)
         extra_kwargs = {
             "title": {
                 "required": True,
@@ -22,7 +22,7 @@ class ArticleChecker(serializers.ModelSerializer):
             "thumbnail": {
                 "required": False,
             },
-            "status": {
+            "is_draft": {
                 "required": True,
             },
         }
@@ -46,11 +46,6 @@ class ArticleChecker(serializers.ModelSerializer):
             raise serializers.ValidationError("图片路径或类型无效")
         return value
 
-    def validate_status(self, value):
-        if value not in ("draft", "published"):
-            raise serializers.ValidationError("文章状态不合要求")
-        return value
-
 
 class BasicArticleSerializer(serializers.ModelSerializer):
     """用于文章的序列化，返回最基础的信息"""
@@ -64,7 +59,7 @@ class BasicArticleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Article
         fields = (
-            "id", "type", "title", "content", "thumbnail", "status", "author", "labels", "create_at", "update_at",
+            "id", "type", "title", "content", "thumbnail", "is_draft", "author", "labels", "create_at", "update_at",
         )
 
 
