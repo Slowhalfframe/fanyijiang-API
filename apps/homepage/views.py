@@ -1,4 +1,4 @@
-import random, math
+import random, math, datetime
 
 from apps.utils.api import CustomAPIView
 from apps.questions.models import Question, Answer, QuestionFollow, ACVote
@@ -55,7 +55,7 @@ class UserCreateArticle(BaseCreateContent):
     def get_user_answer_question(self):
         '''获取用户发表回答的问题'''
         questions = [a.question for a in Answer.objects.filter(user_id=self.user.uid).order_by('-create_at')[
-                               self.offset:self.offset + self.limit]]
+                                         self.offset:self.offset + self.limit]]
         return questions
 
     def get_answer_label_hash(self):
@@ -126,14 +126,14 @@ class GetFinalLabel(UserCreateArticle, UserCreateCollect):
     def get_user_followed_label_dict(self):
         '''获取用户关注的标签字典'''
         followed_labels_dict = dict()
-        followed_labels = Label.objects.filter(labelfollow__user_id=self.user.uid)[self.offset:self.offset+self.limit]
+        followed_labels = Label.objects.filter(labelfollow__user_id=self.user.uid)[self.offset:self.offset + self.limit]
         for f in followed_labels:
             followed_labels_dict[f.id] = 1
         return followed_labels_dict
 
     def get_user_no_followed_label(self):
         '''获取用户未关注的标签列表'''
-        labels = Label.objects.exclude(labelfollow__user_id=self.user.uid)[self.offset:self.offset+self.limit]
+        labels = Label.objects.exclude(labelfollow__user_id=self.user.uid)[self.offset:self.offset + self.limit]
         ls = [l for l in labels]
         return ls
 
@@ -158,6 +158,7 @@ class GetFinalLabel(UserCreateArticle, UserCreateCollect):
 
 class InLabelContent(BaseCreateContent):
     '''根据生成权重最高的标签，获取相应的推荐内容'''
+
     def get_label_question(self, label):
         '''问题'''
         questions = [q for q in
@@ -248,16 +249,49 @@ class HomePageFollowContentAPIView(CustomAPIView):
             return self.error('error', 401)
         offset = int(request.GET.get('offset', 0))
         limit = int(request.GET.get('limit', 20))
-        idol_users = UserProfile.objects.filter(as_idol__fans=user)[offset:offset+limit]
+        idol_users = UserProfile.objects.filter(as_idol__fans=user)[offset:offset + limit]
         data_list = list()
         for idol in idol_users:
             answer = Answer.objects.filter(user_id=idol.uid).order_by('-create_at')
             answer_data = self.paginate_data(request, answer, UserPageAnswerSerializer, serializer_context={'me': idol})
             data_list.extend(answer_data['results'])
             articles = Article.objects.filter(user_id=idol.uid).order_by('-update_at', '-create_at')
-            article_data = self.paginate_data(request, articles, UserPageArticleSerializer, serializer_context={'me': idol})
+            article_data = self.paginate_data(request, articles, UserPageArticleSerializer,
+                                              serializer_context={'me': idol})
             data_list.extend(article_data['results'])
 
-        data = sorted(data_list, key=lambda x:x['update_time'], reverse=True)
+        data = sorted(data_list, key=lambda x: x['update_time'], reverse=True)
         return self.success(data)
 
+
+class WaitAnswerAPIView(CustomAPIView):
+    def get(self, request):
+        from apps.creator.views import RecommendQuestion
+        user = self.get_user_profile(request)
+        if not user:
+            return self.error('error', 401)
+
+        offset = request.GET.get('offset', 0)
+        limit = request.GET.get('limit', 20)
+        recommend = RecommendQuestion(user, offset, limit)
+        questions = recommend.get_finally_question()
+        data = recommend.get_json_data(questions)
+        return self.success(data)
+
+
+class HomePageCreatorAPIView(CustomAPIView):
+    def get(self, request):
+        from apps.creator.views import TotalNums
+        user = self.get_user_profile(request)
+        if not user:
+            return self.error('error', 401)
+
+        # 阅读量
+        total_instance = TotalNums(user)
+        # 昨日总阅读量
+        yesterday = datetime.date.today() - datetime.timedelta(days=1)
+        yesterday_str = datetime.date.strftime(yesterday, '%Y%m%d')
+        ysd_read_nums = total_instance.get_date_total_nums(yesterday_str)
+        ysd_upvote = total_instance.get_date_total_votes(yesterday_str)
+        data = {'ysd_read_nums': ysd_read_nums, 'ysd_upvote': ysd_upvote}
+        return self.success(data)

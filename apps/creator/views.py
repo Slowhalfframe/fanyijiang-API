@@ -475,6 +475,11 @@ class RecommendQuestion(object):
             data['content'] = question.content
             data['follow_count'] = QuestionFollow.objects.filter(question=question).count()
             data['answer_count'] = question.answer_set.all().count()
+            read = question.read_nums.filter(object_id=question.id).first()
+            data['read_count'] = read.nums if read else 0
+            data['followed'] = False
+            if QuestionFollow.objects.filter(question=question, user_id=self.user.uid).exists():
+                data['followed'] = True
             data_l.append(data)
         return data_l
 
