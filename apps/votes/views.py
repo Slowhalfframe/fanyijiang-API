@@ -1,3 +1,4 @@
+from apps.articles_v2.models import Article
 from apps.comments.models import Comment
 from apps.questions_v2.models import Answer
 from apps.utils import errorcode
@@ -8,6 +9,7 @@ from .serializers import VoteChecker
 MAPPINGS = {
     "answer": Answer,
     "comment": Comment,
+    "article": Article,
     # TODO 文章和想法等其他可投票对象
 }
 
