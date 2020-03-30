@@ -24,7 +24,7 @@ class ArticleView(CustomAPIView):
         # 请求体为空时,request.data为普通的空字典，没有getlist方法
         if "labels" not in request.data:
             return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
-        labels = request.data.getlist("labels") or []
+        labels = self.better_getlist(request, "labels")
         try:  # labels里有非数字时会导致查询出错
             qs = Label.objects.filter(pk__in=labels)
         except:
@@ -86,7 +86,7 @@ class OneArticleView(CustomAPIView):
         # 请求体为空时,request.data为普通的空字典，没有getlist方法
         if "labels" not in request.data:
             return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
-        labels = request.data.getlist("labels") or []
+        labels = self.better_getlist(request,"labels")
         try:  # labels里有非数字时会导致查询出错
             qs = Label.objects.filter(pk__in=labels)
         except:

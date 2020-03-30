@@ -80,3 +80,11 @@ class CustomAPIView(APIView):
 
     def get_user_by_slug(self, slug):
         return UserProfile.objects.filter(slug=slug).first()
+
+    def better_getlist(self, request, field_name):
+        """从请求体的某个字段里取出列表数据"""
+
+        field_data = request.data.getlist(field_name) or []
+        if len(field_data) == 1:  # 这种情况说明数据可能是先用逗号拼接再发送的
+            field_data = field_data[0].split(",")
+        return field_data

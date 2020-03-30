@@ -26,7 +26,7 @@ class QuestionView(CustomAPIView):
         # 请求体为空时,request.data为普通的空字典，没有getlist方法
         if "labels" not in request.data:
             return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
-        labels = request.data.getlist("labels") or []
+        labels = self.better_getlist(request, "labels")
         try:  # labels里有非数字时会导致查询出错
             qs = Label.objects.filter(id__in=labels, is_deleted=False)
         except:
@@ -59,7 +59,7 @@ class OneQuestionView(CustomAPIView):
             return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
         if question.author != me:
             return self.error(errorcode.MSG_NOT_OWNER, errorcode.NOT_OWNER)
-        labels = request.data.getlist("labels") or []
+        labels = self.better_getlist(request, "labels")
         qs = Label.objects.filter(id__in=labels, is_deleted=False)
         if not qs.exists():
             return self.error(errorcode.MSG_NO_LABELS, errorcode.NO_LABELS)
