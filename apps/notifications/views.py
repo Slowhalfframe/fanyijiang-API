@@ -34,6 +34,14 @@ class NotificationAPIView(CustomAPIView):
         data = self.paginate_data(request, nos, NotificationsSerializer)
         # 重组数据格式
         if display_type == 'all':
+            # TODO 建议
+            # a = {}
+            # for i in data["results"]:
+            #     if i.get("format_time") not in a:
+            #         a[i.get("format_time")] = [i]
+            #     else:
+            #         a[i.get("format_time")].append(i)
+            # data["results"] = [{"no_date":key,"data_list":value} for key,value in a.items()]
             results = data['results']
             results_data = list()
             while 0 < len(results):
