@@ -309,6 +309,7 @@ class ArticleRecommendView(CustomAPIView):
             "id": i.pk,
             "title": i.title,
             "cover": i.image,
+            "excerpt": i.content[:30],
             "nickname": UserProfile.objects.get(uid=i.user_id).nickname
         } for i in instances]
         return self.success(data)

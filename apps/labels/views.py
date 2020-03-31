@@ -183,6 +183,7 @@ class LabelSearchView(CustomAPIView):
         data = [{
             "id": i.pk,
             "name": i.name,
+            "intro": i.intro,
             "follower_count": LabelFollow.objects.filter(label=i).count(),
             "item_count": i.article_set.filter(is_deleted=False, status="published").count() + i.question_set.count(),
             "is_followed": False if not me else LabelFollow.objects.filter(label=i, user_id=me.uid).exists()
