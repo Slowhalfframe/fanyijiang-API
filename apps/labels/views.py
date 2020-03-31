@@ -184,7 +184,7 @@ class LabelSearchView(CustomAPIView):
             "id": i.pk,
             "name": i.name,
             "follower_count": LabelFollow.objects.filter(label=i).count(),
-            "item_count": i.article_set.filter(is_deleted=False, is_draft=False).count() + i.question_set.count(),
+            "item_count": i.article_set.filter(is_deleted=False, status="published").count() + i.question_set.count(),
             "is_followed": False if not me else LabelFollow.objects.filter(label=i, user_id=me.uid).exists()
         } for i in labels]
         return self.success(data)
