@@ -1,3 +1,5 @@
+import random
+
 from django.db import transaction
 
 from apps.utils.api import CustomAPIView
@@ -154,7 +156,8 @@ class DraftView(CustomAPIView):
         drafts = Article.objects.filter(user_id=request._request.uid, status="draft", is_deleted=False)
         user = UserProfile.objects.get(pk=request._request.uid)
         # TODO 返回哪部分数据？
-        data = self.paginate_data(request, query_set=drafts, object_serializer=ArticleDetailSerializer, serializer_context={'me':user})
+        data = self.paginate_data(request, query_set=drafts, object_serializer=ArticleDetailSerializer,
+                                  serializer_context={'me': user})
         return self.success(data)
 
 
@@ -278,4 +281,34 @@ class ArticleCommentDetailView(CustomAPIView):
         me = self.get_user_profile(request)
         data = self.paginate_data(request, query_set=comments, object_serializer=ArticleCommentSerializer,
                                   serializer_context={"me": me})
+        return self.success(data)
+
+
+class ArticleRecommendView(CustomAPIView):
+    def get(self, request, article_id):
+        """查看推荐的文章"""
+
+        article = Article.objects.filter(pk=article_id, is_deleted=False).first()
+        if article is None:
+            return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
+        candidates = Article.objects.exclude(pk=article_id).filter(is_deleted=False, status="published")
+        # 同作者的文章
+        qs1 = candidates.filter(user_id=article.user_id)
+        # 有相同标签的文章
+        qs2 = candidates.filter(labels__in=article.labels.all())
+        # 标题相似的文章
+        # 同一个收藏夹里的文章
+        qs3 = candidates.filter(mark__in=article.mark.all())
+        # 每次从每一类里选一个来返回？
+        qs = qs1.union(qs2, qs3)
+        if len(qs) > 4:
+            instances = random.sample(list(qs), 4)
+        else:
+            instances = list(qs)
+        data = [{
+            "id": i.pk,
+            "title": i.title,
+            "cover": i.image,
+            "nickname": UserProfile.objects.get(uid=i.user_id).nickname
+        } for i in instances]
         return self.success(data)
