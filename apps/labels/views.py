@@ -5,7 +5,7 @@ from apps.utils.decorators import validate_identity
 from apps.utils import errorcode
 from apps.questions.serializers import QuestionInLabelDiscussSerializer
 from .serializers import LabelCreateSerializer, ChildLabelSerializer, LabelUpdateSerializer, LabelDetailSerializer
-from .models import Label
+from .models import Label, LabelFollow
 
 
 class LabelView(CustomAPIView):
@@ -179,5 +179,12 @@ class LabelSearchView(CustomAPIView):
         if not keyword:
             return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
         labels = Label.objects.filter(Q(name__contains=keyword) | Q(intro__contains=keyword))
-        data = [{"id": i.id, "name": i.name} for i in labels]
+        me = self.get_user_profile(request)
+        data = [{
+            "id": i.pk,
+            "name": i.name,
+            "follower_count": LabelFollow.objects.filter(label=i).count(),
+            "item_count": i.article_set.filter(is_deleted=False, is_draft=False).count() + i.question_set.count(),
+            "is_followed": False if not me else LabelFollow.objects.filter(label=i, user_id=me.uid).exists()
+        } for i in labels]
         return self.success(data)

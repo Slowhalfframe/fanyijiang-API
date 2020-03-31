@@ -1,26 +1,8 @@
-import requests
-from django.conf import settings
 from django.test import TestCase
 from django.urls import reverse
-from rest_framework.test import APIClient
 
-from apps.userpage.models import UserProfile
-from .models import Label
-
-
-def common_prepare(obj):
-    """准备测试用户、登录和客户端"""
-
-    UserProfile.objects.create(uid="e4da3b7fbbce2345d7772b0674a318d5", nickname="haoran·zhang", slug="zhanghaoran")
-    UserProfile.objects.create(uid="a87ff679a2f3e71d9181a67b7542122c", nickname="赵军臣", slug="zhao-jun-chen")
-    data = {
-        "username": "18569938068",
-        "password": "1234567",
-        "login_type": "normal"
-    }
-    response = requests.post(settings.USER_CENTER_GATEWAY + "/api/login", data=data)
-    obj.headers = {"HTTP_AUTHORIZATION": response.json()["data"]["token"]}
-    obj.client = APIClient()
+from apps import common_prepare
+from .models import Label, LabelFollow
 
 
 class LabelViewPostTest(TestCase):
@@ -95,14 +77,6 @@ class LabelViewPostTest(TestCase):
         data = response.json()
         self.assertEqual(data["code"], 0)
         self.assertIsNone(data["data"]["intro"])
-
-    def test_intro_with_html(self):
-        data = self.data.copy()
-        data["intro"] = "<p>OK</p>"
-        response = self.client.post(self.path, data, **self.headers)
-        data = response.json()
-        self.assertEqual(data["code"], 0)
-        self.assertEqual(data["data"]["intro"], "&lt;p&gt;OK&lt;/p&gt;")
 
     def test_no_avatar(self):
         data = self.data.copy()
@@ -182,13 +156,13 @@ class OneLabelViewPutTest(TestCase):
         self.assertEqual(data["data"]["intro"], self.data["intro"])
         self.assertEqual(data["data"]["avatar"], self.data["avatar"])
 
-    def test_label_name_exist(self):
+    def test_label_name_unchanged(self):
         path = reverse("labels_v2:one_label", kwargs={"label_id": self.label.pk})
         data = self.data.copy()
         data["name"] = self.old_data["name"]
         response = self.client.put(path, data, **self.headers)
         data = response.json()
-        self.assertNotEqual(data["code"], 0)
+        self.assertEqual(data["code"], 0)
 
 
 class ChildLabelViewPostTest(TestCase):
@@ -211,6 +185,11 @@ class ChildLabelViewPostTest(TestCase):
 
     def test_no_child(self):
         response = self.client.post(self.path, {"id": self.label2.pk + self.label1.pk}, **self.headers)
+        data = response.json()
+        self.assertNotEqual(data["code"], 0)
+
+    def test_child_is_self(self):
+        response = self.client.post(self.path, {"id": self.label1.pk}, **self.headers)
         data = response.json()
         self.assertNotEqual(data["code"], 0)
 
@@ -244,3 +223,59 @@ class ChildLabelViewDeleteTest(TestCase):
         response = self.client.delete(path, **self.headers)
         data = response.json()
         self.assertEqual(data["code"], 0)
+
+
+class LabelFollowViewPostTest(TestCase):
+    def setUp(self):
+        common_prepare(self)
+        self.label = Label.objects.create(name="标签1")
+        self.path = reverse("labels_v2:follow", kwargs={"label_id": self.label.pk})
+
+    def test_no_login(self):
+        response = self.client.post(self.path)
+        data = response.json()
+        self.assertNotEqual(data["code"], 0)
+
+    def test_label_not_exist(self):
+        path = reverse("labels_v2:follow", kwargs={"label_id": self.label.pk + 1})
+        response = self.client.post(path, **self.headers)
+        data = response.json()
+        self.assertNotEqual(data["code"], 0)
+
+    def test_follow_only_once(self):
+        response = self.client.post(self.path, **self.headers)
+        data = response.json()
+        self.assertEqual(data["code"], 0)
+        response = self.client.post(self.path, **self.headers)
+        data = response.json()
+        self.assertEqual(data["code"], 0)
+        self.assertEqual(self.label.followers.count(), 1)
+
+
+class LabelFollowViewDeleteTest(TestCase):
+    def setUp(self):
+        common_prepare(self)
+        self.label = Label.objects.create(name="标签1")
+        self.path = reverse("labels_v2:follow", kwargs={"label_id": self.label.pk})
+        user = self.users["zhang"]
+        LabelFollow.objects.create(user=user, label=self.label)
+
+    def test_no_login(self):
+        response = self.client.delete(self.path)
+        data = response.json()
+        self.assertNotEqual(data["code"], 0)
+
+    def test_label_followed(self):
+        self.assertEqual(LabelFollow.objects.count(), 1)
+        response = self.client.delete(self.path, **self.headers)
+        data = response.json()
+        self.assertEqual(data["code"], 0)
+        self.assertEqual(LabelFollow.objects.count(), 0)
+
+    def test_label_not_followed(self):
+        self.assertEqual(LabelFollow.objects.count(), 1)
+        path = reverse("labels_v2:follow", kwargs={"label_id": self.label.pk + 1})
+        response = self.client.delete(path, **self.headers)
+        data = response.json()
+        self.assertEqual(data["code"], 0)
+        self.assertEqual(LabelFollow.objects.count(), 1)

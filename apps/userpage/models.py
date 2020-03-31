@@ -33,9 +33,12 @@ class UserProfile(models.Model):
     # slug
     slug = models.SlugField(max_length=150, null=True, blank=True, verbose_name='(URL)别名', unique=True)
 
-
     class Meta:
         db_table = 'db_user_profile'
+
+    @property
+    def kind(self):
+        return "people"
 
 
 class UserEmploymentHistory(models.Model):
