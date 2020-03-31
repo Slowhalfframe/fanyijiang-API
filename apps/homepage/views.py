@@ -42,8 +42,8 @@ class UserCreateArticle(BaseCreateContent):
 
     def get_user_article(self):
         '''用户创作的文章'''
-        articles = [a for a in Article.objects.filter(user_id=self.user.uid).order_by('-create_at')[
-                               self.offset:self.offset + self.limit]]
+
+        articles = [a for a in Article.objects.filter(user_id=self.user.uid).order_by('-create_at')]
         return articles
 
     def get_article_label_hash(self):
@@ -54,8 +54,7 @@ class UserCreateArticle(BaseCreateContent):
 
     def get_user_answer_question(self):
         '''获取用户发表回答的问题'''
-        questions = [a.question for a in Answer.objects.filter(user_id=self.user.uid).order_by('-create_at')[
-                                         self.offset:self.offset + self.limit]]
+        questions = [a.question for a in Answer.objects.filter(user_id=self.user.uid).select_related('question').order_by('-create_at')]
         return questions
 
     def get_answer_label_hash(self):
@@ -70,8 +69,7 @@ class UserCreateCollect(BaseCreateContent):
 
     def get_user_favorites(self):
         '''获取用户的收藏夹'''
-        favorites = [a for a in UserFavorites.objects.filter(user_id=self.user.uid)[
-                                self.offset:self.offset + self.limit]]
+        favorites = [a for a in UserFavorites.objects.filter(user_id=self.user.uid)]
         return favorites
 
     def get_favorites_content(self):
@@ -79,7 +77,7 @@ class UserCreateCollect(BaseCreateContent):
         favorites = self.get_user_favorites()
         content_list = list()
         for favorite in favorites:
-            contents = favorite.favorite_collect.all()[self.offset:self.offset + self.limit]
+            contents = favorite.favorite_collect.all()
             for content in contents:
                 content_list.append(content.content_object)
         return content_list
@@ -92,9 +90,9 @@ class UserCreateCollect(BaseCreateContent):
 
     def get_recent_vote_content(self):
         '''获取最近点赞的内容'''
-        ac_votes = ACVote.objects.filter(user_id=self.user.uid)[self.offset:self.offset + self.limit]
+        ac_votes = ACVote.objects.filter(user_id=self.user.uid)
         contents = [v.content_object for v in ac_votes]
-        article_vote = ArticleVote.objects.filter(user_id=self.user.uid)[self.offset:self.offset + self.limit]
+        article_vote = ArticleVote.objects.filter(user_id=self.user.uid)
         article_contents = [v.content_object for v in article_vote]
         contents.extend(article_contents)
         return contents
@@ -126,14 +124,14 @@ class GetFinalLabel(UserCreateArticle, UserCreateCollect):
     def get_user_followed_label_dict(self):
         '''获取用户关注的标签字典'''
         followed_labels_dict = dict()
-        followed_labels = Label.objects.filter(labelfollow__user_id=self.user.uid)[self.offset:self.offset + self.limit]
+        followed_labels = Label.objects.filter(labelfollow__user_id=self.user.uid).only('id')
         for f in followed_labels:
             followed_labels_dict[f.id] = 1
         return followed_labels_dict
 
     def get_user_no_followed_label(self):
         '''获取用户未关注的标签列表'''
-        labels = Label.objects.exclude(labelfollow__user_id=self.user.uid)[self.offset:self.offset + self.limit]
+        labels = Label.objects.exclude(labelfollow__user_id=self.user.uid)
         ls = [l for l in labels]
         return ls
 
@@ -161,33 +159,75 @@ class InLabelContent(BaseCreateContent):
 
     def get_label_question(self, label):
         '''问题'''
-        questions = [q for q in
-                     label.question_set.all().order_by('-create_at')[self.offset:self.offset + self.limit]]
+        questions = [q for q in label.question_set.all().order_by('-create_at')[:50]]
+        # print('标签下的所有问题', questions)
         return questions
 
     def get_lable_article(self, label):
         '''文章'''
-        articles = [a for a in label.article_set.filter(status='published', is_deleted=False).exclude(
-            user_id=self.user.uid).order_by('-create_at')[self.offset:self.offset + self.limit]]
-        return articles
+        # articles = [a for a in label.article_set.filter(status='published', is_deleted=False).exclude(
+        #     user_id=self.user.uid, ).order_by('-create_at')[:50] if not a.vote.filter(user_id=self.user.uid).exists()]
+        # print('标签下的所有文章', articles)
+        article_list = list()
+        new_offset = math.floor(self.offset * 0.3)
+        new_limit = math.ceil(self.limit * 0.3)
+        for article in label.article_set.filter(status='published', is_deleted=False).exclude(
+                user_id=self.user.uid, ).order_by('-create_at').select_related().only('vote', 'mark',)[new_offset:new_offset+new_limit]:
+
+            # 点过赞
+            if article.vote.filter(user_id=self.user.uid).exists():
+                continue
+
+            # 收藏过
+            if article.mark.filter(favorite__in=self.user.favorites.all()).exists():
+                continue
+
+            # 评论过
+            if article.articlecomment_set.filter(user_id=self.user.uid).exists():
+                continue
+            article_list.append(article)
+
+        return article_list
 
     def get_question_answer(self, question):
         '''回答'''
-        answer = [a for a in question.answer_set.exclude(user_id=self.user.uid).order_by('-create_at')[
-                             self.offset:self.offset + self.limit]]
-        return answer
+        answer_list = list()
+        new_offset = math.floor(self.offset * 0.5)
+        new_limit = math.ceil(self.limit * 0.5)
+        # answer = [a for a in question.answer_set.exclude(user_id=self.user.uid).order_by('-create_at')[:100]]
+        for a in question.answer_set.exclude(user_id=self.user.uid).order_by('-create_at').select_related().only('vote', 'collect', 'comment')[new_offset:new_offset+new_limit]:
+            # 点过赞
+            if a.vote.filter(user_id=self.user.uid).exists():
+                continue
+
+            # 收藏过
+            if a.collect.filter(favorite__in=self.user.favorites.all()).exists():
+                continue
+
+            # 评论过
+            if a.comment.filter(user_id=self.user.uid).exists():
+                continue
+            answer_list.append(a)
+        return answer_list
 
     def get_content_list(self, label):
         '''整合内容：文章30%，回答50%'''
         # content_list = self.get_lable_article(label)
-        random_length = math.ceil(self.limit * 0.3)
-        data_list = self.get_lable_article(label)
-        content_list = random.sample(data_list, random_length) if len(data_list) > random_length else data_list
+        content_list = list()
         for questoin in self.get_label_question(label):
-            random_length = self.limit * 0.5
+            # random_length = math.ceil(self.limit * 0.5)
             answer_list = self.get_question_answer(questoin)
-            answers = random.sample(answer_list, random_length) if len(answer_list) > random_length else answer_list
-            content_list.extend(answers)
+            # answers = random.sample(answer_list, random_length) if len(answer_list) >= random_length else answer_list
+            content_list.extend(answer_list)
+
+        # random_length = math.ceil(self.limit * 0.3)
+        # print('随机文章数量', random_length)
+        articles = self.get_lable_article(label)
+
+        # article_list = random.sample(articles, random_length) if len(articles) >= random_length else articles
+        content_list.extend(articles)
+        # print(content_list, '标签下的内容')
+        # print(label, '标签')
         return content_list
 
     def get_finally_data(self):
@@ -197,25 +237,46 @@ class InLabelContent(BaseCreateContent):
         finally_label = GetFinalLabel(self.user, self.offset, self.limit)
         finally_label_dict = finally_label.get_labels_dict()
         no_labels = finally_label.get_user_no_followed_label()
-
         data_list = list()
-        while len(data_list) <= self.limit:
-            if len(finally_label_dict) > 1 and len(data_list) < self.limit:
+
+        while len(data_list) < math.ceil((self.offset + self.limit) * 0.8):
+            if len(finally_label_dict) > 0:
                 max_label_id = max(finally_label_dict, key=finally_label_dict.get)
                 label = Label.objects.get(pk=max_label_id)
                 data_list.extend(self.get_content_list(label))
                 finally_label_dict.pop(max_label_id)
-
-            if len(finally_label_dict) <= 1 and len(data_list) < self.limit or len(data_list) > self.limit * 0.8:
-                # 从其他标签下获取一个内容
-                print(no_labels)
+            else:
                 if not len(no_labels):
                     break
                 no_label = random.choice(no_labels)
                 no_labels.remove(no_label)
                 data_list.extend(self.get_content_list(no_label))
-            data_list = list(set(data_list))
-        return data_list
+
+            data_list = sorted(set(data_list), key=data_list.index)
+
+        while len(data_list) < self.offset + self.limit:
+            if not len(no_labels):
+                break
+            no_label = random.choice(no_labels)
+            no_labels.remove(no_label)
+            data_list.extend(self.get_content_list(no_label))
+            data_list = sorted(set(data_list), key=data_list.index)
+
+        # 对列表去重，并且不改变列表顺序
+        # data_list = sorted(set(data_list), key=data_list.index)
+        # print(data_list)
+        from django.core.cache import cache
+        cache_data = cache.get(self.user.uid) or list()
+        cache_data.extend(data_list)
+        cache_data = sorted(set(cache_data), key=cache_data.index)
+        if not cache.get(self.user.uid) or self.offset == 0:
+            cache.set(self.user.uid, data_list, 60)
+        else:
+            cache.set(self.user.uid, cache_data, 60)
+        data_list = cache_data
+        # data = random.sample(data_list, self.limit) if len(data_list) > self.limit else data_list
+        data = data_list[self.offset:self.offset + self.limit]
+        return data
 
 
 from apps.userpage.serializers import UserPageArticleSerializer, UserPageAnswerSerializer

@@ -41,6 +41,9 @@ class ArticleView(CustomAPIView):
     def put(self, request):
         """更新文章，成品不能改为草稿"""
 
+        labels = request.data.getlist('labels')
+        labels = labels[0].split(",")
+
         user_id = request._request.uid
         article = Article.objects.filter(pk=request.data.get("id", None), is_deleted=False).first()
         if not article:
@@ -55,7 +58,7 @@ class ArticleView(CustomAPIView):
             "content": request.data.get("content", None),  # 注意HTML转义
             "image": request.data.get("image", ""),
             "status": request.data.get("status", "draft"),
-            "labels": request.data.getlist("labels", []),
+            "labels": labels,
         }
         s = ArticleCreateSerializer(data=data)
         s.is_valid()
