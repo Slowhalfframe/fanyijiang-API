@@ -6,7 +6,7 @@ class Label(models.Model):
     name = models.CharField(max_length=20, unique=True, null=False, verbose_name="标签名称")  # 无重复标签
     intro = models.TextField(null=False, verbose_name="标签介绍")
     create_at = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
-    children = models.ManyToManyField(to="self", symmetrical=False, verbose_name="子标签")
+    children = models.ManyToManyField(to="self", symmetrical=False, verbose_name="子标签",blank=True)
 
     class Meta:
         db_table = "db_labels"

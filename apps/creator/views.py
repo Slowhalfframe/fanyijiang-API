@@ -876,14 +876,17 @@ class CreatorListAPIView(CustomAPIView):
                     data['score'] = content.score
 
                 if content_type == 'article':
-                    article = Article.objects.get(pk=data['id'], is_deleted=False)
-                    data['title'] = article.title
-                    user = UserProfile.objects.get(uid=article.user_id)
-                    user_data = {'avatar': user.avatar, 'nickname': user.nickname}
-                    data['author_data'] = user_data
-                    data['score'] = content.score
-                data['content_type'] = content_type
-                creator_list.append(data)
+                    try:
+                        article = Article.objects.get(pk=data['id'], is_deleted=False)
+                        data['title'] = article.title
+                        user = UserProfile.objects.get(uid=article.user_id)
+                        user_data = {'avatar': user.avatar, 'nickname': user.nickname}
+                        data['author_data'] = user_data
+                        data['score'] = content.score
+                    except Article.DoesNotExist as e:
+                        pass
+                    data['content_type'] = content_type
+                    creator_list.append(data)
             return self.success(creator_list)
 
         else:

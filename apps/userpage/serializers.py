@@ -320,7 +320,7 @@ class UserPageThinksSerializer(serializers.ModelSerializer):
         my_vote = obj.agree.filter(user_id=me.uid).first()
         if not my_vote:
             return None
-        return my_vote.value
+        return True
 
 
 class UserPageLabelSerializer(serializers.ModelSerializer):
