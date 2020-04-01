@@ -30,6 +30,7 @@ urlpatterns = [
     url(r"^api/articles/", include("apps.articles.urls", namespace="articles")),
     url(r"^api/v2/articles/", include("apps.articles_v2.urls", namespace="articles_v2")),
     url(r"^api/ideas/", include("apps.ideas.urls", namespace="ideas")),
+    url(r"^api/v2/pins/", include("apps.pins.urls", namespace="pins")),
     url(r"^api/creator/", include("apps.creator.urls", namespace="creator")),
     url(r"^api/notifications/", include("apps.notifications.urls", namespace="notifications")),
     url(r"^api/search/", include("apps.search.urls", namespace="search")),
