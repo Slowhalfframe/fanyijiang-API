@@ -34,7 +34,7 @@ class IdeaChecker(serializers.ModelSerializer):
         try:
             image_paths = json.loads(value)
         except json.JSONDecodeError:
-            raise serializers.ValidationError("无效的json字符串")
+            image_paths = value.split(",")  # 可能是逗号分隔的多个路径
         if not isinstance(image_paths, (list, str)):
             raise serializers.ValidationError("无效的json数据")
         if isinstance(image_paths, str):
