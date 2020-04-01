@@ -33,3 +33,5 @@ HAYSTACK_CONNECTIONS = {
         'INDEX_NAME': 'fanyijiang',  # 指定elasticsearch建立的索引库的名称
     },
 }
+# 实时更新索引
+HAYSTACK_SIGNAL_PROCESSOR = 'haystack.signals.RealtimeSignalProcessor'
