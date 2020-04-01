@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 
@@ -33,6 +34,10 @@ class Question(BaseModel):
     def kind(self):
         return "question"
 
+    @property
+    def url(self):
+        return settings.FRONT_HOST + "/question/" + str(self.pk) + "/"
+
 
 class Answer(BaseModel):
     """问题的回答，每个问题每个用户只能正式回答一次，但可以修改或有多个草稿"""
@@ -60,6 +65,10 @@ class Answer(BaseModel):
     @property
     def kind(self):
         return "answer"
+
+    @property
+    def url(self):
+        return settings.FRONT_HOST + "/question/" + str(self.question.pk) + "/answer/" + str(self.pk) + "/"
 
 
 class QuestionFollow(BaseModel):

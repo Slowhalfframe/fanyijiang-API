@@ -51,7 +51,7 @@ class StatLabelSerializer(BasicLabelSerializer):
 
     follower_count = serializers.IntegerField(source="followers.count")
     question_count = serializers.SerializerMethodField()
-    article_count = serializers.SerializerMethodField()  # TODO 文章个数
+    article_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Label
@@ -61,7 +61,7 @@ class StatLabelSerializer(BasicLabelSerializer):
         return obj.question_set.filter(is_deleted=False).count()
 
     def get_article_count(self, obj):
-        return 145  # TODO 改成真实数据
+        return obj.article_set.filter(is_deleted=False, is_draft=False).count()
 
 
 class MeLabelSerializer(StatLabelSerializer):

@@ -68,12 +68,13 @@ class StatArticleSerializer(BasicArticleSerializer):
 
     comment_count = serializers.SerializerMethodField()
     vote_count = serializers.SerializerMethodField()
+    follower_count = serializers.IntegerField(source="followers.count")
 
-    # TODO 阅读数，关注者个数
+    # TODO 阅读数
 
     class Meta:
         model = Article
-        fields = BasicArticleSerializer.Meta.fields + ("comment_count", "vote_count",)
+        fields = BasicArticleSerializer.Meta.fields + ("comment_count", "vote_count", "follower_count",)
 
     def get_comment_count(self, obj):
         return obj.comments.filter(is_deleted=False).count()
@@ -87,12 +88,12 @@ class MeArticleSerializer(StatArticleSerializer):
 
     is_voted = serializers.SerializerMethodField()  # 未投票，或票值
     is_commented = serializers.SerializerMethodField()
+    is_followed = serializers.SerializerMethodField()
 
     # TODO 是否增加is_me，表示登录者即作者？需要重写author属性
-    # TODO 是否关注
     class Meta:
         model = Article
-        fields = StatArticleSerializer.Meta.fields + ("is_voted", "is_commented",)
+        fields = StatArticleSerializer.Meta.fields + ("is_voted", "is_commented", "is_followed",)
 
     def get_is_voted(self, obj):
         me = self.context.get("me")
@@ -108,3 +109,9 @@ class MeArticleSerializer(StatArticleSerializer):
         if me is None:
             return False
         return obj.comments.filter(author=me, is_deleted=False).exists()
+
+    def get_is_followed(self, obj):
+        me = self.context.get("me")
+        if me is None:
+            return False
+        return obj.followers.filter(pk=me.pk).exists()

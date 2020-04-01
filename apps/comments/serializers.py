@@ -1,3 +1,4 @@
+from django.conf import settings
 from rest_framework import serializers
 
 from apps.userpage.models import UserProfile
@@ -16,7 +17,7 @@ class BasicUserSerializer(serializers.ModelSerializer):
         fields = ("id", "type", "slug", "nickname", "gender", "avatar", "autograph", "homepage",)
 
     def get_homepage(self, obj):
-        return ""  # TODO 用户主页的地址
+        return settings.FRONT_HOST + "/people/" + obj.slug + "/"
 
 
 class CommentChecker(serializers.ModelSerializer):

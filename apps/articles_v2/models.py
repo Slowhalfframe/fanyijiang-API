@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 
@@ -37,6 +38,10 @@ class Article(BaseModel):
     @property
     def kind(self):
         return "answer"
+
+    @property
+    def url(self):
+        return settings.FRONT_HOST + "/article/p/" + str(self.pk) + "/"
 
 
 class ArticleFollow(BaseModel):
