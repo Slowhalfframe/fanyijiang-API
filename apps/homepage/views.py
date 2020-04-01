@@ -281,6 +281,103 @@ class InLabelContent(BaseCreateContent):
         return data
 
 
+class VisitorContent(object):
+
+    def __init__(self, request, offset, limit):
+        self.offset = int(offset)
+        self.limit = int(limit)
+        self.request = request
+
+    def get_labels(self):
+        label_list = [l for l in Label.objects.all()]
+        return label_list
+
+    def get_label_question(self, label):
+        '''问题'''
+        questions = label.question_set.all()[:20]
+        # print('标签下的所有问题', questions)
+        return questions
+
+    def get_lable_article(self, label):
+        '''文章'''
+        # articles = [a for a in label.article_set.filter(status='published', is_deleted=False).exclude(
+        #     user_id=self.user.uid, ).order_by('-create_at')[:50] if not a.vote.filter(user_id=self.user.uid).exists()]
+        # print('标签下的所有文章', articles)
+        article_list = list()
+        for article in label.article_set.filter(status='published', is_deleted=False).select_related().order_by('-create_at')[
+                       :self.offset + self.limit]:
+            article_list.append(article)
+        return article_list
+
+    def get_question_answer(self, question):
+        '''回答'''
+        answer_list = list()
+        # answer = [a for a in question.answer_set.exclude(user_id=self.user.uid).order_by('-create_at')[:100]]
+        for a in question.answer_set.all().order_by('-create_at').select_related()[:self.offset + self.limit]:
+            answer_list.append(a)
+        return answer_list
+
+    def get_content_list(self, label):
+        '''整合内容：文章30%，回答50%'''
+        # content_list = self.get_lable_article(label)
+        content_list = list()
+        # print(self.get_label_question(label), '遇到问题！！！')
+        for questoin in self.get_label_question(label):
+            # random_length = math.ceil(self.limit * 0.5)
+            # print('我提出的问题！！！！！！！！！！！！！11', questoin)
+            answer_list = self.get_question_answer(questoin)
+            # print(answer_list, '回答的问题！！！！！')
+            # answers = random.sample(answer_list, random_length) if len(answer_list) >= random_length else answer_list
+            content_list.extend(answer_list)
+
+        # random_length = math.ceil(self.limit * 0.3)
+        # print('随机文章数量', random_length)
+        articles = self.get_lable_article(label)
+
+        # article_list = random.sample(articles, random_length) if len(articles) >= random_length else articles
+        content_list.extend(articles)
+        # print(content_list, '标签下的内容')
+        # print(label, '标签')
+        # print(content_list, '标签下的内容')
+        return content_list
+
+    def get_finally_data(self):
+        '''生成最终返回数据
+            由用户行为产生的数据占比80%，其他内容为20%
+        '''
+
+        no_labels = self.get_labels()
+        data_list = list()
+
+        while len(data_list) < self.offset + self.limit:
+            # print(22222222222222)
+            if not len(no_labels):
+                break
+            no_label = random.choice(no_labels)
+            no_labels.remove(no_label)
+            data_list.extend(self.get_content_list(no_label))
+            data_list = sorted(set(data_list), key=data_list.index)
+
+        # 对列表去重，并且不改变列表顺序
+        # data_list = sorted(set(data_list), key=data_list.index)
+        # print(data_list)
+        remote_addr = self.request.META.get('REMOTE_ADDR')
+        from django.core.cache import cache
+        cache_data = cache.get(remote_addr) or list()
+        cache_data.extend(data_list)
+        cache_data = sorted(set(cache_data), key=cache_data.index)
+        if not cache.get(remote_addr) or self.offset == 0:
+            cache.set(remote_addr, data_list, 60)
+        else:
+            cache.set(remote_addr, cache_data, 60)
+        data_list = cache_data
+        # print(data_list)
+        # data = random.sample(data_list, self.limit) if len(data_list) > self.limit else data_list
+        data = data_list[self.offset:self.offset + self.limit]
+        return data
+
+
+
 from apps.userpage.serializers import UserPageArticleSerializer, UserPageAnswerSerializer
 
 
@@ -289,12 +386,16 @@ class HomePageRecommendAPIView(CustomAPIView):
 
     def get(self, request):
         user = self.get_user_profile(request)
-        if not user:
-            print('用户验证失败！！！！')
-            return self.error('error', 401)
+        # if not user:
+        #     print('用户验证失败！！！！')
+        #     return self.error('error', 401)
         offset = int(request.GET.get('offset', 0))
         limit = int(request.GET.get('limit', 10))
-        data_list = InLabelContent(user, offset, limit).get_finally_data()
+        if not user:
+            data_list = VisitorContent(request, offset, limit).get_finally_data()
+        else:
+            data_list = InLabelContent(user, offset, limit).get_finally_data()
+
         data = list()
         for obj in data_list:
             if isinstance(obj, Article):
@@ -311,7 +412,7 @@ class HomePageFollowContentAPIView(CustomAPIView):
     def get(self, request):
         user = self.get_user_profile(request)
         if not user:
-            return self.error('error', 401)
+            return self.success([], 0)
         offset = int(request.GET.get('offset', 0))
         limit = int(request.GET.get('limit', 20))
         idol_users = UserProfile.objects.filter(as_idol__fans=user)[offset:offset + limit]
@@ -339,7 +440,10 @@ class WaitAnswerAPIView(CustomAPIView):
         offset = request.GET.get('offset', 0)
         limit = request.GET.get('limit', 20)
         recommend = RecommendQuestion(user, offset, limit)
-        questions = recommend.get_finally_question()
+        if not user:
+            questions = [q for q in Question.objects.all()[offset:offset + limit]]
+        else:
+            questions = recommend.get_finally_question()
         data = recommend.get_json_data(questions)
         return self.success(data)
 
@@ -349,8 +453,7 @@ class HomePageCreatorAPIView(CustomAPIView):
         from apps.creator.views import TotalNums
         user = self.get_user_profile(request)
         if not user:
-            return self.error('error', 401)
-
+            return self.success({'ysd_read_nums': 0, 'ysd_upvote': 0})
         # 阅读量
         total_instance = TotalNums(user)
         # 昨日总阅读量
