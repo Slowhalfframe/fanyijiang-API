@@ -23,10 +23,13 @@ class QuestionView(CustomAPIView):
         """提问"""
 
         user_id = request._request.uid  # TODO 提问的权限
+        labels = request.data.getlist("labels", [])
+        if len(labels) == 1:
+            labels = labels[0].split(",")
         data = {
             "title": request.data.get("title", None),
             "content": request.data.get("content", ""),
-            "labels": request.data.getlist("labels", []),
+            "labels": labels,
             "user_id": user_id
         }
         s = QuestionCreateSerializer(data=data)
