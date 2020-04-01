@@ -25,7 +25,7 @@ class UserInfoSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = ('uid', 'nickname', 'avatar', 'autograph', 'gender', 'industry',
                   'employment_history', 'education_history', 'locations',
-                  'description', 'slug')
+                  'description', 'slug', 'page_image')
 
     def get_employment_history(self, obj):
         history = obj.user_employment_history.all()

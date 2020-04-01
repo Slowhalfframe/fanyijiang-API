@@ -171,6 +171,22 @@ class UcUpdateAPIView(CustomAPIView):
         return self.success()
 
 
+class UserPageImagePUTAPIView(CustomAPIView):
+    '''更新个人主页图片'''
+    @validate_identity
+    def put(self, request):
+        user_id = request._request.uid
+        user = UserProfile.objects.get(pk=user_id)
+        if not user:
+            return self.error('error', 401)
+
+        page_image = request.data.get('page_image', None)
+        if page_image:
+            user.page_image = page_image
+            return self.success('success')
+        return self.error('无效的数据', 100003)
+
+
 class HoverUserInfoAPIView(CustomAPIView):
     '''但鼠标放在用户头像上时，显示用户部分信息'''
 

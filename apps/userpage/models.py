@@ -32,6 +32,8 @@ class UserProfile(models.Model):
 
     # slug
     slug = models.SlugField(max_length=150, null=True, blank=True, verbose_name='(URL)别名', unique=True)
+    
+    page_image = models.CharField(max_length=100, verbose_name='主页图片', null=True, blank=True)
 
     class Meta:
         db_table = 'db_user_profile'
