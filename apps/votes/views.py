@@ -1,5 +1,6 @@
 from apps.articles_v2.models import Article
 from apps.comments.models import Comment
+from apps.pins.models import Idea
 from apps.questions_v2.models import Answer
 from apps.utils import errorcode
 from apps.utils.api import CustomAPIView
@@ -10,7 +11,7 @@ MAPPINGS = {
     "answer": Answer,
     "comment": Comment,
     "article": Article,
-    # TODO 文章和想法等其他可投票对象
+    "idea": Idea,
 }
 
 
@@ -30,9 +31,10 @@ class VoteView(CustomAPIView):
         if hasattr(model, "is_draft") and instance.is_draft:
             return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
         # TODO 能给自己投票吗？
-        data = {
-            "value": request.data.get("value"),
-        }
+        if model == Idea:  # 想法只接受赞成票
+            data = {"value": True}
+        else:
+            data = {"value": request.data.get("value"), }
         checker = VoteChecker(data=data)
         checker.is_valid()
         if checker.errors:
