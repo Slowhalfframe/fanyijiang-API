@@ -101,7 +101,7 @@ class ArticleDetailSerializer(serializers.ModelSerializer):
         return data
 
     def get_vote_count(self, obj):
-        return obj.vote.filter(value=True).count() - obj.vote.filter(value=False).count()
+        return obj.vote.filter(value=True).count()
 
     def get_comment_count(self, obj):
         return obj.articlecomment_set.count()
@@ -162,7 +162,7 @@ class ArticleCommentSerializer(serializers.ModelSerializer):
         return value
 
     def get_vote_count(self, obj):
-        return obj.vote.filter(value=True).count() - obj.vote.filter(value=False).count()
+        return obj.vote.filter(value=True).count()
 
     def get_voted(self, obj: ArticleComment):
         me = self.context["me"]
