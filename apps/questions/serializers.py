@@ -283,25 +283,17 @@ class AnswerWithAuthorInfoSerializer(serializers.ModelSerializer):
             me = self.context["me"]
         else:
             me = obj.me
-        if not me:  # 为未登录用户返回粗糙的数据
-            data = {
-                "nickname": "旗渡用户",
-                "avatar": None,
-                "autograph": None,
-                "slug": None,
-            }
-        else:
-            author = UserProfile.objects.get(uid=obj.user_id)
-            data = {
-                "nickname": author.nickname,
-                "avatar": author.avatar,
-                "autograph": author.autograph,
-                "slug": author.slug,
-                "answer_count": Answer.objects.filter(user_id=author.uid).count(),
-                "article_count": Article.objects.filter(user_id=author.uid, is_deleted=False).count(),
-                "follower_count": author.as_idol.count(),
-                "i_followed_author": FollowedUser.objects.filter(fans=me, idol=author).exists()
-            }
+        author = UserProfile.objects.get(uid=obj.user_id)
+        data = {
+            "nickname": author.nickname,
+            "avatar": author.avatar,
+            "autograph": author.autograph,
+            "slug": author.slug,
+            "answer_count": Answer.objects.filter(user_id=author.uid).count(),
+            "article_count": Article.objects.filter(user_id=author.uid, is_deleted=False).count(),
+            "follower_count": author.as_idol.count(),
+            "i_followed_author": FollowedUser.objects.filter(fans=me, idol=author).exists()
+        }
         return data
 
 
