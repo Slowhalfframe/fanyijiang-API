@@ -10,4 +10,6 @@ urlpatterns = [
     url(r"^relations/(?P<pk>\d+)$", views.ChildLabelView.as_view(), name="child"),
     url(r"^follows/$", views.LabelFollowView.as_view(), name="follows"),
     url(r"^search/$", views.LabelSearchView.as_view(), name="search"),
+    url(r"^wander/$", views.LabelWanderView.as_view(), name="wander"),
+    url(r"^advice/$", views.AdviceLabelView.as_view(), name="advice"),
 ]

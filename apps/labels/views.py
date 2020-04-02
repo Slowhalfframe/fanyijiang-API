@@ -1,11 +1,13 @@
+import random
+
 from django.db.models import Q
 
+from apps.questions.serializers import QuestionInLabelDiscussSerializer
+from apps.utils import errorcode
 from apps.utils.api import CustomAPIView
 from apps.utils.decorators import validate_identity
-from apps.utils import errorcode
-from apps.questions.serializers import QuestionInLabelDiscussSerializer
-from .serializers import LabelCreateSerializer, ChildLabelSerializer, LabelUpdateSerializer, LabelDetailSerializer
 from .models import Label, LabelFollow
+from .serializers import LabelCreateSerializer, ChildLabelSerializer, LabelUpdateSerializer, LabelDetailSerializer
 
 
 class LabelView(CustomAPIView):
@@ -189,4 +191,47 @@ class LabelSearchView(CustomAPIView):
             "item_count": i.article_set.filter(is_deleted=False, status="published").count() + i.question_set.count(),
             "is_followed": False if not me else LabelFollow.objects.filter(label=i, user_id=me.uid).exists()
         } for i in labels]
+        return self.success(data)
+
+
+class LabelWanderView(CustomAPIView):
+    def get(self, request):
+        """从所有标签里随机展示一批"""
+
+        me = self.get_user_profile(request)
+        qs = Label.objects.all()
+        if qs.count() > 4:
+            labels = random.sample(list(qs), 4)
+        else:
+            labels = list(qs)
+        data = [{
+            "id": i.pk,
+            "name": i.name,
+            "intro": i.intro,
+            "follower_count": LabelFollow.objects.filter(label=i).count(),
+            "item_count": i.article_set.filter(is_deleted=False, status="published").count() + i.question_set.count(),
+            "is_followed": False if not me else LabelFollow.objects.filter(label=i, user_id=me.uid).exists()
+        } for i in labels]
+        return self.success(data)
+
+
+class AdviceLabelView(CustomAPIView):
+    def get(self, request):
+        """根据用户的标题提供一些可能的标签"""
+
+        title = request.query_params.get("title", "")
+        if not title:
+            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
+        advice = []
+        # 标题一般来说有一定长度，标签的名称一般来说较短
+        qs1 = Label.objects.filter(name__in=title, question__isnull=False)
+        if qs1.count() > 3:
+            advice = random.sample(list(qs1), 3)
+        elif qs1.exists():
+            advice = list(qs1)
+        data = [{
+            "id": i.pk,
+            "name": i.name,
+            "intro": i.intro,
+        } for i in advice]
         return self.success(data)
