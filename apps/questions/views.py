@@ -263,17 +263,16 @@ class InvitationView(CustomAPIView):
         s.is_valid()
         if s.errors:
             return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
-        s.validated_data["status"] = 0  # 未回答
+        s.validated_data["status"] = 0
         try:
             instance = s.create(s.validated_data)
         except Exception as e:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
-        s = InviteCreateSerializer(instance=instance)
 
         # TODO 发送消息通知
         question = Question.objects.filter(pk=data.get('question')).first()
-        notification_handler.delay(instance.inviting, instance.invited, 'I', question.id)
-        return self.success(s.data)
+        # notification_handler.delay(instance.inviting, instance.invited, 'I', question.id)
+        return self.success()
 
     @validate_identity
     def delete(self, request):
