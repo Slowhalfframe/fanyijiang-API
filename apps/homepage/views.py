@@ -43,7 +43,7 @@ class UserCreateArticle(BaseCreateContent):
     def get_user_article(self):
         '''用户创作的文章'''
 
-        articles = [a for a in Article.objects.filter(user_id=self.user.uid).order_by('-create_at')]
+        articles = [a for a in Article.objects.filter(user_id=self.user.uid)]
         return articles
 
     def get_article_label_hash(self):
@@ -54,7 +54,9 @@ class UserCreateArticle(BaseCreateContent):
 
     def get_user_answer_question(self):
         '''获取用户发表回答的问题'''
-        questions = [a.question for a in Answer.objects.filter(user_id=self.user.uid).select_related('question').order_by('-create_at')]
+        questions = [a.question for a in Answer.objects.filter(user_id=self.user.uid).select_related('question')]
+        launch_q = [q for q in Question.objects.filter(user_id=self.user.uid)]
+        questions.extend(launch_q)
         return questions
 
     def get_answer_label_hash(self):
@@ -159,7 +161,7 @@ class InLabelContent(BaseCreateContent):
 
     def get_label_question(self, label):
         '''问题'''
-        questions = [q for q in label.question_set.all().order_by('-create_at')[:50]]
+        questions = label.question_set.all()[:20]
         # print('标签下的所有问题', questions)
         return questions
 
@@ -169,10 +171,8 @@ class InLabelContent(BaseCreateContent):
         #     user_id=self.user.uid, ).order_by('-create_at')[:50] if not a.vote.filter(user_id=self.user.uid).exists()]
         # print('标签下的所有文章', articles)
         article_list = list()
-        new_offset = math.floor(self.offset * 0.3)
-        new_limit = math.ceil(self.limit * 0.3)
         for article in label.article_set.filter(status='published', is_deleted=False).exclude(
-                user_id=self.user.uid, ).order_by('-create_at').select_related().only('vote', 'mark',)[new_offset:new_offset+new_limit]:
+                user_id=self.user.uid, ).select_related().order_by('-create_at').only('vote', 'mark',)[:self.offset+self.limit]:
 
             # 点过赞
             if article.vote.filter(user_id=self.user.uid).exists():
@@ -192,11 +192,10 @@ class InLabelContent(BaseCreateContent):
     def get_question_answer(self, question):
         '''回答'''
         answer_list = list()
-        new_offset = math.floor(self.offset * 0.5)
-        new_limit = math.ceil(self.limit * 0.5)
         # answer = [a for a in question.answer_set.exclude(user_id=self.user.uid).order_by('-create_at')[:100]]
-        for a in question.answer_set.exclude(user_id=self.user.uid).order_by('-create_at').select_related().only('vote', 'collect', 'comment')[new_offset:new_offset+new_limit]:
+        for a in question.answer_set.exclude(user_id=self.user.uid).order_by('-create_at').select_related().only('vote', 'collect', 'comment')[:self.offset+self.limit]:
             # 点过赞
+            # print('遇到回答！！！', a)
             if a.vote.filter(user_id=self.user.uid).exists():
                 continue
 
@@ -214,9 +213,12 @@ class InLabelContent(BaseCreateContent):
         '''整合内容：文章30%，回答50%'''
         # content_list = self.get_lable_article(label)
         content_list = list()
+        # print(self.get_label_question(label), '遇到问题！！！')
         for questoin in self.get_label_question(label):
             # random_length = math.ceil(self.limit * 0.5)
+            # print('我提出的问题！！！！！！！！！！！！！11', questoin)
             answer_list = self.get_question_answer(questoin)
+            # print(answer_list, '回答的问题！！！！！')
             # answers = random.sample(answer_list, random_length) if len(answer_list) >= random_length else answer_list
             content_list.extend(answer_list)
 
@@ -228,6 +230,7 @@ class InLabelContent(BaseCreateContent):
         content_list.extend(articles)
         # print(content_list, '标签下的内容')
         # print(label, '标签')
+        # print(content_list, '标签下的内容')
         return content_list
 
     def get_finally_data(self):
@@ -240,21 +243,19 @@ class InLabelContent(BaseCreateContent):
         data_list = list()
 
         while len(data_list) < math.ceil((self.offset + self.limit) * 0.8):
+            # print('11111111111111')
             if len(finally_label_dict) > 0:
                 max_label_id = max(finally_label_dict, key=finally_label_dict.get)
                 label = Label.objects.get(pk=max_label_id)
                 data_list.extend(self.get_content_list(label))
                 finally_label_dict.pop(max_label_id)
-            else:
-                if not len(no_labels):
-                    break
-                no_label = random.choice(no_labels)
-                no_labels.remove(no_label)
-                data_list.extend(self.get_content_list(no_label))
+                data_list = sorted(set(data_list), key=data_list.index)
 
-            data_list = sorted(set(data_list), key=data_list.index)
+            else:
+                break
 
         while len(data_list) < self.offset + self.limit:
+            # print(22222222222222)
             if not len(no_labels):
                 break
             no_label = random.choice(no_labels)
@@ -274,6 +275,7 @@ class InLabelContent(BaseCreateContent):
         else:
             cache.set(self.user.uid, cache_data, 60)
         data_list = cache_data
+        # print(data_list)
         # data = random.sample(data_list, self.limit) if len(data_list) > self.limit else data_list
         data = data_list[self.offset:self.offset + self.limit]
         return data
@@ -288,6 +290,7 @@ class HomePageRecommendAPIView(CustomAPIView):
     def get(self, request):
         user = self.get_user_profile(request)
         if not user:
+            print('用户验证失败！！！！')
             return self.error('error', 401)
         offset = int(request.GET.get('offset', 0))
         limit = int(request.GET.get('limit', 10))
@@ -299,6 +302,7 @@ class HomePageRecommendAPIView(CustomAPIView):
             if isinstance(obj, Answer):
                 content_data = UserPageAnswerSerializer(obj, context={'me': user}).data
             data.append(content_data)
+        print(data, '推荐内容！！！！！')
         return self.success(data)
 
 
@@ -355,4 +359,6 @@ class HomePageCreatorAPIView(CustomAPIView):
         ysd_read_nums = total_instance.get_date_total_nums(yesterday_str)
         ysd_upvote = total_instance.get_date_total_votes(yesterday_str)
         data = {'ysd_read_nums': ysd_read_nums, 'ysd_upvote': ysd_upvote}
+        # print('昨日阅读数量！！！', data)
+
         return self.success(data)
