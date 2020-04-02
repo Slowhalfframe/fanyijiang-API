@@ -1,5 +1,8 @@
+
+
 import os
 import re
+os.environ['DJANGO_SETTINGS_MODULE'] = 'config.settings.base_setting'
 
 import requests
 from django.conf import settings

@@ -58,19 +58,35 @@ class UserInfoAPIView(CustomAPIView):
                     'description': data['description'], 'slug': data['slug'], 'industry': data['industry']
                 })
                 user.location.all().delete()
-                locations = json.loads(data['locations'])
-                for location in locations:
-                    user.location.update_or_create(name=location['name'])
 
-                user.user_education_history.all().delete()
-                education_history = json.loads(data['education_history'])
-                for education in education_history:
-                    user.user_education_history.create(**education)
+                try:
+                    locations = data['locations']
+                    for location in locations:
+                        user.location.update_or_create(name=location['name'])
 
-                user.user_employment_history.all().delete()
-                employment_history = json.loads(data['employment_history'])
-                for employment in employment_history:
-                    user.user_employment_history.create(**employment)
+                    user.user_education_history.all().delete()
+                    education_history = data['education_history']
+                    for education in education_history:
+                        user.user_education_history.create(**education)
+
+                    user.user_employment_history.all().delete()
+                    employment_history = data['employment_history']
+                    for employment in employment_history:
+                        user.user_employment_history.create(**employment)
+                except:
+                    locations = json.loads(data['locations'])
+                    for location in locations:
+                        user.location.update_or_create(name=location['name'])
+
+                    user.user_education_history.all().delete()
+                    education_history = json.loads(data['education_history'])
+                    for education in education_history:
+                        user.user_education_history.create(**education)
+
+                    user.user_employment_history.all().delete()
+                    employment_history = json.loads(data['employment_history'])
+                    for employment in employment_history:
+                        user.user_employment_history.create(**employment)
 
             except Exception as e:
                 return self.error(e.args, 500)
@@ -183,6 +199,7 @@ class UserPageImagePUTAPIView(CustomAPIView):
         page_image = request.data.get('page_image', None)
         if page_image:
             user.page_image = page_image
+            user.save()
             return self.success('success')
         return self.error('无效的数据', 100003)
 
