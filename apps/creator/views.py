@@ -420,8 +420,7 @@ class RecommendQuestion(object):
 
     def get_label_question(self, label):
         '''获取用户关注的话题下所有未回答过的问题'''
-        questions = label.label.question_set.exclude(answer__user_id=self.user.uid)[
-                    self.offset:self.offset + self.limit]
+        questions = label.label.question_set.exclude(answer__user_id=self.user.uid)[:self.offset + self.limit]
         question_list = [question for question in questions]
         return question_list
 
@@ -451,6 +450,7 @@ class RecommendQuestion(object):
                 label_question = self.get_label_question(label)
                 # 判断是否有问题存在，不存在则从所有问题内添加
                 if len(label_question): questions.extend(label_question)
+                questions = sorted(set(questions), key=questions.index)
 
         q = self.get_all_question()
 
@@ -523,7 +523,8 @@ class RecentCreateContent(object):
         return answer_data
 
     def recent_article(self):
-        articles = Article.objects.filter(user_id=self.user.uid, status='published', is_deleted=False).order_by('create_at')[:3]
+        articles = Article.objects.filter(user_id=self.user.uid, status='published', is_deleted=False).order_by(
+            'create_at')[:3]
         article_data = []
         for article in articles:
             data = dict()
@@ -793,7 +794,8 @@ class SingleDataStatisticsAPIView(CustomAPIView):
 
         if data_type == 'article':
 
-            articles = Article.objects.filter(create_at__gte=begin_da, create_at__lte=end_da, user_id=uid, status='published', is_deleted=False)
+            articles = Article.objects.filter(create_at__gte=begin_da, create_at__lte=end_da, user_id=uid,
+                                              status='published', is_deleted=False)
 
             for article in articles:
                 data = dict()
