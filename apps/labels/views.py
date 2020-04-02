@@ -224,7 +224,7 @@ class AdviceLabelView(CustomAPIView):
             return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
         advice = []
         # 标题一般来说有一定长度，标签的名称一般来说较短
-        qs1 = Label.objects.filter(name__in=title, question__isnull=False)
+        qs1 = Label.objects.filter(name__in=[title], question__isnull=False)
         if qs1.count() > 3:
             advice = random.sample(list(qs1), 3)
         elif qs1.exists():
