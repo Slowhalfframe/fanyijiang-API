@@ -1,6 +1,7 @@
 from apps.articles_v2.models import Article
 from apps.comments.models import Comment
 from apps.comments.serializers import CommentChecker, MeCommentSerializer
+from apps.pins.models import Idea
 from apps.questions_v2.models import Question, Answer
 from apps.utils import errorcode
 from apps.utils.api import CustomAPIView
@@ -11,7 +12,7 @@ MAPPINGS = {
     "answer": Answer,
     "comment": Comment,
     "article": Article,
-    # TODO 文章和想法等其他可评论对象
+    "idea": Idea,
 }
 
 

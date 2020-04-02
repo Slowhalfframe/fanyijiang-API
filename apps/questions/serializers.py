@@ -145,7 +145,7 @@ class QACommentDetailSerializer(serializers.ModelSerializer):
         fields = ("id", "author_info", "receiver_info", "content", "create_at", "voted", "vote_count", "is_author")
 
     def get_vote_count(self, obj):
-        return obj.vote.filter(value=True).count() - obj.vote.filter(value=False).count()
+        return obj.vote.filter(value=True).count()
 
     def get_author_info(self, obj):
         author = UserProfile.objects.get(uid=obj.user_id)
@@ -195,7 +195,7 @@ class AnswerInLabelDiscussSerializer(serializers.ModelSerializer):
         )
 
     def get_vote_count(self, obj):
-        return obj.vote.filter(value=True).count() - obj.vote.filter(value=False).count()
+        return obj.vote.filter(value=True).count()
 
     def get_comment_count(self, obj):
         return obj.comment.count()
@@ -261,7 +261,7 @@ class AnswerWithAuthorInfoSerializer(serializers.ModelSerializer):
         fields = ("id", "content", "vote_count", "comment_count", "i_agreed", "create_at", "author_info")
 
     def get_vote_count(self, obj):
-        return obj.vote.filter(value=True).count() - obj.vote.filter(value=False).count()
+        return obj.vote.filter(value=True).count()
 
     def get_comment_count(self, obj):
         return obj.comment.count()
@@ -326,6 +326,7 @@ class TwoAnswersSerializer(serializers.Serializer):
             "followed": followed,
         }
         return data
+
 
 class SearchAnswersSerializer(serializers.Serializer):
     question = serializers.SerializerMethodField()

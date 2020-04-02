@@ -168,7 +168,8 @@ class LabelDiscussView(CustomAPIView):
         if not label:
             return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
         me = self.get_user_profile(request)
-        questions = label.question_set.filter(answer__isnull=False).all()  # TODO 除了要有答案外，还有什么要求？
+        # 这种查询结果可能有重复的，需要自行去重
+        questions = label.question_set.filter(answer__isnull=False).distinct()  # TODO 除了要有答案外，还有什么要求？
         s = QuestionInLabelDiscussSerializer(instance=questions, many=True, context={"me": me})
         return self.success(s.data)
 
