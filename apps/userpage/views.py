@@ -28,7 +28,7 @@ from apps.taskapp.tasks import notification_handler
 from apps.ideas.models import Idea
 
 from apps.creator.views import ArticleVoteStatistics, ArticleCollectStatistics, AnswerVoteStatistics, \
-    AnswerCollectStatistics, ThinkVoteStatistics
+    AnswerCollectStatistics, ThinkVoteStatistics, ThinkCollectStatistics
 
 
 # @method_decorator(validate_token, name='dispatch')
@@ -112,7 +112,8 @@ class UserInfoAPIView(CustomAPIView):
 
         article_collect = ArticleCollectStatistics(user).get_total_collect_nums()
         answer_collect = ArticleCollectStatistics(user).get_total_collect_nums()
-        collect_count = article_collect + answer_collect
+        think_collect = ThinkCollectStatistics(user).get_total_collect_nums()
+        collect_count = article_collect + answer_collect + think_collect
 
         self_achievement = {'upvote_count': upvotes, 'collect_count': collect_count}
         data['self_achievement'] = self_achievement

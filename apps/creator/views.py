@@ -400,6 +400,41 @@ class ThinkVoteStatistics(BaseStatistics):
         return nums
 
 
+# 想法收藏统计
+class ThinkCollectStatistics(BaseStatistics):
+    '''想法收藏统计'''
+
+    def __init__(self, user, which_model=Article):
+        super(ThinkCollectStatistics, self).__init__(user=user, which_model=which_model)
+
+    def get_total_collect_nums(self):
+        queryset = self.get_queryset()
+        nums_list = [query.collect.all().count() for query in queryset]
+        nums = sum(nums_list) or 0
+        return nums
+
+    def get_date_collect_nums(self, date):
+        begin_date = datetime.datetime.strptime(date, '%Y%m%d')
+        end_date = begin_date + datetime.timedelta(days=1)
+        queryset = self.get_queryset()
+        nums_list = [query.collect.filter(create_at__gte=begin_date, create_at__lte=end_date).count() for query in
+                     queryset]
+        nums = sum(nums_list) or 0
+        return nums
+
+    def get_instance_total_nums(self, id):
+        instance = self.get_instance(id)
+        nums = instance.collect.all().count()
+        return nums
+
+    def get_instance_collect_date_nums(self, id, date):
+        begin_date = datetime.datetime.strptime(date, '%Y%m%d')
+        instance = self.get_instance(id)
+        end_date = begin_date + datetime.timedelta(days=1)
+        nums_list = instance.collect.filter(create_at__gte=begin_date, create_at__lte=end_date).count()
+        nums = sum(nums_list) or 0
+        return nums
+
 # 问题推荐
 class RecommendQuestion(object):
     '''

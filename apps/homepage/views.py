@@ -172,7 +172,8 @@ class InLabelContent(BaseCreateContent):
         # print('标签下的所有文章', articles)
         article_list = list()
         for article in label.article_set.filter(status='published', is_deleted=False).exclude(
-                user_id=self.user.uid, ).select_related().order_by('-create_at').only('vote', 'mark',)[:self.offset+self.limit]:
+                user_id=self.user.uid, ).select_related().order_by('-create_at').only('vote', 'mark', )[
+                       :self.offset + self.limit]:
 
             # 点过赞
             if article.vote.filter(user_id=self.user.uid).exists():
@@ -193,7 +194,10 @@ class InLabelContent(BaseCreateContent):
         '''回答'''
         answer_list = list()
         # answer = [a for a in question.answer_set.exclude(user_id=self.user.uid).order_by('-create_at')[:100]]
-        for a in question.answer_set.exclude(user_id=self.user.uid).order_by('-create_at').select_related().only('vote', 'collect', 'comment')[:self.offset+self.limit]:
+        for a in question.answer_set.exclude(user_id=self.user.uid).order_by('-create_at').select_related().only('vote',
+                                                                                                                 'collect',
+                                                                                                                 'comment')[
+                 :self.offset + self.limit]:
             # 点过赞
             # print('遇到回答！！！', a)
             if a.vote.filter(user_id=self.user.uid).exists():
@@ -304,7 +308,8 @@ class VisitorContent(object):
         #     user_id=self.user.uid, ).order_by('-create_at')[:50] if not a.vote.filter(user_id=self.user.uid).exists()]
         # print('标签下的所有文章', articles)
         article_list = list()
-        for article in label.article_set.filter(status='published', is_deleted=False).select_related().order_by('-create_at')[
+        for article in label.article_set.filter(status='published', is_deleted=False).select_related().order_by(
+                '-create_at')[
                        :self.offset + self.limit]:
             article_list.append(article)
         return article_list
@@ -375,7 +380,6 @@ class VisitorContent(object):
         # data = random.sample(data_list, self.limit) if len(data_list) > self.limit else data_list
         data = data_list[self.offset:self.offset + self.limit]
         return data
-
 
 
 from apps.userpage.serializers import UserPageArticleSerializer, UserPageAnswerSerializer

@@ -6,15 +6,15 @@ DEFAULT_FIELD_MAPPING = {'type': 'string', 'analyzer': 'snowball'}
 
 FIELD_MAPPINGS = {
     'edge_ngram': {'type': 'string', 'analyzer': 'edgengram_analyzer'},
-    'ngram':      {'type': 'string', 'analyzer': 'ngram_analyzer'},
-    'date':       {'type': 'date'},
-    'datetime':   {'type': 'date'},
+    'ngram': {'type': 'string', 'analyzer': 'ngram_analyzer'},
+    'date': {'type': 'date'},
+    'datetime': {'type': 'date'},
 
-    'location':   {'type': 'geo_point'},
-    'boolean':    {'type': 'boolean'},
-    'float':      {'type': 'float'},
-    'long':       {'type': 'long'},
-    'integer':    {'type': 'string'},
+    'location': {'type': 'geo_point'},
+    'boolean': {'type': 'boolean'},
+    'float': {'type': 'float'},
+    'long': {'type': 'long'},
+    'integer': {'type': 'string'},
 }
 
 
@@ -47,4 +47,3 @@ class CustomElasticsearchSearchBackend(ElasticsearchSearchBackend):
 
 class CustomElasticsearchSearchEngine(ElasticsearchSearchEngine):
     backend = CustomElasticsearchSearchBackend
-
