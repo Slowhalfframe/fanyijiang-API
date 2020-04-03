@@ -11,7 +11,7 @@ class ArticleChecker(serializers.ModelSerializer):
 
     class Meta:
         model = Article
-        fields = ("title", "content", "thumbnail", "is_draft",)
+        fields = ("title", "content", "cover", "is_draft",)
         extra_kwargs = {
             "title": {
                 "required": True,
@@ -19,7 +19,7 @@ class ArticleChecker(serializers.ModelSerializer):
             "content": {
                 "required": True,
             },
-            "thumbnail": {
+            "cover": {
                 "required": False,
             },
             "is_draft": {
@@ -39,7 +39,7 @@ class ArticleChecker(serializers.ModelSerializer):
             raise serializers.ValidationError("文章主体不能为空")
         return value
 
-    def validate_thumbnail(self, value):
+    def validate_cover(self, value):
         if not value or value.capitalize() == str(None):
             return None
         if not legal_image_path(value):
@@ -59,7 +59,7 @@ class BasicArticleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Article
         fields = (
-            "id", "type", "title", "content", "thumbnail", "is_draft", "author", "labels", "create_at", "update_at",
+            "id", "type", "title", "content", "cover", "is_draft", "author", "labels", "create_at", "update_at",
         )
 
 

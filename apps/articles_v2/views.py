@@ -1,6 +1,7 @@
 from django.db.transaction import atomic
 
 from apps.labels_v2.models import Label
+from apps.taskapp.tasks import articles_pv_record
 from apps.utils import errorcode
 from apps.utils.api import CustomAPIView
 from apps.utils.decorators import logged_in
@@ -18,7 +19,7 @@ class ArticleView(CustomAPIView):
         data = {
             "title": request.data.get("title") or "",
             "content": request.data.get("content") or "",
-            "thumbnail": request.data.get("thumbnail") or None,
+            "cover": request.data.get("cover") or None,
             "is_draft": request.data.get("is_draft") or None,
         }
         # 请求体为空时,request.data为普通的空字典，没有getlist方法
@@ -89,7 +90,7 @@ class OneArticleView(CustomAPIView):
         data = {
             "title": request.data.get("title") or "",
             "content": request.data.get("content") or "",
-            "thumbnail": request.data.get("thumbnail") or None,
+            "cover": request.data.get("cover") or None,
             "is_draft": request.data.get("is_draft") or None,
         }
         # 请求体为空时,request.data为普通的空字典，没有getlist方法
@@ -109,7 +110,7 @@ class OneArticleView(CustomAPIView):
         try:
             article.title = checker.validated_data["title"]
             article.content = checker.validated_data["content"]
-            article.thumbnail = checker.validated_data["thumbnail"]
+            article.cover = checker.validated_data["cover"]
             if article.is_draft:
                 article.is_draft = checker.validated_data["is_draft"]
             elif checker.validated_data["is_draft"]:
@@ -133,6 +134,8 @@ class OneArticleView(CustomAPIView):
         if article.is_draft:
             if me is None or article.author != me:
                 return self.error(errorcode.MSG_NOT_OWNER, errorcode.NOT_OWNER)
+        else:  # 只有非草稿才记录阅读量
+            articles_pv_record.delay(request.META.get("REMOTE_ADDR"), article.pk)
         formatter = MeArticleSerializer(instance=article, context={"me": me})
         return self.success(formatter.data)
 
