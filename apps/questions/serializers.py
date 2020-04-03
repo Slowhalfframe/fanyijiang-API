@@ -222,13 +222,6 @@ class AnswerInLabelDiscussSerializer(serializers.ModelSerializer):
         return data
 
 
-# =======
-# return False
-# return obj.collect.filter(favorite__user_id=me).exists()  # TODO 这个查询正确吗？
-# return obj.collect.filter(favorite__user__uid=me).exists()
-# >>>>>>> master
-
-
 class QuestionInLabelDiscussSerializer(serializers.ModelSerializer):
     """只用于序列化，使用时通过context传入me的值"""
     top_answer = serializers.SerializerMethodField()
