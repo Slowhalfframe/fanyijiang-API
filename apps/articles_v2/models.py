@@ -37,7 +37,7 @@ class Article(BaseModel):
 
     @property
     def kind(self):
-        return "answer"
+        return "article"
 
     @property
     def url(self):

@@ -46,7 +46,7 @@ class ArticleView(CustomAPIView):
         return self.success(formatter.data)
 
     def get(self, request):
-        """查看一批文章，可分页"""
+        """查看所有不是草稿的文章，可分页"""
 
         me = self.get_user_profile(request)
         qs = Article.objects.filter(is_deleted=False, is_draft=False)
