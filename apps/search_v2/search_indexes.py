@@ -39,7 +39,7 @@ class ArticleIndex(indexes.SearchIndex, indexes.Indexable):
         return Article
 
     def index_queryset(self, using=None):
-        return self.get_model().objects.filter(is_deleted=False, status="published")
+        return self.get_model().objects.filter(is_deleted=False, is_draft=False)
 
 
 class IdeaIndex(indexes.SearchIndex, indexes.Indexable):

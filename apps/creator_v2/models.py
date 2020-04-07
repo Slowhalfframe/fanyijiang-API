@@ -12,7 +12,7 @@ class ReadNums(models.Model):
     content_object = GenericForeignKey('content_type', 'object_id')
 
     class Meta:
-        db_table = 'db_read_nums'
+        db_table = 'read_nums'
 
 
 class CreatorList(models.Model):
@@ -22,7 +22,7 @@ class CreatorList(models.Model):
     several_issues = models.ForeignKey('SeveralIssues', on_delete=models.CASCADE, related_name='creator_list')
 
     class Meta:
-        db_table = 'db_creator_list'
+        db_table = 'creator_list'
 
 
 class SeveralIssues(models.Model):
@@ -32,6 +32,6 @@ class SeveralIssues(models.Model):
     create_at = models.DateTimeField(auto_now_add=True, verbose_name='统计日期')
 
     class Meta:
-        db_table = 'db_several_issues'
+        db_table = 'several_issues'
 
 

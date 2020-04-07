@@ -169,12 +169,12 @@ class InLabelContent(BaseCreateContent):
 
     def get_lable_article(self, label):
         '''文章'''
-        # articles = [a for a in label.article_set.filter(status='published', is_deleted=False).exclude(
+        # articles = [a for a in label.article_set.filter(is_draft=False, is_deleted=False).exclude(
         #     user_id=self.user.uid, ).order_by('-create_at')[:50] if not a.vote.filter(user_id=self.user.uid).exists()]
         # print('标签下的所有文章', articles)
         article_list = list()
         new_limit = math.ceil((self.offset+self.limit) * 0.3)
-        for article in label.article_set.filter(status='published', is_deleted=False).exclude(
+        for article in label.article_set.filter(is_draft=False, is_deleted=False).exclude(
                 author=self.user, ).select_related().order_by('-create_at').only('vote', 'collect',)[:new_limit]:
             # 点过赞
             if article.vote.filter(author=self.user).exists():
@@ -305,13 +305,13 @@ class VisitorContent(object):
 
     def get_lable_article(self, label):
         '''文章'''
-        # articles = [a for a in label.article_set.filter(status='published', is_deleted=False).exclude(
+        # articles = [a for a in label.article_set.filter(is_draft=False, is_deleted=False).exclude(
         #     user_id=self.user.uid, ).order_by('-create_at')[:50] if not a.vote.filter(user_id=self.user.uid).exists()]
         # print('标签下的所有文章', articles)
         article_list = list()
 
         new_limit = math.ceil((self.offset + self.limit) * 0.3)
-        for article in label.article_set.filter(status='published', is_deleted=False).select_related().order_by('-create_at')[
+        for article in label.article_set.filter(is_draft=False, is_deleted=False).select_related().order_by('-create_at')[
                        :new_limit]:
             article_list.append(article)
         return article_list
