@@ -564,7 +564,7 @@ class RecentCreateContent(object):
         return answer_data
 
     def recent_article(self):
-        articles = Article.objects.filter(author=self.user, status='published', is_deleted=False).order_by(
+        articles = Article.objects.filter(author=self.user, is_draft=False, is_deleted=False).order_by(
             'create_at')[:3]
         article_data = []
         for article in articles:
@@ -836,7 +836,7 @@ class SingleDataStatisticsAPIView(CustomAPIView):
         if data_type == 'article':
 
             articles = Article.objects.filter(create_at__gte=begin_da, create_at__lte=end_da, author=user,
-                                              status='published', is_deleted=False)
+                                              is_draft=False, is_deleted=False)
 
             for article in articles:
                 data = dict()
