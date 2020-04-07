@@ -33,3 +33,7 @@ class Idea(BaseModel):
     @property
     def kind(self):
         return "idea"
+
+    @property
+    def url(self):
+        return "/pins/" + str(self.id)

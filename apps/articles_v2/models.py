@@ -7,6 +7,8 @@ from apps.labels_v2.models import Label
 from apps.userpage.models import UserProfile
 from apps.utils.models import BaseModel
 from apps.votes.models import Vote
+from apps.userpage_v2.models import FavoriteCollection
+from apps.creator_v2.models import ReadNums
 
 
 class Article(BaseModel):
@@ -24,8 +26,8 @@ class Article(BaseModel):
     comments = GenericRelation(to=Comment)
     votes = GenericRelation(to=Vote)
 
-    # mark = GenericRelation(to=FavoriteCollection, verbose_name="收藏")
-    # read_nums = GenericRelation(to=ReadNums)
+    collect = GenericRelation(to=FavoriteCollection, verbose_name="收藏")
+    read_nums = GenericRelation(to=ReadNums)
 
     class Meta:
         db_table = "article"

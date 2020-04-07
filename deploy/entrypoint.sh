@@ -23,7 +23,7 @@ fi
 
 
 cd $APP
-yes | python manage.py collectstatic
-yes | python manage.py rebuild_index
+echo yes | python manage.py collectstatic
+echo yes | python manage.py rebuild_index
 python manage.py makemigrations && python manage.py migrate
 exec supervisord -c /app/deploy/supervisord.conf
