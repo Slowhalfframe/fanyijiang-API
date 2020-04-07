@@ -28,7 +28,7 @@ FRONT_HOST = 'http://47.92.28.66:9000'
 HAYSTACK_CONNECTIONS = {
     'default': {
         # 'ENGINE': 'haystack.backends.elasticsearch_backend.ElasticsearchSearchEngine',
-        'ENGINE': 'apps.utils_v2.haystack.CustomElasticsearchSearchEngine',
+        'ENGINE': 'apps.utils.haystack.CustomElasticsearchSearchEngine',
         'URL': 'http://localhost:9200/',  # 此处为elasticsearch运行的服务器ip地址，端口号固定为9200
         'INDEX_NAME': 'fanyijiang',  # 指定elasticsearch建立的索引库的名称
     },

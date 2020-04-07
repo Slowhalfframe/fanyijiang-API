@@ -1,6 +1,6 @@
-from apps.utils_v2 import errorcode
-from apps.utils_v2.api import CustomAPIView
-from apps.utils_v2.decorators import logged_in
+from apps.utils import errorcode
+from apps.utils.api import CustomAPIView
+from apps.utils.decorators import logged_in
 from .models import Idea
 from .serializers import IdeaChecker, MeIdeaSerializer
 

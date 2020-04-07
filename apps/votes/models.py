@@ -2,8 +2,8 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 
-from apps.userpage_v2.models import UserProfile
-from apps.utils_v2.models import BaseModel
+from apps.userpage.models import UserProfile
+from apps.utils.models import BaseModel
 
 
 class Vote(BaseModel):
