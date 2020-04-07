@@ -13,6 +13,8 @@ from apps.votes.models import Vote
 
 from apps.userpage.serializers import UserPageArticleSerializer, UserPageAnswerSerializer
 
+from apps.creator.views import TotalNums, RecommendQuestion
+
 
 class BaseCreateContent(object):
     def __init__(self, user, offset, limit):
@@ -438,7 +440,6 @@ class HomePageFollowContentAPIView(CustomAPIView):
 
 class WaitAnswerAPIView(CustomAPIView):
     def get(self, request):
-        from apps.creator.views import RecommendQuestion
         user = self.get_user_profile(request)
         offset = request.GET.get('offset', 0)
         limit = request.GET.get('limit', 20)
@@ -454,7 +455,6 @@ class WaitAnswerAPIView(CustomAPIView):
 
 class HomePageCreatorAPIView(CustomAPIView):
     def get(self, request):
-        from apps.creator.views import TotalNums
         user = self.get_user_profile(request)
         if not user:
             return self.success({'ysd_read_nums': 0, 'ysd_upvote': 0})
