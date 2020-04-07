@@ -182,7 +182,7 @@ class LabelFollowView(CustomAPIView):
         return self.success()
 
     def get(self, request):
-        """查看某个用户关注的标签，可分页"""
+        """查看某个用户关注的标签"""
 
         me = self.get_user_profile(request)
         slug = request.query_params.get("slug")
@@ -190,8 +190,8 @@ class LabelFollowView(CustomAPIView):
         if he is None:
             return self.error(errorcode.MSG_INVALID_SLUG, errorcode.INVALID_SLUG)
         qs = he.followed_labels.filter(is_deleted=False)
-        data = self.paginate_data(request, qs, MeLabelSerializer, {"me": me})
-        return self.success(data)
+        formatter = MeLabelSerializer(instance=qs, many=True, context={"me": me})
+        return self.success(formatter.data)
 
 
 class LabelDiscussionView(CustomAPIView):
