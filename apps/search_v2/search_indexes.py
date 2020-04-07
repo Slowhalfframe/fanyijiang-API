@@ -1,9 +1,9 @@
 from haystack import indexes
 
-from apps.questions.models import Question, Answer
-from apps.articles.models import Article
-from apps.ideas.models import Idea
-from apps.userpage.models import UserProfile
+from apps.questions_v2.models import Question, Answer
+from apps.articles_v2.models import Article
+from apps.pins.models import Idea
+from apps.userpage_v2.models import UserProfile
 
 
 class QuestionIndex(indexes.SearchIndex, indexes.Indexable):

@@ -11,6 +11,9 @@ from apps.userpage_v2.models import UserFavorites, UserProfile
 
 from apps.votes.models import Vote
 
+from apps.userpage_v2.serializers import UserPageArticleSerializer, UserPageAnswerSerializer
+
+
 class BaseCreateContent(object):
     def __init__(self, user, offset, limit):
         self.user = user
@@ -383,7 +386,6 @@ class VisitorContent(object):
         return data
 
 
-from apps.userpage.serializers import UserPageArticleSerializer, UserPageAnswerSerializer
 
 
 # Create your views here.

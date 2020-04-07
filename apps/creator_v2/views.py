@@ -19,6 +19,9 @@ from apps.labels_v2.models import LabelFollow
 
 from apps.pins.models import Idea
 
+from apps.utils_v2.decorators import validate_identity
+
+
 
 # 基础统计
 class BaseStatistics(object):
@@ -637,7 +640,6 @@ class TotalNums(object):
         return answer + article + think
 
 
-from apps.utils.decorators import validate_identity
 
 
 class CreatorHomeAPIView(CustomAPIView):

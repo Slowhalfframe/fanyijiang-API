@@ -1,4 +1,4 @@
-from apps.taskapp.celery import app
+from apps.taskapp_v2.celery import app
 from django.core.cache import cache
 
 import datetime, time

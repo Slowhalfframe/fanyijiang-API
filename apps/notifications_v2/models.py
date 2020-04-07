@@ -2,7 +2,7 @@ from django.db import models
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericRelation, GenericForeignKey
-from apps.userpage.models import UserProfile
+from apps.userpage_v2.models import UserProfile
 
 
 # Create your models here.

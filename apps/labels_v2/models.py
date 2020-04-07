@@ -1,7 +1,7 @@
 from django.db import models
 
-from apps.userpage.models import UserProfile
-from apps.utils.models import BaseModel
+from apps.userpage_v2.models import UserProfile
+from apps.utils_v2.models import BaseModel
 
 
 class Label(BaseModel):
