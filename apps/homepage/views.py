@@ -177,7 +177,7 @@ class InLabelContent(BaseCreateContent):
         article_list = list()
         new_limit = math.ceil((self.offset+self.limit) * 0.3)
         for article in label.article_set.filter(is_draft=False, is_deleted=False).exclude(
-                author=self.user, ).select_related().order_by('-create_at').only('vote', 'collect',)[:new_limit]:
+                author=self.user, ).select_related().order_by('-create_at').only('votes', 'collect',)[:new_limit]:
             # 点过赞
             if article.vote.filter(author=self.user).exists():
                 continue
