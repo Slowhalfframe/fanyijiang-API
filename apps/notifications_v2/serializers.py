@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import Notification
 
-from apps.questions.models import Answer, Question
+from apps.questions_v2.models import Answer, Question
 from django.conf import settings
 
 class NotificationsSerializer(serializers.ModelSerializer):
