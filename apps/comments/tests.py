@@ -3,8 +3,8 @@ from django.urls import reverse
 
 from apps import common_prepare
 from apps.comments.models import Comment
-from apps.labels_v2.models import Label
-from apps.questions_v2.models import Question, Answer
+from apps.labels.models import Label
+from apps.questions.models import Question, Answer
 
 
 def prepare(obj):

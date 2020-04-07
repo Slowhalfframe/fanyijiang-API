@@ -1,7 +1,7 @@
 from django.conf import settings
 from rest_framework import serializers
 
-from apps.userpage_v2.models import UserProfile
+from apps.userpage.models import UserProfile
 from .models import Comment
 
 
