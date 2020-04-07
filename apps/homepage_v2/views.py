@@ -1,6 +1,6 @@
 import random, math, datetime
 
-from apps.utils.api import CustomAPIView
+from apps.utils_v2.api import CustomAPIView
 from apps.questions_v2.models import Question, Answer, QuestionFollow
 
 from apps.labels_v2.models import Label, LabelFollow

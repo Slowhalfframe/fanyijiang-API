@@ -4,11 +4,11 @@ from django.db.transaction import atomic
 
 from apps.comments.serializers import BasicUserSerializer
 from apps.labels_v2.models import Label
-from apps.taskapp.tasks import question_pv_record, answers_pv_record
-from apps.userpage.models import UserProfile
-from apps.utils import errorcode
-from apps.utils.api import CustomAPIView
-from apps.utils.decorators import logged_in
+from apps.taskapp_v2.tasks import question_pv_record, answers_pv_record
+from apps.userpage_v2.models import UserProfile
+from apps.utils_v2 import errorcode
+from apps.utils_v2.api import CustomAPIView
+from apps.utils_v2.decorators import logged_in
 from .models import Question, Answer, QuestionFollow, QuestionInvite
 from .serializers import QuestionChecker, MeQuestionSerializer, AnswerChecker, MeAnswerSerializer
 

@@ -63,7 +63,7 @@ LOCAL_APPS = [
     # 'apps.ideas',
     # 'apps.creator',
     # 'apps.notifications',
-    'apps.search',
+    'apps.search_v2',
     'apps.labels_v2',
     'apps.questions_v2',
     'apps.userpage_v2',

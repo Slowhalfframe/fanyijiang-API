@@ -5,7 +5,7 @@ from django.db.models import Sum
 from django.core.cache import cache
 from django.conf import settings
 
-from apps.utils.api import CustomAPIView
+from apps.utils_v2.api import CustomAPIView
 
 from apps.questions_v2.models import Answer, Question, QuestionFollow, QuestionInvite
 

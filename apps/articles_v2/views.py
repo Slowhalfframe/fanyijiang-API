@@ -1,10 +1,10 @@
 from django.db.transaction import atomic
 
 from apps.labels_v2.models import Label
-from apps.taskapp.tasks import articles_pv_record
-from apps.utils import errorcode
-from apps.utils.api import CustomAPIView
-from apps.utils.decorators import logged_in
+from apps.taskapp_v2.tasks import articles_pv_record
+from apps.utils_v2 import errorcode
+from apps.utils_v2.api import CustomAPIView
+from apps.utils_v2.decorators import logged_in
 from .models import Article, ArticleFollow
 from .serializers import ArticleChecker, MeArticleSerializer
 
