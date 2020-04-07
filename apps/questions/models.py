@@ -3,13 +3,12 @@ from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 
 from apps.comments.models import Comment
+from apps.creator.models import ReadNums
 from apps.labels.models import Label
+from apps.userpage.models import FavoriteCollection
 from apps.userpage.models import UserProfile
 from apps.utils.models import BaseModel
 from apps.votes.models import Vote
-
-from apps.userpage.models import FavoriteCollection
-from apps.creator.models import ReadNums
 
 
 class Question(BaseModel):
@@ -22,7 +21,6 @@ class Question(BaseModel):
     comments = GenericRelation(to=Comment)
     followers = models.ManyToManyField(to=UserProfile, related_name="followed_questions", through="QuestionFollow",
                                        through_fields=("question", "user"), verbose_name="关注者")
-
     read_nums = GenericRelation(to=ReadNums)
 
     class Meta:
@@ -52,8 +50,6 @@ class Answer(BaseModel):
     author = models.ForeignKey(to=UserProfile, null=False, verbose_name="回答者")
     comments = GenericRelation(to=Comment)
     votes = GenericRelation(to=Vote)
-
-    # 添加收藏关系
     collect = GenericRelation(to=FavoriteCollection)
     read_nums = GenericRelation(to=ReadNums)
 

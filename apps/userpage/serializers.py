@@ -101,7 +101,7 @@ class ContentFavoritesSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserFavorites
         fields = (
-        'id', 'title', 'status', 'intro', 'content_count', 'follow_count', 'update_time', 'is_followed', 'is_owner')
+            'id', 'title', 'status', 'intro', 'content_count', 'follow_count', 'update_time', 'is_followed', 'is_owner')
 
     def get_content_count(self, obj):
         return obj.favorite_collect.all().count()
@@ -140,7 +140,8 @@ class FollowsUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = UserProfile
-        fields = ('avatar', 'nickname', 'autograph', 'slug', 'uid', 'fans_count', 'articles_count', 'answers_count',"text")
+        fields = (
+        'avatar', 'nickname', 'autograph', 'slug', 'uid', 'fans_count', 'articles_count', 'answers_count', "text")
 
     def get_fans_count(self, obj):
         return UserProfile.objects.filter(as_fans__idol__uid=obj.uid).count()
@@ -234,7 +235,6 @@ class UserPageArticleSerializer(serializers.ModelSerializer):
     currentUserVote = serializers.SerializerMethodField()
     data_type = serializers.SerializerMethodField()
 
-
     class Meta:
         model = Article
         fields = ('id', 'title', 'content', 'image', 'update_time', 'comment_count', 'upvote_count', 'author_info',
@@ -282,7 +282,8 @@ class UserPageThinksSerializer(serializers.ModelSerializer):
     class Meta:
         model = Idea
         fields = (
-        'id', 'content', 'create_time', 'comment_count', 'upvote_count', 'author_info', 'avatars', 'currentUserVote')
+            'id', 'content', 'create_time', 'comment_count', 'upvote_count', 'author_info', 'avatars',
+            'currentUserVote')
 
     def get_comment_count(self, obj):
         return obj.ideacomment_set.all().count()
@@ -377,3 +378,18 @@ class AnswerInLabelDiscussSerializer(serializers.ModelSerializer):
             "slug": author.slug,
         }
         return data
+
+
+class BasicUserSerializer(serializers.ModelSerializer):
+    """用于用户的序列化，返回最基础的信息"""
+
+    id = serializers.CharField(source="uid")
+    type = serializers.CharField(source="kind")
+    homepage = serializers.SerializerMethodField()
+
+    class Meta:
+        model = UserProfile
+        fields = ("id", "type", "slug", "nickname", "gender", "avatar", "autograph", "homepage",)
+
+    def get_homepage(self, obj):
+        return settings.FRONT_HOST + "/people/" + obj.slug + "/"

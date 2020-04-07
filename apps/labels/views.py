@@ -211,6 +211,8 @@ class LabelDiscussionView(CustomAPIView):
         # 这种查询结果可能有重复的，需要自行去重
         questions = label.question_set.filter(answer__isnull=False).distinct()  # TODO 除了要有答案外，还有什么要求？
         answers = [i.answer_set.first() for i in questions]
+        # TODO 这种查询可行吗？
+        # TODO Answer.objects.filter(is_deleted=False,is_draft=False).filter(question__label=label)
         s = MeAnswerSerializer(instance=answers, many=True, context={"me": me})
         return self.success(s.data)
 

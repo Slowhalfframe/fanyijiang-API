@@ -4,7 +4,7 @@ from rest_framework.viewsets import ViewSetMixin
 from apps.articles.models import Article
 from apps.pins.models import Idea
 from apps.questions.models import Question, Answer
-from apps.search.serializers import UniformIndexSerializer, UserIndexSerializer
+from apps.search.serializers import UniformIndexSerializer
 from apps.userpage.models import UserProfile
 from apps.userpage.serializers import UserPageArticleSerializer, UserPageThinksSerializer, \
     UserPageAnswerSerializer, UserPageQuestionSerializer, FollowsUserSerializer
@@ -43,8 +43,6 @@ class RootView(ViewSetMixin, HaystackGenericAPIView, CustomAPIView):
 class FindUserView(ViewSetMixin, HaystackGenericAPIView, CustomAPIView):
     index_models = [UserProfile]
     serializer_class = FollowsUserSerializer
-
-    # serializer_class = UserIndexSerializer
 
     def list(self, request):
         if not request.query_params.get("text"):

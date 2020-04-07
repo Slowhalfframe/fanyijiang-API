@@ -2,10 +2,10 @@ import random
 
 from django.db.transaction import atomic
 
-from apps.comments.serializers import BasicUserSerializer
 from apps.labels.models import Label
 from apps.taskapp.tasks import question_pv_record, answers_pv_record
 from apps.userpage.models import UserProfile
+from apps.userpage.serializers import BasicUserSerializer
 from apps.utils import errorcode
 from apps.utils.api import CustomAPIView
 from apps.utils.decorators import logged_in

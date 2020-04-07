@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from apps import xss_safe
-from apps.comments.serializers import BasicUserSerializer
+from apps.userpage.serializers import BasicUserSerializer
 from apps.labels.serializers import BasicLabelSerializer
 from .models import Question, Answer
 

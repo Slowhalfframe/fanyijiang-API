@@ -4,7 +4,7 @@ from django.conf import settings
 from rest_framework import serializers
 
 from apps import legal_image_path
-from apps.comments.serializers import BasicUserSerializer
+from apps.userpage.serializers import BasicUserSerializer
 from .models import Idea
 
 

@@ -1,8 +1,8 @@
 from rest_framework import serializers
 
 from apps import xss_safe, legal_image_path
-from apps.comments.serializers import BasicUserSerializer
 from apps.labels.serializers import BasicLabelSerializer
+from apps.userpage.serializers import BasicUserSerializer
 from .models import Article
 
 

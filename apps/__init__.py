@@ -31,7 +31,7 @@ def legal_image_path(path):
 def common_prepare(obj):
     """准备测试用户、登录和客户端"""
 
-    from apps.userpage_v2.models import UserProfile
+    from apps.userpage.models import UserProfile
 
     obj.users = {
         "zhang": UserProfile.objects.create(uid="e4da3b7fbbce2345d7772b0674a318d5", nickname="haoran·zhang",
@@ -40,6 +40,7 @@ def common_prepare(obj):
                                            slug="zhao-jun-chen"),
         "euler": UserProfile.objects.create(uid="1679091c5a880faf6fb5e6087eb1b2dc", nickname="Euler", slug="euler"),
         "gauss": UserProfile.objects.create(uid="8f14e45fceea167a5a36dedd4bea2543", nickname="Gauss", slug="gauss"),
+        "qin": UserProfile.objects.create(uid="45c48cce2e2d7fbdea1afc51c7c6ad26", nickname="qin", slug="qin"),
     }
     data = {
         "username": "18569938068",

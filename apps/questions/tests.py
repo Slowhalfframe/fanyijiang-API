@@ -20,7 +20,7 @@ class QuestionViewPostTest(TestCase):
         common_prepare(self)
         self.label1 = Label.objects.create(name="标签1")
         self.label2 = Label.objects.create(name="标签2")
-        self.path = reverse("questions_v2:root")
+        self.path = reverse("questions:root")
         self.data = {"title": "问题标题", "content": "进一步描述", "labels": [self.label1.pk, self.label2.pk]}
 
     def test_no_login(self):
@@ -57,7 +57,7 @@ class OneQuestionViewPutTest(TestCase):
         self.question = Question.objects.create(title="问题1", content="内容1", author=self.users["zhang"])
         self.question.labels.add(self.label1)
         self.data = {"title": "问题标题", "content": "进一步描述", "labels": [self.label1.pk, self.label2.pk]}
-        self.path = reverse("questions_v2:one_question", kwargs={"question_id": self.question.pk})
+        self.path = reverse("questions:one_question", kwargs={"question_id": self.question.pk})
 
     def test_no_login(self):
         response = self.client.put(self.path, self.data)
@@ -65,7 +65,7 @@ class OneQuestionViewPutTest(TestCase):
         self.assertNotEqual(data["code"], 0)
 
     def test_question_not_exist(self):
-        path = reverse("questions_v2:one_question", kwargs={"question_id": self.question.pk + 1})
+        path = reverse("questions:one_question", kwargs={"question_id": self.question.pk + 1})
         response = self.client.put(path, self.data, **self.headers)
         data = response.json()
         self.assertNotEqual(data["code"], 0)
@@ -74,7 +74,7 @@ class OneQuestionViewPutTest(TestCase):
         question = Question.objects.create(title="问题2", content="内容2", author=self.users["zhao"])
         question.labels.add(self.label2)
         self.assertEqual(Question.objects.count(), 2)
-        path = reverse("questions_v2:one_question", kwargs={"question_id": question.pk})
+        path = reverse("questions:one_question", kwargs={"question_id": question.pk})
         response = self.client.put(path, self.data, **self.headers)
         data = response.json()
         self.assertNotEqual(data["code"], 0)
@@ -99,7 +99,7 @@ class AnswerViewPostTest(TestCase):
     def setUp(self):
         prepare(self)
         self.data = {"content": "回答1", "is_draft": True}
-        self.path = reverse("questions_v2:answer_root", kwargs={"question_id": self.question.pk})
+        self.path = reverse("questions:answer_root", kwargs={"question_id": self.question.pk})
 
     def test_no_login(self):
         response = self.client.post(self.path, self.data)
@@ -107,7 +107,7 @@ class AnswerViewPostTest(TestCase):
         self.assertNotEqual(data["code"], 0)
 
     def test_question_not_exist(self):
-        path = reverse("questions_v2:answer_root", kwargs={"question_id": self.question.pk + 1})
+        path = reverse("questions:answer_root", kwargs={"question_id": self.question.pk + 1})
         self.assertIs(Question.objects.filter(pk=self.question.pk + 1).exists(), False)
         response = self.client.post(path, self.data, **self.headers)
         data = response.json()
@@ -115,7 +115,7 @@ class AnswerViewPostTest(TestCase):
 
     def test_is_question_author(self):
         question = Question.objects.create(title="标题2", content="内容2", author=self.users["zhang"])
-        path = reverse("questions_v2:answer_root", kwargs={"question_id": question.pk})
+        path = reverse("questions:answer_root", kwargs={"question_id": question.pk})
         response = self.client.post(path, self.data, **self.headers)
         data = response.json()
         self.assertEqual(data["code"], 0)
@@ -153,7 +153,7 @@ class OneAnswerViewDeleteTest(TestCase):
         prepare(self)
         self.answer = Answer.objects.create(content="回答1", question=self.question, author=self.users["zhang"],
                                             is_draft=True)
-        self.path = reverse("questions_v2:one_answer",
+        self.path = reverse("questions:one_answer",
                             kwargs={"question_id": self.question.pk, "answer_id": self.answer.pk})
 
     def test_no_login(self):
@@ -162,12 +162,12 @@ class OneAnswerViewDeleteTest(TestCase):
         self.assertNotEqual(data["code"], 0)
 
     def test_question_or_answer_not_exist(self):
-        path = reverse("questions_v2:one_answer",
+        path = reverse("questions:one_answer",
                        kwargs={"question_id": self.question.pk + 1, "answer_id": self.answer.pk})
         response = self.client.delete(path, **self.headers)
         data = response.json()
         self.assertEqual(data["code"], 0)
-        path = reverse("questions_v2:one_answer",
+        path = reverse("questions:one_answer",
                        kwargs={"question_id": self.question.pk, "answer_id": self.answer.pk + 1})
         response = self.client.delete(path, **self.headers)
         data = response.json()
@@ -175,7 +175,7 @@ class OneAnswerViewDeleteTest(TestCase):
 
     def test_not_author(self):
         answer = Answer.objects.create(content="回答2", question=self.question, author=self.users["zhao"], is_draft=False)
-        path = reverse("questions_v2:one_answer",
+        path = reverse("questions:one_answer",
                        kwargs={"question_id": self.question.pk, "answer_id": answer.pk})
         response = self.client.delete(path, **self.headers)
         data = response.json()
@@ -206,7 +206,7 @@ class OneAnswerViewPutTest(TestCase):
         prepare(self)
         self.answer = Answer.objects.create(content="回答1", question=self.question, author=self.users["zhang"],
                                             is_draft=True)
-        self.path = reverse("questions_v2:one_answer",
+        self.path = reverse("questions:one_answer",
                             kwargs={"question_id": self.question.pk, "answer_id": self.answer.pk})
         self.data = {"content": "回答2", "is_draft": True}
 
@@ -216,12 +216,12 @@ class OneAnswerViewPutTest(TestCase):
         self.assertNotEqual(data["code"], 0)
 
     def test_question_or_answer_not_exist(self):
-        path = reverse("questions_v2:one_answer",
+        path = reverse("questions:one_answer",
                        kwargs={"question_id": self.question.pk + 1, "answer_id": self.answer.pk})
         response = self.client.put(path, self.data, **self.headers)
         data = response.json()
         self.assertNotEqual(data["code"], 0)
-        path = reverse("questions_v2:one_answer",
+        path = reverse("questions:one_answer",
                        kwargs={"question_id": self.question.pk, "answer_id": self.answer.pk + 1})
         response = self.client.put(path, self.data, **self.headers)
         data = response.json()
@@ -256,7 +256,7 @@ class OneAnswerViewPutTest(TestCase):
 class DraftViewPostTest(TestCase):
     def setUp(self):
         prepare(self)
-        self.path = reverse("questions_v2:draft_root")
+        self.path = reverse("questions:draft_root")
         self.answer = Answer.objects.create(content="回答1", author=self.users["zhang"], is_draft=True,
                                             question=self.question)
         self.data = {"id": self.answer.pk}
@@ -300,7 +300,7 @@ class DraftViewPostTest(TestCase):
 class QuestionFollowViewPostTest(TestCase):
     def setUp(self):
         prepare(self)
-        self.path = reverse("questions_v2:follow", kwargs={"question_id": self.question.pk})
+        self.path = reverse("questions:follow", kwargs={"question_id": self.question.pk})
 
     def test_no_login(self):
         response = self.client.post(self.path)
@@ -308,7 +308,7 @@ class QuestionFollowViewPostTest(TestCase):
         self.assertNotEqual(data["code"], 0)
 
     def test_question_not_exist(self):
-        path = reverse("questions_v2:follow", kwargs={"question_id": self.question.pk + 1})
+        path = reverse("questions:follow", kwargs={"question_id": self.question.pk + 1})
         response = self.client.post(path, **self.headers)
         data = response.json()
         self.assertNotEqual(data["code"], 0)
@@ -324,7 +324,7 @@ class QuestionFollowViewPostTest(TestCase):
 class QuestionFollowViewDeleteTest(TestCase):
     def setUp(self):
         prepare(self)
-        self.path = reverse("questions_v2:follow", kwargs={"question_id": self.question.pk})
+        self.path = reverse("questions:follow", kwargs={"question_id": self.question.pk})
         QuestionFollow.objects.create(question=self.question, user=self.users["zhang"])
 
     def test_no_login(self):
@@ -351,7 +351,7 @@ class QuestionFollowViewDeleteTest(TestCase):
 class InviteViewPostTest(TestCase):
     def setUp(self):
         prepare(self)
-        self.path = reverse("questions_v2:invite", kwargs={"question_id": self.question.pk})
+        self.path = reverse("questions:invite", kwargs={"question_id": self.question.pk})
         self.data = {"slug": self.users["euler"].slug}
 
     def test_no_login(self):
@@ -360,7 +360,7 @@ class InviteViewPostTest(TestCase):
         self.assertNotEqual(data["code"], 0)
 
     def test_question_not_exist(self):
-        path = reverse("questions_v2:invite", kwargs={"question_id": self.question.pk + 1})
+        path = reverse("questions:invite", kwargs={"question_id": self.question.pk + 1})
         response = self.client.post(path, self.data, **self.headers)
         data = response.json()
         self.assertNotEqual(data["code"], 0)
