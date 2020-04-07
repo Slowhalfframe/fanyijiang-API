@@ -147,7 +147,7 @@ class FollowsUserSerializer(serializers.ModelSerializer):
 
     def get_articles_count(self, obj):
         # TODO 数据库查询
-        return Article.objects.filter(author_id=obj.uid, status='published', is_deleted=False).count()
+        return Article.objects.filter(author_id=obj.uid, is_draft=False, is_deleted=False).count()
 
     def get_answers_count(self, obj):
         # TODO 数据库查询

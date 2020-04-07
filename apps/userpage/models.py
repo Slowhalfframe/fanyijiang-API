@@ -1,11 +1,6 @@
-import os
-
-from django.conf import settings
-
-from django.db import models
-
+from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
-from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
+from django.db import models
 
 
 class UserProfile(models.Model):
@@ -32,11 +27,11 @@ class UserProfile(models.Model):
 
     # slug
     slug = models.SlugField(max_length=150, null=True, blank=True, verbose_name='(URL)别名', unique=True)
-    
+
     page_image = models.CharField(max_length=100, verbose_name='主页图片', null=True, blank=True)
 
     class Meta:
-        db_table = 'db_user_profile'
+        db_table = 'user_profile'
 
     @property
     def kind(self):
@@ -49,7 +44,7 @@ class UserEmploymentHistory(models.Model):
     position = models.CharField(max_length=100, verbose_name='公司职位', null=True, blank=True)
 
     class Meta:
-        db_table = 'db_user_employment_history'
+        db_table = 'user_employment_history'
 
 
 class UserEducationHistory(models.Model):
@@ -61,7 +56,7 @@ class UserEducationHistory(models.Model):
     out_year = models.CharField(max_length=4, verbose_name='毕业年份', null=True, blank=True)
 
     class Meta:
-        db_table = 'db_user_education_history'
+        db_table = 'user_education_history'
 
 
 class UserLocations(models.Model):
@@ -69,7 +64,7 @@ class UserLocations(models.Model):
     location_pic = models.CharField(max_length=255, verbose_name='地址图片', null=True, blank=True)
 
     class Meta:
-        db_table = 'db_user_locations'
+        db_table = 'user_locations'
 
 
 class FollowedUser(models.Model):
@@ -78,7 +73,7 @@ class FollowedUser(models.Model):
     create_time = models.DateTimeField(auto_now_add=True, verbose_name='关注时间')
 
     class Meta:
-        db_table = 'db_followed_user'
+        db_table = 'followed_user'
 
 
 class UserFavorites(models.Model):
@@ -92,7 +87,7 @@ class UserFavorites(models.Model):
     # follows = GenericRelation(UserFollows) # 通过GenericRelation关联到UserFollows表，不是实际的字段
 
     class Meta:
-        db_table = 'db_user_favorites'
+        db_table = 'user_favorites'
 
 
 class FollowedFavorites(models.Model):
@@ -101,7 +96,7 @@ class FollowedFavorites(models.Model):
     create_time = models.DateTimeField(auto_now_add=True, verbose_name='关注时间')
 
     class Meta:
-        db_table = 'db_followed_favorite'
+        db_table = 'followed_favorite'
 
 
 class FavoriteCollection(models.Model):
@@ -112,5 +107,5 @@ class FavoriteCollection(models.Model):
     content_object = GenericForeignKey('content_type', 'object_id')
 
     class Meta:
-        db_table = 'db_favorite_collect'
+        db_table = 'favorite_collect'
         unique_together = ('favorite', 'object_id', 'content_type')
