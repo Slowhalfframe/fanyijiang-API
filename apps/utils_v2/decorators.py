@@ -3,7 +3,7 @@ import requests
 
 from django.conf import settings
 
-from apps.userpage.models import UserProfile
+from apps.userpage_v2.models import UserProfile
 
 
 def validate_serializer(serializer):
