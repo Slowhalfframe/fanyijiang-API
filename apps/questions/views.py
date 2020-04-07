@@ -271,7 +271,7 @@ class InvitationView(CustomAPIView):
 
         # TODO 发送消息通知
         question = Question.objects.filter(pk=data.get('question')).first()
-        # notification_handler.delay(instance.inviting, instance.invited, 'I', question.id)
+        notification_handler.delay(instance.inviting, instance.invited, 'I', question.id)
         return self.success()
 
     @validate_identity

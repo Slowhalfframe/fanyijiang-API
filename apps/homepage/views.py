@@ -171,10 +171,9 @@ class InLabelContent(BaseCreateContent):
         #     user_id=self.user.uid, ).order_by('-create_at')[:50] if not a.vote.filter(user_id=self.user.uid).exists()]
         # print('标签下的所有文章', articles)
         article_list = list()
+        new_limit = math.ceil((self.offset+self.limit) * 0.3)
         for article in label.article_set.filter(status='published', is_deleted=False).exclude(
-                user_id=self.user.uid, ).select_related().order_by('-create_at').only('vote', 'mark', )[
-                       :self.offset + self.limit]:
-
+                user_id=self.user.uid, ).select_related().order_by('-create_at').only('vote', 'mark',)[:new_limit]:
             # 点过赞
             if article.vote.filter(user_id=self.user.uid).exists():
                 continue
@@ -193,11 +192,11 @@ class InLabelContent(BaseCreateContent):
     def get_question_answer(self, question):
         '''回答'''
         answer_list = list()
+        new_limit = math.ceil((self.offset + self.limit) * 0.5)
         # answer = [a for a in question.answer_set.exclude(user_id=self.user.uid).order_by('-create_at')[:100]]
-        for a in question.answer_set.exclude(user_id=self.user.uid).order_by('-create_at').select_related().only('vote',
-                                                                                                                 'collect',
-                                                                                                                 'comment')[
-                 :self.offset + self.limit]:
+
+        for a in question.answer_set.exclude(user_id=self.user.uid).order_by('-create_at').select_related().only('vote', 'collect', 'comment')[:new_limit]:
+
             # 点过赞
             # print('遇到回答！！！', a)
             if a.vote.filter(user_id=self.user.uid).exists():
@@ -308,17 +307,20 @@ class VisitorContent(object):
         #     user_id=self.user.uid, ).order_by('-create_at')[:50] if not a.vote.filter(user_id=self.user.uid).exists()]
         # print('标签下的所有文章', articles)
         article_list = list()
-        for article in label.article_set.filter(status='published', is_deleted=False).select_related().order_by(
-                '-create_at')[
-                       :self.offset + self.limit]:
+
+        new_limit = math.ceil((self.offset + self.limit) * 0.3)
+        for article in label.article_set.filter(status='published', is_deleted=False).select_related().order_by('-create_at')[
+                       :new_limit]:
             article_list.append(article)
         return article_list
 
     def get_question_answer(self, question):
         '''回答'''
         answer_list = list()
+        new_limit = math.ceil((self.offset + self.limit) * 0.5)
+
         # answer = [a for a in question.answer_set.exclude(user_id=self.user.uid).order_by('-create_at')[:100]]
-        for a in question.answer_set.all().order_by('-create_at').select_related()[:self.offset + self.limit]:
+        for a in question.answer_set.all().order_by('-create_at').select_related()[:new_limit]:
             answer_list.append(a)
         return answer_list
 
@@ -407,7 +409,6 @@ class HomePageRecommendAPIView(CustomAPIView):
             if isinstance(obj, Answer):
                 content_data = UserPageAnswerSerializer(obj, context={'me': user}).data
             data.append(content_data)
-        print(data, '推荐内容！！！！！')
         return self.success(data)
 
 
@@ -438,9 +439,6 @@ class WaitAnswerAPIView(CustomAPIView):
     def get(self, request):
         from apps.creator.views import RecommendQuestion
         user = self.get_user_profile(request)
-        if not user:
-            return self.error('error', 401)
-
         offset = request.GET.get('offset', 0)
         limit = request.GET.get('limit', 20)
         recommend = RecommendQuestion(user, offset, limit)
@@ -448,6 +446,7 @@ class WaitAnswerAPIView(CustomAPIView):
             questions = [q for q in Question.objects.all()[offset:offset + limit]]
         else:
             questions = recommend.get_finally_question()
+
         data = recommend.get_json_data(questions)
         return self.success(data)
 

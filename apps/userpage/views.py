@@ -115,6 +115,7 @@ class UserInfoAPIView(CustomAPIView):
         think_collect = ThinkCollectStatistics(user).get_total_collect_nums()
         collect_count = article_collect + answer_collect + think_collect
 
+
         self_achievement = {'upvote_count': upvotes, 'collect_count': collect_count}
         data['self_achievement'] = self_achievement
 
@@ -208,9 +209,9 @@ class UserPageImagePUTAPIView(CustomAPIView):
 class HoverUserInfoAPIView(CustomAPIView):
     '''但鼠标放在用户头像上时，显示用户部分信息'''
 
-    @validate_identity
+    # @validate_identity
     def get(self, request, user_slug):
-        uid = request._request.uid
+        uid = self.get_user_profile(request).uid if self.get_user_profile(request) else None
         user = UserProfile.objects.filter(slug=user_slug).first()
         if not user:
             return self.error('error', 404)
@@ -245,11 +246,14 @@ class HoverLabelInfoAPIView(CustomAPIView):
         label = Label.objects.filter(pk=pk).first()
         if not label:
             return self.error('not found', 404)
+        user = self.get_user_profile(request)
         data = {
+            'id': label.id,
             'name': label.name,
             'intro': label.intro,
             'question_count': Question.objects.filter(labels=label).count(),
             'followed_user_count': LabelFollow.objects.filter(label=label).count(),
+            'is_followed': LabelFollow.objects.filter(label=label, user_id=user.uid).exists() if user else False
         }
         return self.success(data)
 
@@ -281,14 +285,18 @@ class HoverLabelInfoAPIView(CustomAPIView):
 class FollowingUserAPIView(CustomAPIView):
     '''关注该用户'''
 
-    @validate_identity  # TODO 这种方式响应时间较长，怎么处理比较好？
+    # @validate_identity  # TODO 这种方式响应时间较长，怎么处理比较好？
     def get(self, request, user_slug):
         '''查看是否已经关注该用户'''
-        uid = request._request.uid
-        me = UserProfile.objects.filter(uid=uid).first()
+        user = self.get_user_profile(request)
+        # uid = request._request.uid
+        data = dict()
+        data['followed'] = False
+        if not user:
+            return self.success(data)
+        me = UserProfile.objects.filter(uid=user.uid).first()
         idol = UserProfile.objects.filter(slug=user_slug).first()
-        data = {'followed': False}
-        if FollowedUser.objects.filter(fans=me, idol=idol).exists():
+        if user and FollowedUser.objects.filter(fans=me, idol=idol).exists():
             data['followed'] = True
         return self.success(data)
 
@@ -699,6 +707,7 @@ class FavoritesContentAPIView(CustomAPIView):
 class CollectedAPIView(CustomAPIView):
     '''获取当前回答已收藏的收藏夹'''
 
+    @validate_identity
     def get(self, request, user_slug, content_type, object_id):
         favorites = UserFavorites.objects.filter(user__slug=user_slug)
         data_list = [{'title': fa.title, 'id': fa.id, 'content': fa.favorite_collect.all()} for fa in favorites]

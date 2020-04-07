@@ -3,6 +3,7 @@ import datetime, random
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Sum
 from django.core.cache import cache
+from django.conf import settings
 
 from apps.utils.api import CustomAPIView
 
@@ -404,7 +405,7 @@ class ThinkVoteStatistics(BaseStatistics):
 class ThinkCollectStatistics(BaseStatistics):
     '''想法收藏统计'''
 
-    def __init__(self, user, which_model=Article):
+    def __init__(self, user, which_model=Idea):
         super(ThinkCollectStatistics, self).__init__(user=user, which_model=which_model)
 
     def get_total_collect_nums(self):
@@ -434,6 +435,7 @@ class ThinkCollectStatistics(BaseStatistics):
         nums_list = instance.collect.filter(create_at__gte=begin_date, create_at__lte=end_date).count()
         nums = sum(nums_list) or 0
         return nums
+
 
 # 问题推荐
 class RecommendQuestion(object):
@@ -513,7 +515,7 @@ class RecommendQuestion(object):
             read = question.read_nums.filter(object_id=question.id).first()
             data['read_count'] = read.nums if read else 0
             data['followed'] = False
-            if QuestionFollow.objects.filter(question=question, user_id=self.user.uid).exists():
+            if self.user and QuestionFollow.objects.filter(question=question, user_id=self.user.uid).exists():
                 data['followed'] = True
             data_l.append(data)
         return data_l
@@ -554,6 +556,7 @@ class RecentCreateContent(object):
             data['upvote_count'] = answer.vote.filter(object_id=answer.id, value=True).count()
             # 收藏量
             data['collect_count'] = answer.collect.filter(object_id=answer.id).count()
+            data['link'] = "/question/" + str(answer.question.id) + '/answer/' + str(answer.id)
             answer_data.append(data)
         return answer_data
 
@@ -573,6 +576,7 @@ class RecentCreateContent(object):
             data['comment_count'] = article.articlecomment_set.all().count()
             data['upvote_count'] = article.vote.filter(object_id=article.id, value=True).count()
             data['collect_count'] = article.mark.filter(object_id=article.id).count()
+            data['link'] = "/article/p/" + str(article.id)
             article_data.append(data)
         return article_data
 
@@ -591,6 +595,7 @@ class RecentCreateContent(object):
             data['comment_count'] = think.ideacomment_set.all().count()
             data['upvote_count'] = think.agree.filter(object_id=think.id).count()
             data['collect_count'] = 0
+            data['link'] = "/pins/" + str(think.id)
             thinks_data.append(data)
         return thinks_data
 
@@ -814,7 +819,8 @@ class SingleDataStatisticsAPIView(CustomAPIView):
             begin_da = end_da - datetime.timedelta(days=7)
         data_list = list()
         if data_type == 'answer':
-            answers = Answer.objects.filter(create_at__gte=begin_da, create_at__lte=end_da, user_id=uid)
+            # answers = Answer.objects.filter(create_at__gte=begin_da, create_at__lte=end_da, user_id=uid)
+            answers = Answer.objects.filter(create_at__gte=begin_da, user_id=uid)
             for answer in answers:
                 data = dict()
                 data['id'] = answer.id
