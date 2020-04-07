@@ -14,7 +14,7 @@ class Article(BaseModel):
 
     title = models.CharField(max_length=100, null=False, blank=False, verbose_name="文章标题")
     content = models.TextField(null=False, blank=False, verbose_name="文章主体")
-    thumbnail = models.CharField(max_length=100, null=True, verbose_name="缩略图路径")
+    cover = models.CharField(max_length=100, null=True, verbose_name="封面图路径")
     # 发表评论时用到了该字段名，不能随意改名
     is_draft = models.BooleanField(null=False, blank=False, verbose_name="是不是草稿")
     author = models.ForeignKey(to=UserProfile, null=False, blank=False, verbose_name="作者")
@@ -37,7 +37,7 @@ class Article(BaseModel):
 
     @property
     def kind(self):
-        return "answer"
+        return "article"
 
     @property
     def url(self):

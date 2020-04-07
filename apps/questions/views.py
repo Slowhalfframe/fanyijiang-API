@@ -333,6 +333,9 @@ class HelperView(CustomAPIView):
 
         user_id = request._request.uid
         question = request.GET.get("question", None)
+        question = Question.objects.filter(pk=question).first()
+        if question is None:
+            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
         invited = QuestionInvite.objects.filter(inviting=user_id, question=question).values("invited")
         helpers = UserProfile.objects.exclude(uid=user_id).exclude(uid__in=invited)  # TODO 主动拒绝邀请的也要排除
         if len(helpers) > 15:  # 用户超过15个时，随机抽取15个

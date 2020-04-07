@@ -4,6 +4,7 @@ from django.db.transaction import atomic
 
 from apps.comments.serializers import BasicUserSerializer
 from apps.labels_v2.models import Label
+from apps.taskapp.tasks import question_pv_record, answers_pv_record
 from apps.userpage.models import UserProfile
 from apps.utils import errorcode
 from apps.utils.api import CustomAPIView
@@ -41,6 +42,7 @@ class QuestionView(CustomAPIView):
             with atomic():
                 question = Question.objects.create(author=me, **checker.validated_data)
                 question.labels.add(*(i for i in qs))  # question.labels.add(qs)为何出错？
+                QuestionFollow.objects.create(user=me, question=question)  # 自动关注自己的提问
         except:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         formatter = MeQuestionSerializer(instance=question, context={"me": me})
@@ -93,6 +95,7 @@ class OneQuestionView(CustomAPIView):
         question = Question.objects.filter(pk=question_id, is_deleted=False).first()
         if question is None:
             return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
+        question_pv_record.delay(request.META.get("REMOTE_ADDR"), question.pk)  # 记录阅读次数
         formatter = MeQuestionSerializer(instance=question, context={"me": me})
         # TODO 返回一批回答
         return self.success(formatter.data)
@@ -199,6 +202,8 @@ class OneAnswerView(CustomAPIView):
         if answer.is_draft:
             if me is None or answer.author != me:
                 return self.error(errorcode.MSG_NOT_OWNER, errorcode.NOT_OWNER)
+        else:  # 只有非草稿才记录阅读量
+            answers_pv_record.delay(request.META.get("REMOTE_ADDR"), answer.pk)
         formatter = MeAnswerSerializer(instance=answer, context={"me": me})
         return self.success(formatter.data)
 
