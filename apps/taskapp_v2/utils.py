@@ -4,8 +4,6 @@ from apps.questions_v2.models import Question, Answer
 
 from apps.articles_v2.models import Article
 
-from apps.userpage.models import UserProfile
-
 
 def creator_list(date):
     '''统计一周内创作数据的致知数
