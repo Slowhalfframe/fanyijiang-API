@@ -133,16 +133,12 @@
 
 * 旧：
 * `/api/labels/follows/`
-* 新：改为根据用户的slug查询他关注的标签，可分页
-* `/api/v2/labels/follow/?slug=<slug>&limit=<limit>&offset=<offset>`
+* 新：改为根据用户的slug查询他关注的标签
+* `/api/v2/labels/follow/?slug=<slug>`
 
 **请求头参数**
 
 不再强制登录
-
-**返回数据**
-
-由原先的数据改成分页的通用返回格式
 
 # 查看标签详情
 
