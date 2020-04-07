@@ -2,9 +2,9 @@ from apps.articles_v2.models import Article
 from apps.comments.models import Comment
 from apps.pins.models import Idea
 from apps.questions_v2.models import Answer
-from apps.utils import errorcode
-from apps.utils.api import CustomAPIView
-from apps.utils.decorators import logged_in
+from apps.utils_v2 import errorcode
+from apps.utils_v2.api import CustomAPIView
+from apps.utils_v2.decorators import logged_in
 from .serializers import VoteChecker
 
 MAPPINGS = {

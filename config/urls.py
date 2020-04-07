@@ -20,15 +20,15 @@ from django.views.static import serve
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
-    url(r"^api/labels/", include("apps.labels.urls", namespace="labels")),
-    url(r"^api/questions/", include("apps.questions.urls", namespace="questions")),
-    url(r"^api/userpage/", include("apps.userpage.urls", namespace="userpage")),
-    url(r"^api/articles/", include("apps.articles.urls", namespace="articles")),
-    url(r"^api/ideas/", include("apps.ideas.urls", namespace="ideas")),
-    url(r"^api/creator/", include("apps.creator.urls", namespace="creator")),
-    url(r"^api/notifications/", include("apps.notifications.urls", namespace="notifications")),
-    url(r"^api/search/", include("apps.search.urls", namespace="search")),
-    url(r"^api/homepage/", include("apps.homepage.urls", namespace="homepage")),
+    # url(r"^api/labels/", include("apps.labels.urls", namespace="labels")),
+    # url(r"^api/questions/", include("apps.questions.urls", namespace="questions")),
+    # url(r"^api/userpage/", include("apps.userpage.urls", namespace="userpage")),
+    # url(r"^api/articles/", include("apps.articles.urls", namespace="articles")),
+    # url(r"^api/ideas/", include("apps.ideas.urls", namespace="ideas")),
+    # url(r"^api/creator/", include("apps.creator.urls", namespace="creator")),
+    # url(r"^api/notifications/", include("apps.notifications.urls", namespace="notifications")),
+    # url(r"^api/search/", include("apps.search.urls", namespace="search")),
+    # url(r"^api/homepage/", include("apps.homepage.urls", namespace="homepage")),
 
     url(r"^api/v2/labels/", include("apps.labels_v2.urls", namespace="labels_v2")),
     url(r"^api/v2/questions/", include("apps.questions_v2.urls", namespace="questions_v2")),
@@ -41,7 +41,8 @@ urlpatterns = [
     url(r"^api/v2/notifications/", include("apps.notifications_v2.urls", namespace="notifications_v2")),
     url(r"^api/v2/homepage/", include("apps.homepage_v2.urls", namespace="homepage_v2")),
 
-    url(r'^api/', include('apps.utils.urls', namespace='utils')),
+    # url(r'^api/', include('apps.utils.urls', namespace='utils')),
+    url(r'^api/v2', include('apps.utils_v2.urls', namespace='utils')),
 
     url(r'public/(?P<path>.*)$', serve, {'document_root': settings.DATA_DIR}),
     url(r'static/(?P<path>.*)$', serve, {'document_root': settings.STATIC_ROOT}),  # admin的css文件访问路径

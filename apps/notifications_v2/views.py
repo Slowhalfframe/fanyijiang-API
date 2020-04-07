@@ -1,9 +1,9 @@
-from apps.utils.api import CustomAPIView
-from apps.notifications.models import Notification
-from apps.notifications.serializers import NotificationsSerializer
+from apps.utils_v2.api import CustomAPIView
+from apps.notifications_v2.models import Notification
+from apps.notifications_v2.serializers import NotificationsSerializer
 
-from apps.userpage.models import UserProfile
-from apps.utils.decorators import validate_identity
+from apps.userpage_v2.models import UserProfile
+from apps.utils_v2.decorators import validate_identity
 
 
 class NotificationAPIView(CustomAPIView):

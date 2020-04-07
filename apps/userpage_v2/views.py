@@ -6,8 +6,8 @@ from django.utils.decorators import method_decorator
 from django.db.models import Sum
 from django.http import QueryDict
 
-from apps.utils.api import CustomAPIView
-from apps.utils.decorators import validate_serializer, validate_identity
+from apps.utils_v2.api import CustomAPIView
+from apps.utils_v2.decorators import validate_serializer, validate_identity
 
 from apps.userpage_v2.models import (UserProfile, UserFavorites, FollowedUser, FollowedFavorites,
                                   FavoriteCollection)
