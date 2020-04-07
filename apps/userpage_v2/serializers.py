@@ -6,14 +6,12 @@ from apps.userpage_v2.models import (UserProfile, UserEmploymentHistory, UserEdu
                                   UserLocations, UserFavorites, FollowedFavorites, FavoriteCollection)
 
 from apps.labels_v2.models import Label
-from apps.labels.serializers import LabelCreateSerializer
 
 from apps.questions_v2.models import Question, QuestionFollow, Answer
-from apps.questions_v2.serializers import  AnswerInLabelDiscussSerializer
 
-from apps.articles.models import Article
+from apps.articles_v2.models import Article
 
-from apps.ideas.models import Idea
+from apps.pins.models import Idea
 
 
 class UserInfoSerializer(serializers.ModelSerializer):
