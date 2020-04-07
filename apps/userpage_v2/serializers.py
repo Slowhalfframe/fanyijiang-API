@@ -225,7 +225,7 @@ class UserPageAnswerSerializer(serializers.ModelSerializer):
         return my_vote.value
 
     def get_data_type(self, obj):
-        return obj.kind
+        return 'answer'
 
 
 class UserPageArticleSerializer(serializers.ModelSerializer):
@@ -270,7 +270,7 @@ class UserPageArticleSerializer(serializers.ModelSerializer):
         return my_vote.value
 
     def get_data_type(self, obj):
-        return obj.kind
+        return 'article'
 
 
 class UserPageThinksSerializer(serializers.ModelSerializer):
@@ -305,6 +305,7 @@ class UserPageThinksSerializer(serializers.ModelSerializer):
     def get_avatars(self, obj):
         picture = obj.avatars
         if len(picture):
+            # data = picture.replace('[', '').replace(']','').replace('\"', '').split(',')
             data = json.loads(picture)
             data = [settings.PICTURE_HOST + p for p in data]
             return data
@@ -314,6 +315,7 @@ class UserPageThinksSerializer(serializers.ModelSerializer):
         """返回None表示未投票，True表示赞成，False表示反对"""
         me = self.context["me"]  # None或者当前登录的UserProfile对象
         if not me:
+            # <<<<<<< master
             return None
         my_vote = obj.agree.filter(user_id=me.uid).first()
         if not my_vote:

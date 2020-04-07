@@ -8,6 +8,9 @@ from apps.userpage.models import UserProfile
 from apps.utils.models import BaseModel
 from apps.votes.models import Vote
 
+from apps.userpage_v2.models import FavoriteCollection
+from apps.creator_v2.models import ReadNums
+
 
 class Question(BaseModel):
     """问题，标题不能重复"""
@@ -20,7 +23,7 @@ class Question(BaseModel):
     followers = models.ManyToManyField(to=UserProfile, related_name="followed_questions", through="QuestionFollow",
                                        through_fields=("question", "user"), verbose_name="关注者")
 
-    # read_nums = GenericRelation(to=ReadNums)
+    read_nums = GenericRelation(to=ReadNums)
 
     class Meta:
         db_table = "question"
@@ -50,9 +53,9 @@ class Answer(BaseModel):
     comments = GenericRelation(to=Comment)
     votes = GenericRelation(to=Vote)
 
-    # # 添加收藏关系
-    # collect = GenericRelation(to=FavoriteCollection)
-    # read_nums = GenericRelation(to=ReadNums)
+    # 添加收藏关系
+    collect = GenericRelation(to=FavoriteCollection)
+    read_nums = GenericRelation(to=ReadNums)
 
     class Meta:
         db_table = "answer"
