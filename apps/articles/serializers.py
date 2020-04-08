@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from apps import xss_safe, legal_image_path
 from apps.labels.serializers import BasicLabelSerializer
-from apps.userpage.serializers import BasicUserSerializer
+from apps.userpage.serializers import BasicUserSerializer, MeUserSerializer
 from .models import Article
 
 
@@ -89,6 +89,7 @@ class MeArticleSerializer(StatArticleSerializer):
     is_voted = serializers.SerializerMethodField()  # 未投票，或票值
     is_commented = serializers.SerializerMethodField()
     is_followed = serializers.SerializerMethodField()
+    author = serializers.SerializerMethodField()
 
     # TODO 是否增加is_me，表示登录者即作者？需要重写author属性
     class Meta:
@@ -115,3 +116,8 @@ class MeArticleSerializer(StatArticleSerializer):
         if me is None:
             return False
         return obj.followers.filter(pk=me.pk).exists()
+
+    def get_author(self, obj):
+        me = self.context.get("me")
+        formatter = MeUserSerializer(instance=obj.author, context={"me": me})
+        return formatter.data

@@ -382,3 +382,28 @@ class BasicUserSerializer(serializers.ModelSerializer):
 
     def get_homepage(self, obj):
         return settings.FRONT_HOST + "/people/" + obj.slug + "/"
+
+
+class StatUserSerializer(BasicUserSerializer):
+    """用于用户的序列化，增加了与登录用户无关的统计信息"""
+
+    # TODO 增加哪些属性？
+    class Meta:
+        model = UserProfile
+        fields = BasicUserSerializer.Meta.fields
+
+
+class MeUserSerializer(StatUserSerializer):
+    """用于用户的序列化，增加了与登录用户有关的信息，需要传入当前登录用户"""
+
+    is_followed = serializers.SerializerMethodField()  # 当前登录用户是否关注了此用户
+
+    class Meta:
+        model = UserProfile
+        fields = StatUserSerializer.Meta.fields + ("is_followed",)
+
+    def get_is_followed(self, obj):
+        me = self.context.get("me")
+        if me is None:
+            return False
+        return FollowedUser.objects.filter(fans=me, idol=obj).exists()
