@@ -12,4 +12,4 @@ class ReadNums(models.Model):
     content_object = GenericForeignKey('content_type', 'object_id')
 
     class Meta:
-        db_table = 'read_nums'
+        db_table = 'db_read_nums'

@@ -16,6 +16,6 @@ class Vote(BaseModel):
     content_object = GenericForeignKey("content_type", "object_id")
 
     class Meta:
-        db_table = "vote"
+        db_table = "db_vote"
         verbose_name = "投票"
         verbose_name_plural = verbose_name

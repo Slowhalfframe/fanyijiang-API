@@ -5,7 +5,7 @@ from apps.comments.models import Comment
 from apps.userpage.models import UserProfile, FavoriteCollection
 from apps.utils.models import BaseModel
 from apps.votes.models import Vote
-from apps.creator.models import ReadNums
+from apps.read_nums.models import ReadNums
 
 
 class Idea(BaseModel):
@@ -24,7 +24,7 @@ class Idea(BaseModel):
     collect = GenericRelation(to=FavoriteCollection)
 
     class Meta:
-        db_table = "idea"
+        db_table = "db_idea"
         verbose_name = "想法"
         verbose_name_plural = verbose_name
 

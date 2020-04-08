@@ -28,7 +28,7 @@ class Article(BaseModel):
     read_nums = GenericRelation(to=ReadNums)
 
     class Meta:
-        db_table = "article"
+        db_table = "db_article"
         verbose_name = "文章"
         verbose_name_plural = verbose_name
 
@@ -51,7 +51,7 @@ class ArticleFollow(BaseModel):
     article = models.ForeignKey(to=Article, null=False, verbose_name="关注的文章")
 
     class Meta:
-        db_table = "article_follow"
+        db_table = "db_article_follow"
         verbose_name = "文章关注"
         verbose_name_plural = verbose_name
 

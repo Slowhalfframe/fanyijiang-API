@@ -23,7 +23,7 @@ class Question(BaseModel):
     read_nums = GenericRelation(to=ReadNums)
 
     class Meta:
-        db_table = "question"
+        db_table = "db_question"
         verbose_name = "问题"
         verbose_name_plural = verbose_name
 
@@ -53,7 +53,7 @@ class Answer(BaseModel):
     read_nums = GenericRelation(to=ReadNums)
 
     class Meta:
-        db_table = "answer"
+        db_table = "db_answer"
         verbose_name = "回答"
         verbose_name_plural = verbose_name
 
@@ -76,7 +76,7 @@ class QuestionFollow(BaseModel):
     question = models.ForeignKey(to=Question, null=False, verbose_name="关注的问题")
 
     class Meta:
-        db_table = "question_follow"
+        db_table = "db_question_follow"
         verbose_name = "问题关注"
         verbose_name_plural = verbose_name
 
@@ -102,6 +102,6 @@ class QuestionInvite(BaseModel):
     question = models.ForeignKey(to=Question, null=False, verbose_name="问题")
 
     class Meta:
-        db_table = "question_invite"
+        db_table = "db_question_invite"
         verbose_name = "邀请回答"
         verbose_name_plural = verbose_name
