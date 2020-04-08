@@ -527,18 +527,138 @@
 
 * 请求API
 
-  * 旧：
+  * 旧：回答可分页，文档未明说
   * `/api/questions/(?P<question_id>\d+)/`
-  * 新：未决定返回数据格式！！！
+  * 新：可分页
   * `/api/v2/questions/<question_id>/?limit=<limit>&offset=<offset>`
+  * 新旧数据的`answers`里都不含有问题的信息
+
+* URL和查询字符串参数
+
+    |question_id|<span style="color:red;">是</span>|integer|问题ID|
+
+    |limit|<span style="color:cyan;">否</span>|integer|最多几条结果|
+
+    |offset|<span style="color:cyan;">否</span>|integer|跳过几条结果|
+
+* 旧返回数据
+
+```json
+{
+    "code": 0,
+    "data": {
+        "id": 1,
+        "answer_numbers": 1,//改名为answer_count
+        "answered": 9,//已废弃，当前用户未回答时为false，否则为当前用户的回答的ID
+        "answers": {//进行了简化，原先数据在results里，现在直接就是数据
+            "results": [
+                {
+                    "id": 9,
+                    "content": "随意的回答",
+                    "vote_count": 0,
+                    "comment_count": 0,
+                    "i_agreed": null,//改名为is_voted
+                    "create_at": "20200319 17:25:02",
+                    "author_info": {//改名为author
+                        "nickname": "手机用户4zvDTn3",
+                        "avatar": "/avatar/36dda3061ff7738850aa522ddb900f27.jpg",
+                        "autograph": "CXV工程师",
+                        "slug": "shou-ji-yong-hu-4zvdtn3",
+                        "answer_count": 3,//已废弃
+                        "article_count": 2,//已废弃
+                        "follower_count": 0,//已废弃
+                        "i_followed_author": false//已经废弃
+                    }
+                }
+            ],
+            "total": 1//已废弃的重复数据
+        },
+        "title": "我的第一个问题",
+        "content": null,
+        "author_info": {//改名为author
+            "nickname": "haoran·zhang",
+            "avatar": "/avatar/0b5171bc39a9aec05a8f6cb7a185b769.jpg",
+            "slug": "zhanghaoran"
+        },
+        "create_at": "20200311 11:38:48",
+        "labels": [
+            {
+                "id": 1,
+                "name": "标签1"
+            }
+        ],
+        "follow_numbers": 0,//改名为follower_count
+        "comment_numbers": 5,//改名为comment_count
+        "followed": false//改名为is_followed
+    }
+}
+```
+
+* 新返回数据
+
+```json
+{
+    "code": 0,
+    "data": {
+        "id": 1,
+        "type": "question",//新增数据
+        "title": "什么是闭包？",
+        "content": null,
+        "is_anonymous": true,//新增数据，是否匿名
+        "author": {},//原先的author_info，匿名时为空对象
+        "labels": [
+            {
+                "id": 1,
+                "type": "label",
+                "name": "数学",
+                "intro": null,
+                "avatar": null
+            }
+        ],
+        "create_at": "20200407 22:31:12",
+        "update_at": "20200407 22:31:12",
+        "answer_count": 3,//原先的answer_numbers，回答总个数
+        "comment_count": 0,//原先的comment_numbers，评论数
+        "follower_count": 1,//原先的follower_numbers，关注者个数
+        "read_nums": 3434,//新增数据，阅读次数
+        "is_followed": true,//原先的followed
+        "is_answered": false,//原先的answered，但已回答时不返回ID
+        "answers": [
+            {
+                "id": 1,
+                "type": "answer",//新增数据
+                "content": "该集合与它的极限点集合的并",
+                "is_draft": false,//新增数据，是否是草稿
+                "is_anonymous": false,//新增数据，是否匿名
+                "author": {//原先的author_info，匿名时为空对象
+                    "id": "e4da3b7fbbce2345d7772b0674a318d5",
+                    "type": "people",
+                    "slug": "zhanghaoran",
+                    "nickname": "haoran·zhang",
+                    "gender": null,
+                    "avatar": null,
+                    "autograph": null,
+                    "homepage": "http://192.168.0.105:8068/people/zhanghaoran/"
+                },
+                "create_at": "20200407 22:33:26",
+                "update_at": "20200407 22:33:26",
+                "comment_count": 0,
+                "vote_count": 0,
+                "is_voted": null,//原先的i_agreed
+                "is_commented": false//新增数据，是否已经评论
+            }
+        ]
+    }
+}
+```
 
 # 查看回答详情
 
 * 请求API
 
-  * 旧：除自身外，额外返回一个回答
+  * 旧：额外返回一个（可能为空的）回答，
   * `/api/questions/(?P<question_id>\d+)/answers/(?P<answer_id>\d+)/`
-  * 新：作者可以查看草稿，只返回自身
+  * 新：作者可以查看草稿，额外返回一个（可能为空的）回答，看草稿时额外回答必然为空
   * `/api/v2/questions/<question_id>/answers/<answer_id>/`
 
 * 旧返回数据
@@ -552,7 +672,7 @@
             "title": "我的第一个问题",
             "answer_count": 1,
             "comment_count": 0,
-            "followed": false
+            "followed": false//改名为is_followed
         },
         "answer": {//回答自身
             "id": 1,
@@ -582,27 +702,14 @@
 ```json
 {
     "code": 0,
-    "data": {
-        "id": 5,
-        "type": "answer",//新增数据
-        "content": "该集合与它的极限点集合的并",
-        "is_draft": true,//新增数据
-        "question": {//问题对象，现在附属于回答
+    "data": {//主要特点是问题与回答是分开的，而且是两个回答
+        "question": {
             "id": 1,
             "type": "question",
             "title": "什么是闭包？",
             "content": null,
-            "is_anonymous": false,
-            "author": {//匿名时为空数据
-                "id": "45c48cce2e2d7fbdea1afc51c7c6ad26",
-                "type": "people",
-                "slug": "qin",
-                "nickname": "秦",
-                "gender": null,
-                "avatar": null,
-                "autograph": null,
-                "homepage": "http://192.168.0.107:9000/people/qin/"
-            },
+            "is_anonymous": true,//是否匿名
+            "author": {},//作者信息，匿名时为空对象
             "labels": [
                 {
                     "id": 1,
@@ -612,26 +719,61 @@
                     "avatar": null
                 }
             ],
-            "create_at": "20200406 15:42:33",
-            "update_at": "20200406 15:42:33"
+            "create_at": "20200407 22:31:12",
+            "update_at": "20200407 22:31:12",
+            "answer_count": 3,
+            "comment_count": 0,
+            "follower_count": 1,
+            "read_nums": 3434,
+            "is_followed": true,
+            "is_answered": false
         },
-        "is_anonymous": false,
-        "author": {//原先的author_info，不含统计信息、与当前用户的关联信息，匿名时为空对象
-            "id": "45c48cce2e2d7fbdea1afc51c7c6ad26",
-            "type": "people",
-            "slug": "qin",
-            "nickname": "秦",
-            "gender": null,
-            "avatar": null,
-            "autograph": null,
-            "homepage": "http://192.168.0.107:9000/people/qin/"
+        "answer": {//回答自身
+            "id": 1,
+            "type": "answer",
+            "content": "该集合与它的极限点集合的并",
+            "is_draft": false,
+            "is_anonymous": false,//是否匿名
+            "author": {//原先的author_info，匿名时为空对象
+                "id": "e4da3b7fbbce2345d7772b0674a318d5",
+                "type": "people",
+                "slug": "zhanghaoran",
+                "nickname": "haoran·zhang",
+                "gender": null,
+                "avatar": null,
+                "autograph": null,
+                "homepage": "http://192.168.0.105:8068/people/zhanghaoran/"
+            },
+            "create_at": "20200407 22:33:26",
+            "update_at": "20200407 22:33:26",
+            "comment_count": 0,
+            "vote_count": 0,
+            "is_voted": null,
+            "is_commented": false
         },
-        "create_at": "20200406 16:23:34",
-        "update_at": "20200406 16:34:50",
-        "comment_count": 0,//新增数据，回答的评论数
-        "vote_count": 0,//新增数据，回答的赞成票数
-        "is_voted": null,//原先的i_agreed，当前用户是否已经投票或票值
-        "is_commented": false//新增数据，当前用户是否已经评论
+        "another_answer": {//另一个回答，可能为null，查看草稿必然为null
+            "id": 1,
+            "type": "answer",
+            "content": "该集合与它的极限点集合的并",
+            "is_draft": false,
+            "is_anonymous": false,
+            "author": {
+                "id": "e4da3b7fbbce2345d7772b0674a318d5",
+                "type": "people",
+                "slug": "zhanghaoran",
+                "nickname": "haoran·zhang",
+                "gender": null,
+                "avatar": null,
+                "autograph": null,
+                "homepage": "http://192.168.0.105:8068/people/zhanghaoran/"
+            },
+            "create_at": "20200407 22:33:26",
+            "update_at": "20200407 22:33:26",
+            "comment_count": 0,
+            "vote_count": 0,
+            "is_voted": null,
+            "is_commented": false
+        }
     }
 }
 ```

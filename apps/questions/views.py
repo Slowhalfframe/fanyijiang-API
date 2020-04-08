@@ -10,7 +10,8 @@ from apps.utils import errorcode
 from apps.utils.api import CustomAPIView
 from apps.utils.decorators import logged_in
 from .models import Question, Answer, QuestionFollow, QuestionInvite
-from .serializers import QuestionChecker, MeQuestionSerializer, AnswerChecker, MeAnswerSerializer
+from .serializers import QuestionChecker, MeQuestionSerializer, AnswerChecker, MeAnswerSerializer, \
+    MeAnswerWithoutQuestionSerializer
 
 from apps.taskapp.tasks import notification_handler
 
@@ -101,8 +102,10 @@ class OneQuestionView(CustomAPIView):
             return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
         question_pv_record.delay(request.META.get("REMOTE_ADDR"), question.pk)  # 记录阅读次数
         formatter = MeQuestionSerializer(instance=question, context={"me": me})
-        # TODO 返回一批回答
-        return self.success(formatter.data)
+        data = formatter.data
+        qs = question.answer_set.filter(is_deleted=False, is_draft=False)
+        data["answers"] = self.paginate_data(request, qs, MeAnswerWithoutQuestionSerializer, {"me": me})["results"]
+        return self.success(data)
 
 
 class AnswerView(CustomAPIView):
@@ -220,8 +223,14 @@ class OneAnswerView(CustomAPIView):
                 return self.error(errorcode.MSG_NOT_OWNER, errorcode.NOT_OWNER)
         else:  # 只有非草稿才记录阅读量
             answers_pv_record.delay(request.META.get("REMOTE_ADDR"), answer.pk)
-        formatter = MeAnswerSerializer(instance=answer, context={"me": me})
-        return self.success(formatter.data)
+        data = {}
+        data["question"] = MeQuestionSerializer(instance=question, context={"me": me}).data
+        data["answer"] = MeAnswerWithoutQuestionSerializer(instance=answer, context={"me": me}).data
+        if answer.is_draft:
+            data["another_answer"] = None
+        else:  # TODO 先返回一个假数据
+            data["another_answer"] = data["answer"]
+        return self.success(data)
 
 
 class DraftView(CustomAPIView):
