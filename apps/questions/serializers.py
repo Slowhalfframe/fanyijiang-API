@@ -189,3 +189,11 @@ class MeAnswerSerializer(StatAnswerSerializer):
         if me is None:
             return False
         return obj.comments.filter(author=me, is_deleted=False).exists()
+
+
+class MeAnswerWithoutQuestionSerializer(MeAnswerSerializer):
+    """用于特殊情况下回答的序列化，与MeAnswerSerializer相比，去掉了问题的信息"""
+
+    class Meta:
+        model = Answer
+        fields = tuple(i for i in MeAnswerSerializer.Meta.fields if i != "question")
