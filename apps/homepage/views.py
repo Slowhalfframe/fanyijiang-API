@@ -177,7 +177,7 @@ class InLabelContent(BaseCreateContent):
         article_list = list()
         new_limit = math.ceil((self.offset+self.limit) * 0.3)
         for article in label.article_set.filter(is_draft=False, is_deleted=False).exclude(
-                author=self.user, ).select_related().order_by('-create_at').only('votes', 'collect',)[:new_limit]:
+                author=self.user, ).select_related().order_by('-create_at').only('votes', 'collect', 'comments')[:new_limit]:
             # 点过赞
             if article.votes.filter(author=self.user).exists():
                 continue
@@ -199,7 +199,7 @@ class InLabelContent(BaseCreateContent):
         new_limit = math.ceil((self.offset + self.limit) * 0.5)
         # answer = [a for a in question.answer_set.exclude(user_id=self.user.uid).order_by('-create_at')[:100]]
 
-        for a in question.answer_set.exclude(author=self.user).order_by('-create_at').select_related().only('vote', 'collect', 'comment')[:new_limit]:
+        for a in question.answer_set.exclude(author=self.user).order_by('-create_at').select_related().only('votes', 'collect', 'comments')[:new_limit]:
 
             # 点过赞
             # print('遇到回答！！！', a)
@@ -302,6 +302,8 @@ class VisitorContent(object):
     def get_label_question(self, label):
         '''问题'''
         questions = label.question_set.all()[:20]
+        print(label)
+        print(questions)
         # print('标签下的所有问题', questions)
         return questions
 
@@ -334,6 +336,7 @@ class VisitorContent(object):
         content_list = list()
         # print(self.get_label_question(label), '遇到问题！！！')
         for questoin in self.get_label_question(label):
+            print(questoin, '推荐的问题')
             # random_length = math.ceil(self.limit * 0.5)
             # print('我提出的问题！！！！！！！！！！！！！11', questoin)
             answer_list = self.get_question_answer(questoin)
@@ -350,6 +353,7 @@ class VisitorContent(object):
         # print(content_list, '标签下的内容')
         # print(label, '标签')
         # print(content_list, '标签下的内容')
+        print(content_list)
         return content_list
 
     def get_finally_data(self):
