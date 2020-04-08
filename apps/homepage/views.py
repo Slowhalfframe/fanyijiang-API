@@ -179,7 +179,7 @@ class InLabelContent(BaseCreateContent):
         for article in label.article_set.filter(is_draft=False, is_deleted=False).exclude(
                 author=self.user, ).select_related().order_by('-create_at').only('votes', 'collect',)[:new_limit]:
             # 点过赞
-            if article.vote.filter(author=self.user).exists():
+            if article.votes.filter(author=self.user).exists():
                 continue
 
             # 收藏过
@@ -203,7 +203,7 @@ class InLabelContent(BaseCreateContent):
 
             # 点过赞
             # print('遇到回答！！！', a)
-            if a.vote.filter(author=self.user).exists():
+            if a.votes.filter(author=self.user).exists():
                 continue
 
             # 收藏过
@@ -211,7 +211,7 @@ class InLabelContent(BaseCreateContent):
                 continue
 
             # 评论过
-            if a.comment.filter(author=self.user).exists():
+            if a.comments.filter(author=self.user).exists():
                 continue
             answer_list.append(a)
         return answer_list
