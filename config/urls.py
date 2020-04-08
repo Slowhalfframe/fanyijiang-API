@@ -42,7 +42,7 @@ urlpatterns = [
     url(r"^api/v2/homepage/", include("apps.homepage.urls", namespace="homepage")),
 
     # url(r'^api/', include('apps.utils.urls', namespace='utils')),
-    url(r'^api/v2', include('apps.utils.urls', namespace='utils')),
+    url(r'^api/v2/', include('apps.utils.urls', namespace='utils')),
 
     url(r'public/(?P<path>.*)$', serve, {'document_root': settings.DATA_DIR}),
     url(r'static/(?P<path>.*)$', serve, {'document_root': settings.STATIC_ROOT}),  # admin的css文件访问路径

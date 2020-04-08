@@ -1,3 +1,8 @@
+import random
+
+from django.db.models import Q
+
+from apps.questions.serializers import MeAnswerSerializer
 from apps.utils import errorcode
 from apps.utils.api import CustomAPIView
 from apps.utils.decorators import logged_in
@@ -198,4 +203,77 @@ class LabelDiscussionView(CustomAPIView):
     def get(self, request, label_id):
         """获取本标签的讨论内容，或者说热点"""
 
-        # TODO 未实现，需要先实现文章、问答等的模型
+        # TODO 这是临时版本
+        label = Label.objects.filter(pk=label_id, is_deleted=False).first()
+        if not label:
+            return self.error(errorcode.MSG_NO_DATA, errorcode.NO_DATA)
+        me = self.get_user_profile(request)
+        # 这种查询结果可能有重复的，需要自行去重
+        questions = label.question_set.filter(answer__isnull=False).distinct()  # TODO 除了要有答案外，还有什么要求？
+        answers = [i.answer_set.first() for i in questions]
+        s = MeAnswerSerializer(instance=answers, many=True, context={"me": me})
+        return self.success(s.data)
+
+
+class LabelSearchView(CustomAPIView):
+    # TODO 这是临时版本
+    def get(self, request):
+        keyword = request.query_params.get("kw", "")
+        if not keyword:
+            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
+        labels = Label.objects.filter(Q(name__contains=keyword) | Q(intro__contains=keyword))
+        me = self.get_user_profile(request)
+        data = [{
+            "id": i.pk,
+            "name": i.name,
+            "intro": i.intro,
+            "follower_count": LabelFollow.objects.filter(label=i).count(),
+            "item_count": i.article_set.filter(is_deleted=False, is_draft=False).count() + i.question_set.count(),
+            "is_followed": False if not me else LabelFollow.objects.filter(label=i, user=me).exists()
+        } for i in labels]
+        return self.success(data)
+
+
+class LabelWanderView(CustomAPIView):
+    # TODO 这是临时版本
+    def get(self, request):
+        """从所有标签里随机展示一批"""
+
+        me = self.get_user_profile(request)
+        qs = Label.objects.all()
+        if qs.count() > 4:
+            labels = random.sample(list(qs), 4)
+        else:
+            labels = list(qs)
+        data = [{
+            "id": i.pk,
+            "name": i.name,
+            "intro": i.intro,
+            "follower_count": LabelFollow.objects.filter(label=i).count(),
+            "item_count": i.article_set.filter(is_deleted=False, status="published").count() + i.question_set.count(),
+            "is_followed": False if not me else LabelFollow.objects.filter(label=i, user=me).exists()
+        } for i in labels]
+        return self.success(data)
+
+
+class AdviceLabelView(CustomAPIView):
+    # TODO 这是临时版本
+    def get(self, request):
+        """根据用户的标题提供一些可能的标签"""
+
+        title = request.query_params.get("title", "")
+        if not title:
+            return self.error(errorcode.MSG_INVALID_DATA, errorcode.INVALID_DATA)
+        advice = []
+        # 标题一般来说有一定长度，标签的名称一般来说较短
+        qs1 = Label.objects.filter(name__in=[title], question__isnull=False)
+        if qs1.count() > 3:
+            advice = random.sample(list(qs1), 3)
+        elif qs1.exists():
+            advice = list(qs1)
+        data = [{
+            "id": i.pk,
+            "name": i.name,
+            "intro": i.intro,
+        } for i in advice]
+        return self.success(data)

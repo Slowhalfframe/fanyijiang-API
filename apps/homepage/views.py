@@ -13,6 +13,8 @@ from apps.votes.models import Vote
 
 from apps.userpage.serializers import UserPageArticleSerializer, UserPageAnswerSerializer
 
+from apps.creator.views import TotalNums, RecommendQuestion
+
 
 class BaseCreateContent(object):
     def __init__(self, user, offset, limit):
@@ -175,7 +177,7 @@ class InLabelContent(BaseCreateContent):
         article_list = list()
         new_limit = math.ceil((self.offset+self.limit) * 0.3)
         for article in label.article_set.filter(is_draft=False, is_deleted=False).exclude(
-                author=self.user, ).select_related().order_by('-create_at').only('vote', 'collect',)[:new_limit]:
+                author=self.user, ).select_related().order_by('-create_at').only('votes', 'collect',)[:new_limit]:
             # 点过赞
             if article.vote.filter(author=self.user).exists():
                 continue
@@ -438,7 +440,6 @@ class HomePageFollowContentAPIView(CustomAPIView):
 
 class WaitAnswerAPIView(CustomAPIView):
     def get(self, request):
-        from apps.creator.views import RecommendQuestion
         user = self.get_user_profile(request)
         offset = request.GET.get('offset', 0)
         limit = request.GET.get('limit', 20)
@@ -454,7 +455,6 @@ class WaitAnswerAPIView(CustomAPIView):
 
 class HomePageCreatorAPIView(CustomAPIView):
     def get(self, request):
-        from apps.creator.views import TotalNums
         user = self.get_user_profile(request)
         if not user:
             return self.success({'ysd_read_nums': 0, 'ysd_upvote': 0})

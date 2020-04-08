@@ -217,7 +217,7 @@ class UserPageAnswerSerializer(serializers.ModelSerializer):
         if not me:
             # <<<<<<< master
             return None
-        my_vote = obj.vote.filter(author_id=me.uid).first()
+        my_vote = obj.votes.filter(author_id=me.uid).first()
         if not my_vote:
             return None
         return my_vote.value
@@ -241,10 +241,10 @@ class UserPageArticleSerializer(serializers.ModelSerializer):
                   'currentUserVote', 'data_type')
 
     def get_comment_count(self, obj):
-        return obj.articlecomment_set.all().count()
+        return obj.comments.all().count()
 
     def get_upvote_count(self, obj):
-        return obj.vote.filter(value=True).count()
+        return obj.votes.filter(value=True).count()
 
     def get_author_info(self, obj):
         author = UserProfile.objects.filter(uid=obj.author_id).first()
@@ -262,7 +262,7 @@ class UserPageArticleSerializer(serializers.ModelSerializer):
         if not me:
             # <<<<<<< master
             return None
-        my_vote = obj.vote.filter(author_id=me.uid).first()
+        my_vote = obj.votes.filter(author_id=me.uid).first()
         if not my_vote:
             return None
         return my_vote.value
@@ -285,7 +285,7 @@ class UserPageThinksSerializer(serializers.ModelSerializer):
         'id', 'content', 'create_time', 'comment_count', 'upvote_count', 'author_info', 'avatars', 'currentUserVote')
 
     def get_comment_count(self, obj):
-        return obj.ideacomment_set.all().count()
+        return obj.comments.all().count()
 
     def get_upvote_count(self, obj):
         return obj.agree.all().count()
@@ -315,7 +315,7 @@ class UserPageThinksSerializer(serializers.ModelSerializer):
         if not me:
             # <<<<<<< master
             return None
-        my_vote = obj.vote.filter(author_id=me.uid).first()
+        my_vote = obj.votes.filter(author_id=me.uid).first()
         if not my_vote:
             return None
         return True
@@ -352,10 +352,10 @@ class AnswerInLabelDiscussSerializer(serializers.ModelSerializer):
         )
 
     def get_vote_count(self, obj):
-        return obj.vote.filter(value=True).count()
+        return obj.votes.filter(value=True).count()
 
     def get_comment_count(self, obj):
-        return obj.comment.count()
+        return obj.comments.count()
 
     def get_voted(self, obj):
         """返回None表示未投票，True表示赞成，False表示反对"""
@@ -363,7 +363,7 @@ class AnswerInLabelDiscussSerializer(serializers.ModelSerializer):
         if not me:
             # <<<<<<< master
             return None
-        my_vote = obj.vote.filter(author_id=me.uid).first()
+        my_vote = obj.votes.filter(author_id=me.uid).first()
         if not my_vote:
             return None
         return my_vote.value
