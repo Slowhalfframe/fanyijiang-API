@@ -542,7 +542,7 @@ class RecentCreateContent(object):
         self.user = user
 
     def recent_answer(self):
-        answers = Answer.objects.filter(author=self.user).order_by('-create_at')[:3]
+        answers = Answer.objects.filter(author=self.user, is_draft=False).order_by('-create_at')[:3]
         answer_data = []
         for answer in answers:
             data = dict()
@@ -820,7 +820,7 @@ class SingleDataStatisticsAPIView(CustomAPIView):
         data_list = list()
         if data_type == 'answer':
             # answers = Answer.objects.filter(create_at__gte=begin_da, create_at__lte=end_da, user_id=uid)
-            answers = Answer.objects.filter(create_at__gte=begin_da, author=user)
+            answers = Answer.objects.filter(create_at__gte=begin_da, author=user, is_draft=False)
             for answer in answers:
                 data = dict()
                 data['id'] = answer.id

@@ -58,7 +58,7 @@ class UserCreateArticle(BaseCreateContent):
 
     def get_user_answer_question(self):
         '''获取用户发表回答的问题'''
-        questions = [a.question for a in Answer.objects.filter(author=self.user).select_related('question')]
+        questions = [a.question for a in Answer.objects.filter(author=self.user, is_draft=False).select_related('question')]
         launch_q = [q for q in Question.objects.filter(author=self.user)]
         questions.extend(launch_q)
         return questions
@@ -424,7 +424,7 @@ class HomePageFollowContentAPIView(CustomAPIView):
         idol_users = UserProfile.objects.filter(as_idol__fans=user)[offset:offset + limit]
         data_list = list()
         for idol in idol_users:
-            answer = Answer.objects.filter(author=idol).order_by('-create_at')
+            answer = Answer.objects.filter(author=idol, is_draft=False).order_by('-create_at')
             answer_data = self.paginate_data(request, answer, UserPageAnswerSerializer, serializer_context={'me': idol})
             data_list.extend(answer_data['results'])
             articles = Article.objects.filter(author=idol).order_by('-update_at', '-create_at')
