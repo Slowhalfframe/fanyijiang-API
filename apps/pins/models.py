@@ -2,9 +2,10 @@ from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 
 from apps.comments.models import Comment
-from apps.userpage.models import UserProfile
+from apps.userpage.models import UserProfile, FavoriteCollection
 from apps.utils.models import BaseModel
 from apps.votes.models import Vote
+from apps.creator.models import ReadNums
 
 
 class Idea(BaseModel):
@@ -19,8 +20,8 @@ class Idea(BaseModel):
     comments = GenericRelation(to=Comment)
     votes = GenericRelation(to=Vote)  # 想法的点赞即投票，不过只有未投票和赞成票两种
 
-    # read_nums = GenericRelation(to=ReadNums)
-    # collect = GenericRelation(to=FavoriteCollection)
+    read_nums = GenericRelation(to=ReadNums)
+    collect = GenericRelation(to=FavoriteCollection)
 
     class Meta:
         db_table = "idea"

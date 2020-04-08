@@ -8,7 +8,7 @@ from apps.userpage.models import UserProfile
 from apps.utils.models import BaseModel
 from apps.votes.models import Vote
 from apps.userpage.models import FavoriteCollection
-from apps.creator.models import ReadNums
+from apps.read_nums.models import ReadNums
 
 
 class Article(BaseModel):

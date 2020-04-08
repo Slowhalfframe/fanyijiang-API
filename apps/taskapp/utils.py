@@ -33,9 +33,9 @@ def creator_list(date):
 def get_answer_score(answer):
     # 获取一周的阅读量, 因为统计的是从回答从创建到昨日的阅读量, 所以可以直接从数据库读即可
     read_nums = answer.read_nums.get(object_id=answer.id).nums or 0
-    up_votes = answer.vote.filter(object_id=answer.id, value=True).count() or 1
-    down_votes = answer.vote.filter(object_id=answer.id, value=False).count()
-    comments = answer.comment.all().count()
+    up_votes = answer.votes.filter(object_id=answer.id, value=True).count() or 1
+    down_votes = answer.votes.filter(object_id=answer.id, value=False).count()
+    comments = answer.comments.all().count()
     collects = answer.collect.all().count()
 
     score = 60 * (15 * (read_nums / up_votes)) + 40 * (5 * comments + 30 * up_votes + 10 * collects - 30 * down_votes)
@@ -45,8 +45,8 @@ def get_answer_score(answer):
 def get_article_score(article):
     read = article.read_nums.filter(object_id=article.id).first()
     read_nums = read.nums if read else 0
-    up_votes = article.vote.filter(object_id=article.id, value=True).count() or 1
-    down_votes = article.vote.filter(object_id=article.id, value=False).count()
+    up_votes = article.votes.filter(object_id=article.id, value=True).count() or 1
+    down_votes = article.votes.filter(object_id=article.id, value=False).count()
     comments = article.comments.all().count()
     collects = article.collect.all().count()
     score = 60 * (15 * (read_nums / up_votes)) + 40 * (5 * comments + 30 * up_votes + 10 * collects - 30 * down_votes)
