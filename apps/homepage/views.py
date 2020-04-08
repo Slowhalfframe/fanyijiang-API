@@ -178,17 +178,17 @@ class InLabelContent(BaseCreateContent):
         new_limit = math.ceil((self.offset+self.limit) * 0.3)
         for article in label.article_set.filter(is_draft=False, is_deleted=False).exclude(
                 author=self.user, ).select_related().order_by('-create_at').only('votes', 'collect', 'comments')[:new_limit]:
-            # 点过赞
-            if article.votes.filter(author=self.user).exists():
-                continue
-
-            # 收藏过
-            if article.collect.filter(favorite__in=self.user.favorites.all()).exists():
-                continue
-
-            # 评论过
-            if article.comments.filter(author=self.user).exists():
-                continue
+            # # 点过赞
+            # if article.votes.filter(author=self.user).exists():
+            #     continue
+            #
+            # # 收藏过
+            # if article.collect.filter(favorite__in=self.user.favorites.all()).exists():
+            #     continue
+            #
+            # # 评论过
+            # if article.comments.filter(author=self.user).exists():
+            #     continue
             article_list.append(article)
 
         return article_list
@@ -202,17 +202,17 @@ class InLabelContent(BaseCreateContent):
         for a in question.answer_set.exclude(author=self.user).order_by('-create_at').select_related().only('votes', 'collect', 'comments')[:new_limit]:
 
             # 点过赞
-            # print('遇到回答！！！', a)
-            if a.votes.filter(author=self.user).exists():
-                continue
-
-            # 收藏过
-            if a.collect.filter(favorite__in=self.user.favorites.all()).exists():
-                continue
-
-            # 评论过
-            if a.comments.filter(author=self.user).exists():
-                continue
+            # # print('遇到回答！！！', a)
+            # if a.votes.filter(author=self.user).exists():
+            #     continue
+            #
+            # # 收藏过
+            # if a.collect.filter(favorite__in=self.user.favorites.all()).exists():
+            #     continue
+            #
+            # # 评论过
+            # if a.comments.filter(author=self.user).exists():
+            #     continue
             answer_list.append(a)
         return answer_list
 
