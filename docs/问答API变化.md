@@ -549,7 +549,7 @@
     "data": {
         "id": 1,
         "answer_numbers": 1,//改名为answer_count
-        "answered": 9,//已废弃，当前用户未回答时为false，否则为当前用户的回答的ID
+        "answered": 9,//改名为is_answered，当前用户未回答时为false，否则为当前用户的回答的ID
         "answers": {//进行了简化，原先数据在results里，现在直接就是数据
             "results": [
                 {
@@ -622,7 +622,7 @@
         "follower_count": 1,//原先的follower_numbers，关注者个数
         "read_nums": 3434,//新增数据，阅读次数
         "is_followed": true,//原先的followed
-        "is_answered": false,//原先的answered，但已回答时不返回ID
+        "is_answered": false,//原先的answered
         "answers": [
             {
                 "id": 1,

@@ -2,6 +2,7 @@ __pycache__/
 .idea/
 public/
 migrations/
+!migrations/__init__.py
 .env
 deploy/logs/*
 *.log

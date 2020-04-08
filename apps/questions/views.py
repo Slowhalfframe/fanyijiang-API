@@ -105,6 +105,9 @@ class OneQuestionView(CustomAPIView):
         data = formatter.data
         qs = question.answer_set.filter(is_deleted=False, is_draft=False)
         data["answers"] = self.paginate_data(request, qs, MeAnswerWithoutQuestionSerializer, {"me": me})["results"]
+        if data["is_answered"]:
+            my_answer = Answer.objects.filter(question=question, author=me, is_draft=False, is_deleted=False).first()
+            data["is_answered"] = my_answer.pk
         return self.success(data)
 
 
