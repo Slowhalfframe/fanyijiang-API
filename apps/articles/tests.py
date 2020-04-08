@@ -17,7 +17,7 @@ class ArticleViewPostTest(TestCase):
     def setUp(self):
         common_prepare(self)
         self.label = Label.objects.create(name="标签1")
-        self.path = reverse("articles_v2:root")
+        self.path = reverse("articles:root")
         self.data = {
             "title": "标题1",
             "content": "内容1",
@@ -58,7 +58,7 @@ class ArticleViewPostTest(TestCase):
 class OneArticleViewDeleteTest(TestCase):
     def setUp(self):
         prepare(self)
-        self.path = reverse("articles_v2:one_article", kwargs={"article_id": self.article.pk})
+        self.path = reverse("articles:one_article", kwargs={"article_id": self.article.pk})
 
     def test_no_login(self):
         response = self.client.delete(self.path)
@@ -66,7 +66,7 @@ class OneArticleViewDeleteTest(TestCase):
         self.assertNotEqual(data["code"], 0)
 
     def test_article_not_exist(self):
-        path = reverse("articles_v2:one_article", kwargs={"article_id": self.article.pk + 1})
+        path = reverse("articles:one_article", kwargs={"article_id": self.article.pk + 1})
         response = self.client.delete(path, **self.headers)
         data = response.json()
         self.assertEqual(data["code"], 0)
@@ -104,7 +104,7 @@ class OneArticleViewDeleteTest(TestCase):
 class OneArticleViewPutTest(TestCase):
     def setUp(self):
         prepare(self)
-        self.path = reverse("articles_v2:one_article", kwargs={"article_id": self.article.pk})
+        self.path = reverse("articles:one_article", kwargs={"article_id": self.article.pk})
         self.data = {
             "title": "标题2",
             "content": "内容2",
@@ -118,7 +118,7 @@ class OneArticleViewPutTest(TestCase):
         self.assertNotEqual(data["code"], 0)
 
     def test_article_not_exist(self):
-        path = reverse("articles_v2:one_article", kwargs={"article_id": self.article.pk + 1})
+        path = reverse("articles:one_article", kwargs={"article_id": self.article.pk + 1})
         response = self.client.put(path, self.data, **self.headers)
         data = response.json()
         self.assertNotEqual(data["code"], 0)
@@ -141,7 +141,7 @@ class OneArticleViewPutTest(TestCase):
 class DraftViewPostTest(TestCase):
     def setUp(self):
         prepare(self)
-        self.path = reverse("articles_v2:draft_root")
+        self.path = reverse("articles:draft_root")
         self.data = {"id": self.article.pk}
 
     def test_no_login(self):
@@ -175,7 +175,7 @@ class ArticleFollowViewPostTest(TestCase):
         prepare(self)
         self.article.is_draft = False
         self.article.save()
-        self.path = reverse("articles_v2:follow", kwargs={"article_id": self.article.pk})
+        self.path = reverse("articles:follow", kwargs={"article_id": self.article.pk})
 
     def test_no_login(self):
         response = self.client.post(self.path)
@@ -183,7 +183,7 @@ class ArticleFollowViewPostTest(TestCase):
         self.assertNotEqual(data["code"], 0)
 
     def test_article_not_exist(self):
-        path = reverse("articles_v2:follow", kwargs={"article_id": self.article.pk + 1})
+        path = reverse("articles:follow", kwargs={"article_id": self.article.pk + 1})
         response = self.client.post(path, **self.headers)
         data = response.json()
         self.assertNotEqual(data["code"], 0)
@@ -201,7 +201,7 @@ class ArticleFollowViewDeleteTest(TestCase):
         prepare(self)
         self.article.is_draft = False
         self.article.save()
-        self.path = reverse("articles_v2:follow", kwargs={"article_id": self.article.pk})
+        self.path = reverse("articles:follow", kwargs={"article_id": self.article.pk})
 
     def test_no_login(self):
         response = self.client.delete(self.path)

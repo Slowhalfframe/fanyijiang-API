@@ -4,11 +4,10 @@ from django.db import models
 
 from apps.comments.models import Comment
 from apps.labels.models import Label
-from apps.userpage.models import UserProfile
+from apps.read_nums.models import ReadNums
+from apps.userpage.models import UserProfile, FavoriteCollection
 from apps.utils.models import BaseModel
 from apps.votes.models import Vote
-from apps.userpage.models import FavoriteCollection
-from apps.read_nums.models import ReadNums
 
 
 class Article(BaseModel):
@@ -25,7 +24,6 @@ class Article(BaseModel):
                                        through_fields=("article", "user"), verbose_name="关注者")
     comments = GenericRelation(to=Comment)
     votes = GenericRelation(to=Vote)
-
     collect = GenericRelation(to=FavoriteCollection, verbose_name="收藏")
     read_nums = GenericRelation(to=ReadNums)
 

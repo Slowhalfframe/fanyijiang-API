@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from apps import xss_safe
-from apps.comments.serializers import BasicUserSerializer
+from apps.userpage.serializers import BasicUserSerializer
 from apps.labels.serializers import BasicLabelSerializer
 from .models import Question, Answer
 
@@ -51,12 +51,12 @@ class StatQuestionSerializer(BasicQuestionSerializer):
     answer_count = serializers.SerializerMethodField()
     comment_count = serializers.SerializerMethodField()
     follower_count = serializers.IntegerField(source="followers.count")
-    view_count = serializers.SerializerMethodField()  # TODO 阅读次数
+    read_nums = serializers.SerializerMethodField()  # TODO 阅读次数
 
     class Meta:
         model = Question
         fields = BasicQuestionSerializer.Meta.fields + (
-            "answer_count", "comment_count", "follower_count", "view_count",)
+            "answer_count", "comment_count", "follower_count", "read_nums",)
 
     def get_answer_count(self, obj):
         return obj.answer_set.filter(is_draft=False, is_deleted=False).count()
@@ -64,7 +64,7 @@ class StatQuestionSerializer(BasicQuestionSerializer):
     def get_comment_count(self, obj):
         return obj.comments.filter(is_deleted=False).count()
 
-    def get_view_count(self, obj):
+    def get_read_nums(self, obj):
         return 3434  # TODO 返回真实数据
 
 

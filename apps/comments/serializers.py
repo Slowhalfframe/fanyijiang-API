@@ -1,23 +1,7 @@
-from django.conf import settings
 from rest_framework import serializers
 
-from apps.userpage.models import UserProfile
+from apps.userpage.serializers import BasicUserSerializer
 from .models import Comment
-
-
-class BasicUserSerializer(serializers.ModelSerializer):
-    """用于用户的序列化，返回最基础的信息"""
-
-    id = serializers.CharField(source="uid")
-    type = serializers.CharField(source="kind")
-    homepage = serializers.SerializerMethodField()
-
-    class Meta:
-        model = UserProfile
-        fields = ("id", "type", "slug", "nickname", "gender", "avatar", "autograph", "homepage",)
-
-    def get_homepage(self, obj):
-        return settings.FRONT_HOST + "/people/" + obj.slug + "/"
 
 
 class CommentChecker(serializers.ModelSerializer):

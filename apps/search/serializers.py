@@ -12,5 +12,4 @@ class UniformIndexSerializer(HaystackSerializer):
 class UserIndexSerializer(HaystackSerializer):
     class Meta:
         index_classes = [UserIndex, ]
-        # fields = ("uid", "kind", "text",)
         fields = ("text",)
