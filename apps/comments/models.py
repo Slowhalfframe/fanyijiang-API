@@ -19,7 +19,7 @@ class Comment(BaseModel):
     votes = GenericRelation(to=Vote)  # 用于获取评论的投票
 
     class Meta:
-        db_table = "comment"
+        db_table = "db_comment"
         verbose_name = "评论"
         verbose_name_plural = verbose_name
 

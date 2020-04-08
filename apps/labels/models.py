@@ -15,7 +15,7 @@ class Label(BaseModel):
                                        through_fields=("label", "user"), verbose_name="关注者")
 
     class Meta:
-        db_table = "label"
+        db_table = "db_label"
         verbose_name = "标签"
         verbose_name_plural = verbose_name
 
@@ -34,7 +34,7 @@ class LabelFollow(BaseModel):
     label = models.ForeignKey(to=Label, null=False, verbose_name="关注的标签")
 
     class Meta:
-        db_table = "label_follow"
+        db_table = "db_label_follow"
         verbose_name = "标签关注"
         verbose_name_plural = verbose_name
 

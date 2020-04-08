@@ -24,7 +24,7 @@ class Idea(BaseModel):
     collect = GenericRelation(to=FavoriteCollection)
 
     class Meta:
-        db_table = "idea"
+        db_table = "db_idea"
         verbose_name = "想法"
         verbose_name_plural = verbose_name
 

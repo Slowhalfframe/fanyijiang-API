@@ -11,7 +11,9 @@ class CreatorList(models.Model):
     several_issues = models.ForeignKey('SeveralIssues', on_delete=models.CASCADE, related_name='creator_list')
 
     class Meta:
-        db_table = 'creator_list'
+        db_table = 'db_creator_list'
+        verbose_name = '榜单内容'
+        verbose_name_plural = verbose_name
 
 
 class SeveralIssues(models.Model):
@@ -21,4 +23,6 @@ class SeveralIssues(models.Model):
     create_at = models.DateTimeField(auto_now_add=True, verbose_name='统计日期')
 
     class Meta:
-        db_table = 'several_issues'
+        db_table = 'db_several_issues'
+        verbose_name = '榜单期数'
+        verbose_name_plural = verbose_name

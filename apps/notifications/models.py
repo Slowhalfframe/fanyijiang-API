@@ -42,7 +42,7 @@ class Notification(models.Model):
     action_object = GenericForeignKey()  # 或GenericForeignKey("content_type", "object_id")
 
     class Meta:
-        db_table = 'notifications'
+        db_table = 'db_notifications'
         verbose_name = "通知"
         verbose_name_plural = verbose_name
         ordering = ("-created_at",)
