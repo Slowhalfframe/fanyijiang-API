@@ -37,6 +37,9 @@ class UserProfile(models.Model):
     def kind(self):
         return "people"
 
+    def __str__(self):
+        return self.nickname
+
 
 class UserEmploymentHistory(models.Model):
     user = models.ForeignKey('UserProfile', on_delete=models.CASCADE, related_name='user_employment_history')

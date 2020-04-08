@@ -12,6 +12,8 @@ class CreatorList(models.Model):
 
     class Meta:
         db_table = 'db_creator_list'
+        verbose_name = '榜单内容'
+        verbose_name_plural = verbose_name
 
 
 class SeveralIssues(models.Model):
@@ -22,3 +24,5 @@ class SeveralIssues(models.Model):
 
     class Meta:
         db_table = 'db_several_issues'
+        verbose_name = '榜单期数'
+        verbose_name_plural = verbose_name

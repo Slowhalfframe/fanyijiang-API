@@ -13,3 +13,5 @@ class ReadNums(models.Model):
 
     class Meta:
         db_table = 'db_read_nums'
+        verbose_name = '阅读量'
+        verbose_name_plural = verbose_name
