@@ -107,32 +107,22 @@ class NotificationsSerializer(serializers.ModelSerializer):
         if verb == 'CAN':
             # 评论了你的回答
             content_object = action_object.content_object
-            if isinstance(content_object, Question):
-                data['title'] = action_object.title
-                data['id'] = content_object.id
-                data['link'] = ''  # 评论详情
-            if isinstance(content_object, Answer):
-                data['title'] = content_object.question.title
-                data['id'] = content_object.id
-                data['link'] = ''  # 评论详情
+            data['title'] = content_object.question.title
+            data['id'] = content_object.id
+            data['link'] = ''  # 评论详情
 
         if verb == 'CAR':
             # 评论了你的文章
-            data['title'] = action_object.article.title
+            data['title'] = action_object.content_object.title
             data['id'] = action_object.id
             data['link'] = ''  # 评论详情
 
         if verb == 'CQ':
             # 评论了你的问题
             content_object = action_object.content_object
-            if isinstance(content_object, Question):
-                data['title'] = action_object.title
-                data['id'] = content_object.id
-                data['link'] = ''  # 评论详情
-            if isinstance(content_object, Answer):
-                data['title'] = content_object.question.title
-                data['id'] = content_object.id
-                data['link'] = ''  # 评论详情
+            data['title'] = action_object.title
+            data['id'] = content_object.id
+            data['link'] = ''  # 评论详情
 
         if verb == 'CI':
             # 评论了你的想法

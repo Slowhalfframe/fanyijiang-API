@@ -246,7 +246,6 @@ class UserPageArticleSerializer(serializers.ModelSerializer):
         """返回None表示未投票，True表示赞成，False表示反对"""
         me = self.context["me"]  # None或者当前登录的UserProfile对象
         if not me:
-            # <<<<<<< master
             return None
         my_vote = obj.votes.filter(author_id=me.uid).first()
         if not my_vote:

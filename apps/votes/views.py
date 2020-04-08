@@ -6,7 +6,7 @@ from apps.utils import errorcode
 from apps.utils.api import CustomAPIView
 from apps.utils.decorators import logged_in
 from .serializers import VoteChecker
-
+from apps.taskapp.tasks import notification_handler
 MAPPINGS = {
     "answer": Answer,
     "comment": Comment,
@@ -43,6 +43,28 @@ class VoteView(CustomAPIView):
             instance.votes.update_or_create(author=me, defaults=checker.validated_data)
         except:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
+
+        # 触发消息通知
+        if kind == 'comment':
+            content_object = instance.content_object
+            if isinstance(content_object, Article):
+                notification_handler.delay(me.pk, instance.author_id, 'LAC', instance.pk)
+
+            if isinstance(content_object, Answer):
+                notification_handler.delay(me.pk, instance.author_id, 'LQAC', instance.pk)
+
+            if isinstance(content_object, Idea):
+                notification_handler.delay(me.pk, instance.author_id, 'LIC', instance.pk)
+
+        if kind == 'answer':
+            notification_handler.delay(me.pk, instance.author_id, 'LAN', instance.pk)
+
+        if kind == 'article':
+            notification_handler.delay(me.pk, instance.author_id, 'LAR', instance.pk)
+
+        if kind == 'idea':
+            notification_handler.delay(me.pk, instance.author_id, 'LI', instance.pk)
+
         return self.success()
 
     @logged_in

@@ -6,7 +6,7 @@ from apps.questions.models import Question, Answer
 from apps.utils import errorcode
 from apps.utils.api import CustomAPIView
 from apps.utils.decorators import logged_in
-
+from apps.taskapp.tasks import notification_handler
 MAPPINGS = {
     "question": Question,
     "answer": Answer,
@@ -44,6 +44,23 @@ class CommentView(CustomAPIView):
         except:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         formatter = MeCommentSerializer(instance=comment, context={"me": me})
+
+        # 触发消息通知
+        if kind == 'question':
+            notification_handler.delay(me.pk, instance.author_id, 'CQ', comment.pk)
+
+        if kind == 'answer':
+            notification_handler.delay(me.pk, instance.author_id, 'CAN', comment.pk)
+
+        if kind == 'article':
+            notification_handler.delay(me.pk, instance.author_id, 'CAR', comment.pk)
+
+        if kind == 'idea':
+            notification_handler.delay(me.pk, instance.author_id, 'CI', comment.pk)
+            
+        if kind == 'comment':
+            notification_handler.delay(me.pk, instance.author_id, 'R', comment.pk)
+
         return self.success(formatter.data)
 
     def get(self, request, kind, id):

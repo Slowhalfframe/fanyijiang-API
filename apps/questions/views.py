@@ -13,6 +13,8 @@ from .models import Question, Answer, QuestionFollow, QuestionInvite
 from .serializers import QuestionChecker, MeQuestionSerializer, AnswerChecker, MeAnswerSerializer, \
     MeAnswerWithoutQuestionSerializer
 
+from apps.taskapp.tasks import notification_handler
+
 
 class QuestionView(CustomAPIView):
     @logged_in
@@ -138,6 +140,16 @@ class AnswerView(CustomAPIView):
         except:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         formatter = MeAnswerSerializer(instance=answer, context={"me": me})
+
+        try:
+            print('触发消息通知')
+            notification_handler.delay(me.pk, question.author.pk, 'A', answer.pk)
+            # TODO 是否也要给关注该问题的人发送通知，是否要异步发送
+            question_follows = QuestionFollow.objects.filter(question=question)
+            for follow in question_follows:
+                notification_handler.delay(me.pk, follow.user_id, 'AF', answer.pk)
+        except Question.DoesNotExist as e:
+            return self.error(e.args, errorcode.INVALID_DATA)
         return self.success(formatter.data)
 
 
@@ -327,9 +339,12 @@ class InviteView(CustomAPIView):
         # TODO 自动拒绝邀请
         # TODO 如果不允许自问自答，则也不能邀请提问者
         try:
-            QuestionInvite.objects.create(inviting=me, invited=he, question=question)
+            instance = QuestionInvite.objects.create(inviting=me, invited=he, question=question)
         except:
             return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
+
+        # TODO 发送消息通知
+        notification_handler.delay(instance.inviting, instance.invited, 'I', question.pk)
         return self.success()
 
 
