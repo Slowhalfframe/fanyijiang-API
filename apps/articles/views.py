@@ -213,3 +213,17 @@ class ArticleFollowView(CustomAPIView):
         qs = he.followed_articles.filter(is_deleted=False, is_draft=False)
         data = self.paginate_data(request, qs, MeArticleSerializer, {"me": me})
         return self.success(data)
+
+
+class ArticleCommentDetailView(CustomAPIView):
+    def get(self, request, article_id):
+        # TODO 空视图
+
+        return self.success([])
+
+
+class ArticleRecommendView(CustomAPIView):
+    def get(self, request, article_id):
+        # TODO 空视图
+
+        return self.success([])
