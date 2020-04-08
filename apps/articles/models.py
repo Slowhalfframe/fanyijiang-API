@@ -3,10 +3,9 @@ from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 
 from apps.comments.models import Comment
-from apps.creator.models import ReadNums
 from apps.labels.models import Label
-from apps.userpage.models import FavoriteCollection
-from apps.userpage.models import UserProfile
+from apps.read_nums.models import ReadNums
+from apps.userpage.models import UserProfile, FavoriteCollection
 from apps.utils.models import BaseModel
 from apps.votes.models import Vote
 

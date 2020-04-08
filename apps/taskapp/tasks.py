@@ -28,7 +28,6 @@ def answers_pv_record(remote_addr, answer_id):
     read_nums = cache.get(redis_key) or 0
 
     addr_key = remote_addr + '_' + redis_key
-    # TODO 是否需要防止同一IP频繁刷新？比如5分钟的刷新次数浏览量只算1次浏览量
     if not cache.get(addr_key):
         # 不存在则说明第一次访问或者已经超过一个小时，PV加1
         cache.set(redis_key, int(read_nums) + 1, 60 * 60 * 24 * 30)  # 设置时常为30天
@@ -43,7 +42,6 @@ def articles_pv_record(remote_addr, article_id):
     today_str = datetime.date.strftime(today, '%Y%m%d')
     redis_key = 'article_' + str(article_id) + "_" + today_str
     read_nums = cache.get(redis_key) or 1
-    print(read_nums)
     addr_key = remote_addr + '_' + redis_key
     if not cache.get(addr_key):
         # 不存在则说明第一次访问或者已经超过一个小时，PV加1
@@ -90,14 +88,11 @@ def read_nums_in_database():
     yesterday = today - one_day
     yesterday_str = datetime.date.strftime(yesterday, '%Y%m%d')
     # yesterday_str = datetime.datetime.strftime(yesterday, '%Y%m%d')
-    print(yesterday_str)
     # 写入回答阅读量
     write_read_in_database('answer', yesterday_str)
     # 写入文章阅读量
-    # TODO
     write_read_in_database('article', yesterday_str)
     # 写入想法阅读量
-    # TODO
     write_read_in_database('think', yesterday_str)
     # 问题阅读量
     write_read_in_database('question', yesterday_str)

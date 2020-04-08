@@ -672,7 +672,7 @@ class FavoritesContentAPIView(CustomAPIView):
         model_mappings = {'answer': Answer, 'article': Article, 'think': Idea}
         if content_type not in model_mappings:
             return self.error('未知的数据类型', 404)
-        which_model = model_mappings['content_type']
+        which_model = model_mappings[content_type]
 
         # if content_type == 'answer':
         #     answer = Answer.objects.filter(pk=object_id).first()

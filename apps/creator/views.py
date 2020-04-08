@@ -3,7 +3,6 @@ import datetime, random
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Sum
 from django.core.cache import cache
-from django.conf import settings
 
 from apps.utils.api import CustomAPIView
 
@@ -11,7 +10,7 @@ from apps.questions.models import Answer, Question, QuestionFollow, QuestionInvi
 
 from apps.userpage.models import UserProfile
 
-from apps.creator.models import ReadNums, CreatorList, SeveralIssues
+from apps.creator.models import CreatorList, SeveralIssues
 
 from apps.articles.models import Article
 
@@ -21,6 +20,7 @@ from apps.pins.models import Idea
 
 from apps.utils.decorators import validate_identity
 
+from apps.read_nums.models import ReadNums
 
 
 # 基础统计
@@ -120,324 +120,179 @@ class ThinkReadNums(ReadNumsClass):
         return super(ThinkReadNums, self).get_instance_total_nums(id=id)
 
 
+class CommentStatistics(BaseStatistics):
+    '''评论统计'''
+
+    def __init__(self, user, which_model):
+        super(CommentStatistics, self).__init__(user=user, which_model=which_model)
+
+    def get_total_comment_nums(self):
+        queryset = self.get_queryset()
+        nums_list = [query.comments.all().count() for query in queryset]
+        nums = sum(nums_list) or 0
+        return nums
+
+    def get_date_total_comments(self, date):
+        begin_date = datetime.datetime.strptime(date, '%Y%m%d')
+        end_date = begin_date + datetime.timedelta(days=1)
+        queryset = self.get_queryset()
+        nums_list = [query.comments.filter(create_at__gte=begin_date, create_at__lte=end_date).count() for query in
+                     queryset]
+        nums = sum(nums_list) or 0
+        return nums
+
+    def get_instance_date_nums(self, id, date):
+        instance = self.get_instance(id)
+        begin_date = datetime.datetime.strptime(date, '%Y%m%d')
+        end_date = begin_date + datetime.timedelta(days=1)
+        nums = instance.comments.filter(create_at__gte=begin_date, create_at__lte=end_date).count()
+        return nums
+
+    def get_instance_total_nums(self, id):
+        instance = self.get_instance(id)
+        nums = instance.comments.all().count()
+        return nums
+
+
+# 收藏统计
+class CollectStatistics(BaseStatistics):
+    '''收藏统计'''
+
+    def __init__(self, user, which_model):
+        super(CollectStatistics, self).__init__(user=user, which_model=which_model)
+
+    def get_total_collect_nums(self):
+        queryset = self.get_queryset()
+        nums_list = [query.collect.all().count() for query in queryset]
+        nums = sum(nums_list) or 0
+        return nums
+
+    def get_date_collect_nums(self, date):
+        begin_date = datetime.datetime.strptime(date, '%Y%m%d')
+        end_date = begin_date + datetime.timedelta(days=1)
+        queryset = self.get_queryset()
+        nums_list = [query.collect.filter(create_at__gte=begin_date, create_at__lte=end_date).count() for query in
+                     queryset]
+        nums = sum(nums_list) or 0
+        return nums
+
+    def get_instance_collect_date_nums(self, id, date):
+        begin_date = datetime.datetime.strptime(date, '%Y%m%d')
+        instance = self.get_instance(id)
+        end_date = begin_date + datetime.timedelta(days=1)
+        nums_list = instance.collect.filter(create_at__gte=begin_date, create_at__lte=end_date).count()
+        nums = sum(nums_list) or 0
+        return nums
+
+    def get_instance_total_nums(self, id):
+        instance = self.get_instance(id)
+        nums = instance.collect.all().count()
+        return nums
+
+
+class VoteStatistics(BaseStatistics):
+    '''赞同统计'''
+
+    def __init__(self, user, which_model):
+        super(VoteStatistics, self).__init__(user, which_model)
+
+    def get_total_upvote_nums(self):
+        queryset = self.get_queryset()
+        nums_list = [query.votes.filter(value=True).count() for query in queryset]
+        nums = sum(nums_list) or 0
+        return nums
+
+    def get_date_upvote_nums(self, date):
+        begin_date = datetime.datetime.strptime(date, '%Y%m%d')
+        end_date = begin_date + datetime.timedelta(days=1)
+        queryset = self.get_queryset()
+        nums_list = [query.votes.filter(value=True, create_at__gte=begin_date, create_at__lte=end_date).count() for
+                     query
+                     in
+                     queryset]
+        nums = sum(nums_list) or 0
+        return nums
+
+    def get_instance_upvote_date_nums(self, id, date):
+        instance = self.get_instance(id)
+        begin_date = datetime.datetime.strptime(date, '%Y%m%d')
+        end_date = begin_date + datetime.timedelta(days=1)
+        nums = instance.votes.filter(value=True, create_at__gte=begin_date, create_at__lte=end_date).count()
+        return nums
+
+    def get_instance_total_nums(self, id):
+        instance = self.get_instance(id)
+        nums = instance.votes.filter(value=True).count()
+        return nums
+
+
 # 回答评论统计
-class AnswerCommentStatistics(BaseStatistics):
+class AnswerCommentStatistics(CommentStatistics):
     '''回答评论统计'''
 
     def __init__(self, user, which_model=Answer):
         super(AnswerCommentStatistics, self).__init__(user=user, which_model=which_model)
 
-    def get_total_comment_nums(self):
-        queryset = self.get_queryset()
-        nums_list = [query.comment.all().count() for query in queryset]
-        nums = sum(nums_list) or 0
-        return nums
-
-    def get_date_total_comments(self, date):
-        begin_date = datetime.datetime.strptime(date, '%Y%m%d')
-        end_date = begin_date + datetime.timedelta(days=1)
-        queryset = self.get_queryset()
-        nums_list = [query.comment.filter(create_at__gte=begin_date, create_at__lte=end_date).count() for query in
-                     queryset]
-        nums = sum(nums_list) or 0
-        return nums
-
-    def get_instance_date_nums(self, id, date):
-        instance = self.get_instance(id)
-        begin_date = datetime.datetime.strptime(date, '%Y%m%d')
-        end_date = begin_date + datetime.timedelta(days=1)
-        nums = instance.comment.filter(create_at__gte=begin_date, create_at__lte=end_date).count()
-        return nums
-
-    def get_instance_total_nums(self, id):
-        instance = self.get_instance(id)
-        nums = instance.comment.all().count()
-        return nums
-
 
 # 回答收藏统计
-class AnswerCollectStatistics(BaseStatistics):
+class AnswerCollectStatistics(CollectStatistics):
     '''回答收藏统计'''
 
     def __init__(self, user, which_model=Answer):
         super(AnswerCollectStatistics, self).__init__(user=user, which_model=which_model)
 
-    def get_total_collect_nums(self):
-        queryset = self.get_queryset()
-        nums_list = [query.collect.all().count() for query in queryset]
-        nums = sum(nums_list) or 0
-        return nums
 
-    def get_date_collect_nums(self, date):
-        begin_date = datetime.datetime.strptime(date, '%Y%m%d')
-        end_date = begin_date + datetime.timedelta(days=1)
-        queryset = self.get_queryset()
-        nums_list = [query.collect.filter(create_at__gte=begin_date, create_at__lte=end_date).count() for query in
-                     queryset]
-        nums = sum(nums_list) or 0
-        return nums
-
-    def get_instance_collect_date_nums(self, id, date):
-        begin_date = datetime.datetime.strptime(date, '%Y%m%d')
-        instance = self.get_instance(id)
-        end_date = begin_date + datetime.timedelta(days=1)
-        nums_list = instance.collect.filter(create_at__gte=begin_date, create_at__lte=end_date).count()
-        nums = sum(nums_list) or 0
-        return nums
-
-    def get_instance_total_nums(self, id):
-        instance = self.get_instance(id)
-        nums = instance.collect.all().count()
-        return nums
-
-
-class AnswerVoteStatistics(BaseStatistics):
+class AnswerVoteStatistics(VoteStatistics):
     '''回答赞同统计'''
 
     def __init__(self, user, which_model=Answer):
         super(AnswerVoteStatistics, self).__init__(user, which_model)
 
-    def get_total_upvote_nums(self):
-        queryset = self.get_queryset()
-        nums_list = [query.vote.filter(value=True).count() for query in queryset]
-        nums = sum(nums_list) or 0
-        return nums
-
-    def get_date_upvote_nums(self, date):
-        begin_date = datetime.datetime.strptime(date, '%Y%m%d')
-        end_date = begin_date + datetime.timedelta(days=1)
-        queryset = self.get_queryset()
-        nums_list = [query.vote.filter(value=True, create_at__gte=begin_date, create_at__lte=end_date).count() for query
-                     in
-                     queryset]
-        nums = sum(nums_list) or 0
-        return nums
-
-    def get_instance_upvote_date_nums(self, id, date):
-        instance = self.get_instance(id)
-        begin_date = datetime.datetime.strptime(date, '%Y%m%d')
-        end_date = begin_date + datetime.timedelta(days=1)
-        nums = instance.vote.filter(value=True, create_at__gte=begin_date, create_at__lte=end_date).count()
-        return nums
-
-    def get_instance_total_nums(self, id):
-        instance = self.get_instance(id)
-        nums = instance.vote.filter(value=True).count()
-        return nums
-
 
 # 文章评论收统计
-class ArticleCommentStatistics(BaseStatistics):
+class ArticleCommentStatistics(CommentStatistics):
     '''文章评论统计'''
 
     def __init__(self, user, which_model=Article):
         super(ArticleCommentStatistics, self).__init__(user=user, which_model=which_model)
 
-    def get_total_comment_nums(self):
-        queryset = self.get_queryset()
-        nums_list = [query.articlecomment_set.all().count() for query in queryset]
-        nums = sum(nums_list) or 0
-        return nums
-
-    def get_date_total_comments(self, date):
-        begin_date = datetime.datetime.strptime(date, '%Y%m%d')
-        end_date = begin_date + datetime.timedelta(days=1)
-        queryset = self.get_queryset()
-        nums_list = [query.articlecomment_set.filter(create_at__gte=begin_date, create_at__lte=end_date).count() for
-                     query in
-                     queryset]
-        nums = sum(nums_list) or 0
-        return nums
-
-    def get_instance_date_nums(self, id, date):
-        instance = self.get_instance(id)
-        begin_date = datetime.datetime.strptime(date, '%Y%m%d')
-        end_date = begin_date + datetime.timedelta(days=1)
-        nums = instance.articlecomment_set.filter(create_at__gte=begin_date, create_at__lte=end_date).count()
-        return nums
-
-    def get_instance_total_nums(self, id):
-        instance = self.get_instance(id)
-        nums = instance.articlecomment_set.all().count()
-        return nums
-
 
 # 文章收藏统计
-class ArticleCollectStatistics(BaseStatistics):
+class ArticleCollectStatistics(CollectStatistics):
     '''文章收藏统计'''
 
     def __init__(self, user, which_model=Article):
         super(ArticleCollectStatistics, self).__init__(user=user, which_model=which_model)
 
-    def get_total_collect_nums(self):
-        queryset = self.get_queryset()
-        nums_list = [query.collect.all().count() for query in queryset]
-        nums = sum(nums_list) or 0
-        return nums
 
-    def get_date_collect_nums(self, date):
-        begin_date = datetime.datetime.strptime(date, '%Y%m%d')
-        end_date = begin_date + datetime.timedelta(days=1)
-        queryset = self.get_queryset()
-        nums_list = [query.collect.filter(create_at__gte=begin_date, create_at__lte=end_date).count() for query in
-                     queryset]
-        nums = sum(nums_list) or 0
-        return nums
-
-    def get_instance_total_nums(self, id):
-        instance = self.get_instance(id)
-        nums = instance.collect.all().count()
-        return nums
-
-    def get_instance_collect_date_nums(self, id, date):
-        begin_date = datetime.datetime.strptime(date, '%Y%m%d')
-        instance = self.get_instance(id)
-        end_date = begin_date + datetime.timedelta(days=1)
-        nums_list = instance.collect.filter(create_at__gte=begin_date, create_at__lte=end_date).count()
-        nums = sum(nums_list) or 0
-        return nums
-
-
-class ArticleVoteStatistics(BaseStatistics):
+class ArticleVoteStatistics(VoteStatistics):
     '''文章赞同统计'''
 
     def __init__(self, user, which_model=Article):
         super(ArticleVoteStatistics, self).__init__(user, which_model)
 
-    def get_total_upvote_nums(self):
-        queryset = self.get_queryset()
-        nums_list = [query.vote.filter(value=True).count() for query in queryset]
-        nums = sum(nums_list) or 0
-        return nums
-
-    def get_date_upvote_nums(self, date):
-        begin_date = datetime.datetime.strptime(date, '%Y%m%d')
-        end_date = begin_date + datetime.timedelta(days=1)
-        queryset = self.get_queryset()
-        nums_list = [query.vote.filter(value=True, create_at__gte=begin_date, create_at__lte=end_date).count() for query
-                     in
-                     queryset]
-        nums = sum(nums_list) or 0
-        return nums
-
-    def get_instance_upvote_date_nums(self, id, date):
-        instance = self.get_instance(id)
-        begin_date = datetime.datetime.strptime(date, '%Y%m%d')
-        end_date = begin_date + datetime.timedelta(days=1)
-        nums = instance.vote.filter(value=True, create_at__gte=begin_date, create_at__lte=end_date).count()
-        return nums
-
-    def get_instance_upvote_total_nums(self, id):
-        instance = self.get_instance(id)
-        nums = instance.vote.all().count()
-        return nums
-
 
 # 文章评论收统计
-class ThinkCommentStatistics(BaseStatistics):
+class ThinkCommentStatistics(CommentStatistics):
     '''想法评论统计'''
 
     def __init__(self, user, which_model=Idea):
         super(ThinkCommentStatistics, self).__init__(user=user, which_model=which_model)
 
-    def get_total_comment_nums(self):
-        queryset = self.get_queryset()
-        nums_list = [query.ideacomment_set.all().count() for query in queryset]
-        nums = sum(nums_list) or 0
-        return nums
 
-    def get_date_total_comments(self, date):
-        begin_date = datetime.datetime.strptime(date, '%Y%m%d')
-        end_date = begin_date + datetime.timedelta(days=1)
-        queryset = self.get_queryset()
-        nums_list = [query.ideacomment_set.filter(create_at__gte=begin_date, create_at__lte=end_date).count() for
-                     query in
-                     queryset]
-        nums = sum(nums_list) or 0
-        return nums
-
-    def get_instance_date_nums(self, id, date):
-        instance = self.get_instance(id)
-        begin_date = datetime.datetime.strptime(date, '%Y%m%d')
-        end_date = begin_date + datetime.timedelta(days=1)
-        nums = instance.ideacomment_set.filter(create_at__gte=begin_date, create_at__lte=end_date).count()
-        return nums
-
-    def get_instance_total_nums(self, id):
-        instance = self.get_instance(id)
-        nums = instance.ideacomment_set.all().count()
-        return nums
-
-
-class ThinkVoteStatistics(BaseStatistics):
+class ThinkVoteStatistics(VoteStatistics):
     '''想法赞同统计'''
 
     def __init__(self, user, which_model=Idea):
         super(ThinkVoteStatistics, self).__init__(user, which_model)
 
-    def get_total_upvote_nums(self):
-        queryset = self.get_queryset()
-        nums_list = [query.agree.all().count() for query in queryset]
-        nums = sum(nums_list) or 0
-        return nums
-
-    def get_date_upvote_nums(self, date):
-        begin_date = datetime.datetime.strptime(date, '%Y%m%d')
-        end_date = begin_date + datetime.timedelta(days=1)
-        queryset = self.get_queryset()
-        nums_list = [query.agree.filter(create_at__gte=begin_date, create_at__lte=end_date).count() for query
-                     in
-                     queryset]
-        nums = sum(nums_list) or 0
-        return nums
-
-    def get_instance_upvote_date_nums(self, id, date):
-        instance = self.get_instance(id)
-        begin_date = datetime.datetime.strptime(date, '%Y%m%d')
-        end_date = begin_date + datetime.timedelta(days=1)
-        nums = instance.agree.filter(create_at__gte=begin_date, create_at__lte=end_date).count()
-        return nums
-
-    def get_instance_upvote_total_nums(self, id):
-        instance = self.get_instance(id)
-        nums = instance.agree.all().count()
-        return nums
-
 
 # 想法收藏统计
-class ThinkCollectStatistics(BaseStatistics):
+class ThinkCollectStatistics(CollectStatistics):
     '''想法收藏统计'''
 
     def __init__(self, user, which_model=Idea):
         super(ThinkCollectStatistics, self).__init__(user=user, which_model=which_model)
-
-    def get_total_collect_nums(self):
-        queryset = self.get_queryset()
-        nums_list = [query.collect.all().count() for query in queryset]
-        nums = sum(nums_list) or 0
-        return nums
-
-    def get_date_collect_nums(self, date):
-        begin_date = datetime.datetime.strptime(date, '%Y%m%d')
-        end_date = begin_date + datetime.timedelta(days=1)
-        queryset = self.get_queryset()
-        nums_list = [query.collect.filter(create_at__gte=begin_date, create_at__lte=end_date).count() for query in
-                     queryset]
-        nums = sum(nums_list) or 0
-        return nums
-
-    def get_instance_total_nums(self, id):
-        instance = self.get_instance(id)
-        nums = instance.collect.all().count()
-        return nums
-
-    def get_instance_collect_date_nums(self, id, date):
-        begin_date = datetime.datetime.strptime(date, '%Y%m%d')
-        instance = self.get_instance(id)
-        end_date = begin_date + datetime.timedelta(days=1)
-        nums_list = instance.collect.filter(create_at__gte=begin_date, create_at__lte=end_date).count()
-        nums = sum(nums_list) or 0
-        return nums
 
 
 # 问题推荐
@@ -542,21 +397,21 @@ class RecentCreateContent(object):
         self.user = user
 
     def recent_answer(self):
-        answers = Answer.objects.filter(author=self.user).order_by('-create_at')[:3]
+        answers = Answer.objects.filter(author=self.user, is_draft=False).order_by('-create_at')[:3]
         answer_data = []
         for answer in answers:
             data = dict()
             data['id'] = answer.id
             data['display_title'] = answer.question.title
             data['display_content'] = answer.content
-            data['type'] = 'answer'
+            data['type'] = answer.kind
             data['create_at'] = answer.create_at
             read_nums = answer.read_nums.filter(object_id=answer.id).first()
             data['read_nums'] = read_nums.nums if read_nums else 0
             # 获取阅读量
-            data['comment_count'] = answer.comment.filter(object_id=answer.id).count()
+            data['comment_count'] = answer.comments.filter(object_id=answer.id).count()
             # 赞同量
-            data['upvote_count'] = answer.vote.filter(object_id=answer.id, value=True).count()
+            data['upvote_count'] = answer.votes.filter(object_id=answer.id, value=True).count()
             # 收藏量
             data['collect_count'] = answer.collect.filter(object_id=answer.id).count()
             data['link'] = answer.url
@@ -572,12 +427,12 @@ class RecentCreateContent(object):
             data['id'] = article.id
             data['display_title'] = article.title
             data['display_content'] = article.content
-            data['type'] = 'article'
+            data['type'] = article.kind
             data['create_at'] = article.create_at
             read_nums = article.read_nums.filter(object_id=article.id).first()
             data['read_nums'] = read_nums.nums if read_nums else 0
-            data['comment_count'] = article.articlecomment_set.all().count()
-            data['upvote_count'] = article.vote.filter(object_id=article.id, value=True).count()
+            data['comment_count'] = article.comments.all().count()
+            data['upvote_count'] = article.votes.filter(object_id=article.id, value=True).count()
             data['collect_count'] = article.collect.filter(object_id=article.id).count()
             data['link'] = article.url
             article_data.append(data)
@@ -591,13 +446,13 @@ class RecentCreateContent(object):
             data['id'] = think.id
             data['display_title'] = ''
             data['display_content'] = think.content
-            data['type'] = 'think'
+            data['type'] = think.kind
             data['create_at'] = think.create_at
             read_nums = think.read_nums.filter(object_id=think.id).first()
             data['read_nums'] = read_nums.nums if read_nums else 0
-            data['comment_count'] = think.ideacomment_set.all().count()
-            data['upvote_count'] = think.agree.filter(object_id=think.id).count()
-            data['collect_count'] = 0
+            data['comment_count'] = think.comments.all().count()
+            data['upvote_count'] = think.votes.filter(object_id=think.id).count()
+            data['collect_count'] = think.collect.fliter(object_id=think.id).count()
             data['link'] = think.url
             thinks_data.append(data)
         return thinks_data
@@ -638,8 +493,6 @@ class TotalNums(object):
         article = AnswerVoteStatistics(self.user).get_date_upvote_nums(date) or 0
         think = AnswerVoteStatistics(self.user).get_date_upvote_nums(date) or 0
         return answer + article + think
-
-
 
 
 class CreatorHomeAPIView(CustomAPIView):
@@ -736,9 +589,9 @@ class CreatorDataDetailAPIView(CustomAPIView):
                 'upvote_nums': ThinkVoteStatistics(user).get_total_upvote_nums(),  # TODO
                 'ysd_read_nums': instance.get_queryset_date_num(yesterday_str),
                 'ysd_upvote_nums': ThinkVoteStatistics(user).get_date_upvote_nums(yesterday_str),  # TODO
-                'comment_count': sum([query.ideacomment_set.all().count() for query in instance.get_queryset()]),
+                'comment_count': sum([query.comments.all().count() for query in instance.get_queryset()]),
                 'ysd_comment_count': sum(
-                    [query.ideacomment_set.filter(create_at__gte=yesterday, create_at__lte=today).count() for query in
+                    [query.comments.filter(create_at__gte=yesterday, create_at__lte=today).count() for query in
                      instance.get_queryset()])
             }
         return self.success(create_data)
@@ -820,7 +673,7 @@ class SingleDataStatisticsAPIView(CustomAPIView):
         data_list = list()
         if data_type == 'answer':
             # answers = Answer.objects.filter(create_at__gte=begin_da, create_at__lte=end_da, user_id=uid)
-            answers = Answer.objects.filter(create_at__gte=begin_da, author=user)
+            answers = Answer.objects.filter(create_at__gte=begin_da, author=user, is_draft=False)
             for answer in answers:
                 data = dict()
                 data['id'] = answer.id

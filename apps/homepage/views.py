@@ -60,7 +60,7 @@ class UserCreateArticle(BaseCreateContent):
 
     def get_user_answer_question(self):
         '''获取用户发表回答的问题'''
-        questions = [a.question for a in Answer.objects.filter(author=self.user).select_related('question')]
+        questions = [a.question for a in Answer.objects.filter(author=self.user, is_draft=False).select_related('question')]
         launch_q = [q for q in Question.objects.filter(author=self.user)]
         questions.extend(launch_q)
         return questions
@@ -177,9 +177,9 @@ class InLabelContent(BaseCreateContent):
         article_list = list()
         new_limit = math.ceil((self.offset+self.limit) * 0.3)
         for article in label.article_set.filter(is_draft=False, is_deleted=False).exclude(
-                author=self.user, ).select_related().order_by('-create_at').only('vote', 'collect',)[:new_limit]:
+                author=self.user, ).select_related().order_by('-create_at').only('votes', 'collect', 'comments')[:new_limit]:
             # 点过赞
-            if article.vote.filter(author=self.user).exists():
+            if article.votes.filter(author=self.user).exists():
                 continue
 
             # 收藏过
@@ -199,11 +199,11 @@ class InLabelContent(BaseCreateContent):
         new_limit = math.ceil((self.offset + self.limit) * 0.5)
         # answer = [a for a in question.answer_set.exclude(user_id=self.user.uid).order_by('-create_at')[:100]]
 
-        for a in question.answer_set.exclude(author=self.user).order_by('-create_at').select_related().only('vote', 'collect', 'comment')[:new_limit]:
+        for a in question.answer_set.exclude(author=self.user).order_by('-create_at').select_related().only('votes', 'collect', 'comments')[:new_limit]:
 
             # 点过赞
             # print('遇到回答！！！', a)
-            if a.vote.filter(author=self.user).exists():
+            if a.votes.filter(author=self.user).exists():
                 continue
 
             # 收藏过
@@ -211,7 +211,7 @@ class InLabelContent(BaseCreateContent):
                 continue
 
             # 评论过
-            if a.comment.filter(author=self.user).exists():
+            if a.comments.filter(author=self.user).exists():
                 continue
             answer_list.append(a)
         return answer_list
@@ -302,6 +302,8 @@ class VisitorContent(object):
     def get_label_question(self, label):
         '''问题'''
         questions = label.question_set.all()[:20]
+        print(label)
+        print(questions)
         # print('标签下的所有问题', questions)
         return questions
 
@@ -334,6 +336,7 @@ class VisitorContent(object):
         content_list = list()
         # print(self.get_label_question(label), '遇到问题！！！')
         for questoin in self.get_label_question(label):
+            print(questoin, '推荐的问题')
             # random_length = math.ceil(self.limit * 0.5)
             # print('我提出的问题！！！！！！！！！！！！！11', questoin)
             answer_list = self.get_question_answer(questoin)
@@ -350,6 +353,7 @@ class VisitorContent(object):
         # print(content_list, '标签下的内容')
         # print(label, '标签')
         # print(content_list, '标签下的内容')
+        print(content_list)
         return content_list
 
     def get_finally_data(self):
@@ -426,7 +430,7 @@ class HomePageFollowContentAPIView(CustomAPIView):
         idol_users = UserProfile.objects.filter(as_idol__fans=user)[offset:offset + limit]
         data_list = list()
         for idol in idol_users:
-            answer = Answer.objects.filter(author=idol).order_by('-create_at')
+            answer = Answer.objects.filter(author=idol, is_draft=False).order_by('-create_at')
             answer_data = self.paginate_data(request, answer, UserPageAnswerSerializer, serializer_context={'me': idol})
             data_list.extend(answer_data['results'])
             articles = Article.objects.filter(author=idol).order_by('-update_at', '-create_at')
