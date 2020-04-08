@@ -11,10 +11,11 @@ from apps.votes.models import Vote
 
 
 class Question(BaseModel):
-    """问题，标题不能重复"""
+    """问题，标题不能重复，可以匿名"""
 
     title = models.CharField(max_length=100, unique=True, null=False, blank=False, verbose_name="问题标题")
     content = models.TextField(null=True, blank=True, verbose_name="问题描述")
+    is_anonymous = models.BooleanField(default=True, verbose_name="是否匿名")
     author = models.ForeignKey(to=UserProfile, null=False, verbose_name="提问者")
     labels = models.ManyToManyField(to=Label, verbose_name="问题的标签")
     comments = GenericRelation(to=Comment)
@@ -40,11 +41,12 @@ class Question(BaseModel):
 
 
 class Answer(BaseModel):
-    """问题的回答，每个问题每个用户只能正式回答一次，但可以修改或有多个草稿"""
+    """问题的回答，每个问题每个用户只能正式回答一次，但可以修改或有多个草稿，可以匿名"""
 
     content = models.TextField(null=False, blank=False, verbose_name="回答内容")
     # 发表评论是用到了该字段名，不能随意改名
     is_draft = models.BooleanField(null=False, blank=False, verbose_name="是否是草稿")
+    is_anonymous = models.BooleanField(default=False, verbose_name="是否匿名")
     question = models.ForeignKey(to=Question, null=False, verbose_name="问题")
     author = models.ForeignKey(to=UserProfile, null=False, verbose_name="回答者")
     comments = GenericRelation(to=Comment)

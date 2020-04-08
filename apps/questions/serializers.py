@@ -11,11 +11,14 @@ class QuestionChecker(serializers.ModelSerializer):
 
     class Meta:
         model = Question
-        fields = ("title", "content",)
+        fields = ("title", "content", "is_anonymous",)
         extra_kwargs = {
             "title": {
                 "required": True,
-            }
+            },
+            "is_anonymous": {
+                "required": True
+            },
         }
 
     def validate_title(self, value):
@@ -34,7 +37,7 @@ class QuestionChecker(serializers.ModelSerializer):
 class BasicQuestionSerializer(serializers.ModelSerializer):
     """用于问题的序列化，返回最基础的信息"""
 
-    author = BasicUserSerializer()
+    author = serializers.SerializerMethodField()
     labels = BasicLabelSerializer(many=True)
     type = serializers.CharField(source="kind")
     create_at = serializers.DateTimeField(format="%Y%m%d %H:%M:%S")
@@ -42,7 +45,13 @@ class BasicQuestionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Question
-        fields = ("id", "type", "title", "content", "author", "labels", "create_at", "update_at",)
+        fields = ("id", "type", "title", "content", "is_anonymous", "author", "labels", "create_at", "update_at",)
+
+    def get_author(self, obj):
+        if obj.is_anonymous:
+            return {}
+        formatter = BasicUserSerializer(instance=obj.author)
+        return formatter.data
 
 
 class StatQuestionSerializer(BasicQuestionSerializer):
@@ -98,14 +107,17 @@ class AnswerChecker(serializers.ModelSerializer):
 
     class Meta:
         model = Answer
-        fields = ("content", "is_draft",)
+        fields = ("content", "is_draft", "is_anonymous",)
         extra_kwargs = {
             "content": {
                 "required": True,
             },
             "is_draft": {
                 "required": True,
-            }
+            },
+            "is_anonymous": {
+                "required": True
+            },
         }
 
     def validate_content(self, value):
@@ -121,11 +133,17 @@ class BasicAnswerSerializer(serializers.ModelSerializer):
     create_at = serializers.DateTimeField(format="%Y%m%d %H:%M:%S")
     update_at = serializers.DateTimeField(format="%Y%m%d %H:%M:%S")
     question = BasicQuestionSerializer()
-    author = BasicUserSerializer()
+    author = serializers.SerializerMethodField()
 
     class Meta:
         model = Answer
-        fields = ("id", "type", "content", "is_draft", "question", "author", "create_at", "update_at",)
+        fields = ("id", "type", "content", "is_draft", "question", "is_anonymous", "author", "create_at", "update_at",)
+
+    def get_author(self, obj):
+        if obj.is_anonymous:
+            return {}
+        formatter = BasicUserSerializer(instance=obj.author)
+        return formatter.data
 
 
 class StatAnswerSerializer(BasicAnswerSerializer):

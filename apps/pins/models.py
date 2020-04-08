@@ -2,10 +2,10 @@ from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 
 from apps.comments.models import Comment
+from apps.read_nums.models import ReadNums
 from apps.userpage.models import UserProfile, FavoriteCollection
 from apps.utils.models import BaseModel
 from apps.votes.models import Vote
-from apps.read_nums.models import ReadNums
 
 
 class Idea(BaseModel):

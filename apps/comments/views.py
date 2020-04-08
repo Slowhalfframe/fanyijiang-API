@@ -72,7 +72,14 @@ class OneCommentView(CustomAPIView):
         comment = Comment.objects.filter(pk=comment_id, is_deleted=False).first()
         if comment is None:
             return self.success()
-        # TODO 哪些评论可以删除？除了作者，还有谁可以删除？真实删除还是逻辑删除？
+        # 只有作者能删除评论，采用逻辑删除
+        if comment.author != me:
+            return self.error(errorcode.MSG_NOT_OWNER, errorcode.NOT_OWNER)
+        try:
+            comment.is_deleted = True
+            comment.save()
+        except:
+            return self.error(errorcode.MSG_DB_ERROR, errorcode.DB_ERROR)
         return self.success()
 
     @logged_in
