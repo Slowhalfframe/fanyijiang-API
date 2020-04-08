@@ -48,6 +48,12 @@ class QuestionViewPostTest(TestCase):
         self.assertNotEqual(data["code"], 0)
         self.assertEqual(Question.objects.count(), 0)
 
+    def test_is_anonymous(self):
+        response = self.client.post(self.path, self.data, **self.headers)
+        data = response.json()
+        self.assertEqual(data["code"], 0)
+        self.assertEqual(data["data"]["author"], {})
+
 
 class OneQuestionViewPutTest(TestCase):
     def setUp(self):
@@ -146,6 +152,13 @@ class AnswerViewPostTest(TestCase):
         self.assertNotEqual(data["code"], 0)
         self.assertEqual(self.question.answer_set.filter(is_draft=True).count(), 0)
         self.assertEqual(self.question.answer_set.filter(is_draft=False).count(), 1)
+
+    def test_is_anonymous(self):
+        self.data["is_anonymous"] = True
+        response = self.client.post(self.path, self.data, **self.headers)
+        data = response.json()
+        self.assertEqual(data["code"], 0)
+        self.assertEqual(data["data"]["author"], {})
 
 
 class OneAnswerViewDeleteTest(TestCase):

@@ -23,6 +23,7 @@ class QuestionView(CustomAPIView):
         data = {
             "title": request.data.get("title") or "",
             "content": request.data.get("content") or "",
+            "is_anonymous": request.data.get("is_anonymous") or True,  # 提问默认匿名
         }
         # 请求体为空时,request.data为普通的空字典，没有getlist方法
         if "labels" not in request.data:
@@ -69,7 +70,8 @@ class OneQuestionView(CustomAPIView):
         title = request.data.get("title") or ""
         data = {
             "content": request.data.get("content") or "",
-            "title": "a" if question.title == title else title  # 使用无意义但有效的标题，绕过唯一性验证
+            "title": "a" if question.title == title else title,  # 使用无意义但有效的标题，绕过唯一性验证
+            "is_anonymous": request.data.get("is_anonymous") or True,
         }
         checker = QuestionChecker(data=data)
         checker.is_valid()
@@ -117,6 +119,7 @@ class AnswerView(CustomAPIView):
         data = {
             "content": request.data.get("content") or "",
             "is_draft": request.data.get("is_draft"),
+            "is_anonymous": request.data.get("is_anonymous") or False,  # 回答默认不匿名
         }
         checker = AnswerChecker(data=data)
         checker.is_valid()
@@ -171,6 +174,7 @@ class OneAnswerView(CustomAPIView):
         data = {
             "content": request.data.get("content") or "",
             "is_draft": request.data.get("is_draft"),
+            "is_anonymous": request.data.get("is_anonymous") or False,
         }
         checker = AnswerChecker(data=data)
         checker.is_valid()

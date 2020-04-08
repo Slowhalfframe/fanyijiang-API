@@ -4,12 +4,14 @@
 
   * 旧：
   * `/api/questions/`
-  * 新：提问后自动关注
+  * 新：提问后自动关注，可以匿名提问
   * `/api/v2/questions/`
 
 * 请求体参数
 
     原先的`labels`是标签名称的列表或逗号拼接的字符串，现在改为标签ID的列表或逗号拼接的字符串
+
+    增加bool类型的参数`is_anonymous`，表示是否匿名，未提供时视为`true`
 
 * 旧返回数据
 
@@ -39,7 +41,8 @@
         "type": "question",//新增数据
         "title": "什么是闭包？",
         "content": null,
-        "author": {//新增数据，比原先的nickname更详细
+        "is_anonymous": false,
+        "author": {//新增数据，比原先的nickname更详细，匿名时为空对象
             "id": "45c48cce2e2d7fbdea1afc51c7c6ad26",
             "type": "people",
             "slug": "qin",
@@ -76,7 +79,7 @@
 
   * 旧：
   * `/api/questions/(?P<question_id>\d+)/answers/`
-  * 新：回答也可以是草稿，正式回答会删除同问题的其他回答草稿
+  * 新：回答也可以是草稿，正式回答会删除同问题的其他回答草稿，可以匿名回答
   * `/api/v2/questions/<question_id>/answers/`
 
 * 请求体参数
@@ -84,6 +87,8 @@
     增加如下参数：
 
     |is_draft|<span style="color:red;">是</span>|bool|是否是草稿|
+
+    |is_anonymous|<span style="color:red;">是</span>|bool|是否匿名|
 
 * 旧返回数据
 
@@ -118,7 +123,8 @@
             "type": "question",
             "title": "什么是闭包？",
             "content": null,
-            "author": {
+            "is_anonymous": false,
+            "author": {//匿名时为空对象
                 "id": "45c48cce2e2d7fbdea1afc51c7c6ad26",
                 "type": "people",
                 "slug": "qin",
@@ -140,7 +146,8 @@
             "create_at": "20200406 15:42:33",
             "update_at": "20200406 15:42:33"
         },
-        "author": {//原先的author_info，增加了一些信息
+        "is_anonymous": false,//新增数据，是否匿名
+        "author": {//原先的author_info，增加了一些信息，匿名时为空对象
             "id": "45c48cce2e2d7fbdea1afc51c7c6ad26",
             "type": "people",
             "slug": "qin",
@@ -166,7 +173,7 @@
 
   * 旧：
   * `/api/questions/(?P<question_id>\d+)/answers/`
-  * 新：可以修改草稿，也可以在修改时发表，正式发表会删除草稿
+  * 新：可以修改草稿，也可以在修改时发表，正式发表会删除草稿，可以修改匿名状态
   * `/api/v2/questions/<question_id>/answers/<answer_id>/`
 
 * URL参数
@@ -180,6 +187,8 @@
     增加如下参数：
 
     |is_draft|<span style="color:red;">是</span>|bool|是否是草稿|
+
+    |is_anonymous|<span style="color:red;">是</span>|bool|是否匿名|
 
 * 返回数据
 
@@ -583,7 +592,8 @@
             "type": "question",
             "title": "什么是闭包？",
             "content": null,
-            "author": {
+            "is_anonymous": false,
+            "author": {//匿名时为空数据
                 "id": "45c48cce2e2d7fbdea1afc51c7c6ad26",
                 "type": "people",
                 "slug": "qin",
@@ -605,7 +615,8 @@
             "create_at": "20200406 15:42:33",
             "update_at": "20200406 15:42:33"
         },
-        "author": {//原先的author_info，不含统计信息、与当前用户的关联信息
+        "is_anonymous": false,
+        "author": {//原先的author_info，不含统计信息、与当前用户的关联信息，匿名时为空对象
             "id": "45c48cce2e2d7fbdea1afc51c7c6ad26",
             "type": "people",
             "slug": "qin",
