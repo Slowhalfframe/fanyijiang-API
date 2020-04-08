@@ -66,7 +66,8 @@
             "gender": null,//新增数据
             "avatar": null,
             "autograph": null,
-            "homepage": "http://192.168.0.107:9000/people/qin/" //新增数据
+            "homepage": "http://192.168.0.107:9000/people/qin/", //新增数据
+            "is_followed": false//新增数据，当前用户是否已经关注该用户
         },
         "labels": [
             {
