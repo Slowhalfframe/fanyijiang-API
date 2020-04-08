@@ -115,21 +115,12 @@ class ContentFavoritesSerializer(serializers.ModelSerializer):
             return True
         return False
 
-    # def get_owner_info(self, obj):
-    #     owner = obj.user
-    #     data = {'nickname': owner.nickname, 'slug': owner.slug}
-    #     return data
-    #
     def get_is_followed(self, obj):
         uid = self.context['uid']
         data = False
         if FollowedFavorites.objects.filter(user_id=uid, fa=obj).exists():
             data = True
         return data
-
-
-# class FavoritesAnswerSerializer(serializers.ModelSerializer):
-#     class Meta:
 
 
 class FollowsUserSerializer(serializers.ModelSerializer):
@@ -147,11 +138,9 @@ class FollowsUserSerializer(serializers.ModelSerializer):
         return UserProfile.objects.filter(as_fans__idol__uid=obj.uid).count()
 
     def get_articles_count(self, obj):
-        # TODO 数据库查询
         return Article.objects.filter(author_id=obj.uid, is_draft=False, is_deleted=False).count()
 
     def get_answers_count(self, obj):
-        # TODO 数据库查询
         return Answer.objects.filter(author_id=obj.uid).count()
 
 
@@ -165,16 +154,13 @@ class FavoritesContentSerializer(serializers.ModelSerializer):
     def get_details(self, obj):
         content_object = obj.content_object
         content_data = None
-        me = self.context["me"]
         if isinstance(content_object, Answer):
             content_data = UserPageAnswerSerializer(instance=content_object, context=self.context).data
-            content_data['data_type'] = 'answer'
         if isinstance(content_object, Article):
             content_data = UserPageArticleSerializer(instance=content_object, context=self.context).data
-            content_data['data_type'] = 'article'
         if isinstance(content_object, Idea):
             content_data = UserPageThinksSerializer(instance=content_object, context=self.context).data
-            content_data['data_type'] = 'think'
+        content_data['data_type'] = content_object.kind
         return content_data
 
 
@@ -216,7 +202,6 @@ class UserPageAnswerSerializer(serializers.ModelSerializer):
         """返回None表示未投票，True表示赞成，False表示反对"""
         me = self.context["me"]  # None或者当前登录的UserProfile对象
         if not me:
-            # <<<<<<< master
             return None
         my_vote = obj.votes.filter(author_id=me.uid).first()
         if not my_vote:
@@ -224,7 +209,7 @@ class UserPageAnswerSerializer(serializers.ModelSerializer):
         return my_vote.value
 
     def get_data_type(self, obj):
-        return 'answer'
+        return obj.kind
 
 
 class UserPageArticleSerializer(serializers.ModelSerializer):
