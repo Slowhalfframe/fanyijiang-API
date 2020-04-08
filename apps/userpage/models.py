@@ -96,7 +96,7 @@ class FollowedFavorites(models.Model):
     create_time = models.DateTimeField(auto_now_add=True, verbose_name='关注时间')
 
     class Meta:
-        db_table = 'followed_favorite'
+        db_table = 'db_followed_favorite'
 
 
 class FavoriteCollection(models.Model):

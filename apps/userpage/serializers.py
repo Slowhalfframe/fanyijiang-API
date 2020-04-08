@@ -234,6 +234,7 @@ class UserPageArticleSerializer(serializers.ModelSerializer):
     author_info = serializers.SerializerMethodField()
     currentUserVote = serializers.SerializerMethodField()
     data_type = serializers.SerializerMethodField()
+    image = serializers.SerializerMethodField()
 
     class Meta:
         model = Article
@@ -268,7 +269,10 @@ class UserPageArticleSerializer(serializers.ModelSerializer):
         return my_vote.value
 
     def get_data_type(self, obj):
-        return 'article'
+        return obj.kind
+
+    def get_image(self, obj):
+        return obj.cover
 
 
 class UserPageThinksSerializer(serializers.ModelSerializer):
